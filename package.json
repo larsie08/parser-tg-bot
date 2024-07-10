@@ -6,6 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node ./dist/app.js",
+    "dev": "ts-node-dev ./app.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -17,10 +18,12 @@
     "eslint": "^8.57.0",
     "eslint-plugin-react": "^7.34.1",
     "globals": "^15.2.0",
+    "ts-node-dev": "^2.0.0",
     "typescript": "^5.4.5",
     "typescript-eslint": "^7.9.0"
   },
   "dependencies": {
+    "axios": "^1.7.2",
     "dotenv": "^16.4.5",
     "telegraf": "^4.16.3",
     "telegraf-session-local": "^2.1.1"

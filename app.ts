@@ -1,10 +1,11 @@
 import { Telegraf } from "telegraf";
 import LocalSession from "telegraf-session-local";
+
 import { IConfigService } from "./src/config/config.interface";
 import { ConfigService } from "./src/config/config.service";
 import { IBotContext } from "./src/context/context.interface";
-import { Command } from "./src/commands/command.class";
-import { StartCommand } from "./src/commands/start.command";
+
+import { Command, StartCommand, StatusCommand } from "./src/commands";
 
 class Bot {
   bot: Telegraf<IBotContext>;
@@ -16,7 +17,7 @@ class Bot {
   }
 
   init() {
-    this.commands = [new StartCommand(this.bot)];
+    this.commands = [new StartCommand(this.bot), new StatusCommand(this.bot)];
     for (const command of this.commands) {
       command.handle();
     }
