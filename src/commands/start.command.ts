@@ -11,11 +11,23 @@ export class StartCommand extends Command {
 
   handle(): void {
     this.bot.start((context) => {
-      console.log(context.session);
       context.reply(
         "Привет, чем могу помочь?",
-        Markup.keyboard([["Узнать статус заказа"]])
+        Markup.keyboard([["Меню парсера"]]).oneTime()
       );
+
+      this.bot.hears("Меню парсера", (ctx) => {
+        ctx.reply(
+          "Выберите команду",
+          Markup.inlineKeyboard([
+            Markup.button.callback(
+              "Добавить игру в список отслеживания",
+              "game_add"
+            ),
+            Markup.button.callback("Проверить цену игры", "check_price"),
+          ])
+        );
+      });
     });
   }
 }

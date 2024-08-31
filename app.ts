@@ -5,7 +5,12 @@ import { IConfigService } from "./src/config/config.interface";
 import { ConfigService } from "./src/config/config.service";
 import { IBotContext } from "./src/context/context.interface";
 
-import { Command, StartCommand, StatusCommand } from "./src/commands";
+import {
+  Command,
+  ParserCommand,
+  StartCommand,
+  GameAddCommand,
+} from "./src/commands";
 
 class Bot {
   bot: Telegraf<IBotContext>;
@@ -17,7 +22,11 @@ class Bot {
   }
 
   init() {
-    this.commands = [new StartCommand(this.bot), new StatusCommand(this.bot)];
+    this.commands = [
+      new StartCommand(this.bot),
+      new ParserCommand(this.bot),
+      new GameAddCommand(this.bot),
+    ];
     for (const command of this.commands) {
       command.handle();
     }
