@@ -16,10 +16,12 @@ export class GameAddCommand extends Command {
 
       context
         .sendMessage(
-          "Введите название игры",
+          "Введите название игры\nПри добавлении нескольких игр, писать через запятую(,)",
           Markup.inlineKeyboard([Markup.button.callback("Отменить", "cancel")])
         )
         .then((message) => messagesId.push(message.message_id));
+
+      isCanceled = false;
 
       this.bot.hears(/.+/, (context) => {
         if (isCanceled) return;
@@ -28,14 +30,9 @@ export class GameAddCommand extends Command {
           context.session.games = [];
         }
 
-        context.session.games = [
-          ...context.session.games,
-          context.message.text,
-        ];
+        this.handleAddGame(context, context.message.text);
 
-        context
-          .sendMessage("Игра успешно добавлена")
-          .then((message) => messagesId.push(message.message_id));
+        isCanceled = true;
       });
 
       this.bot.action("cancel", () => {
@@ -44,5 +41,35 @@ export class GameAddCommand extends Command {
         context.deleteMessages(messagesId);
       });
     });
+  }
+
+  handleAddGame(context: IBotContext, text: string) {
+    if (!text.trim()) {
+      return context.sendMessage("Введите название игры для добавления.");
+    }
+
+    const games = text
+      .split(",")
+      .map((game) => game.trim())
+      .filter((game) => game.length > 0);
+
+    if (games.length === 0) {
+      return context.sendMessage("Не удалось распознать ни одной игры.");
+    }
+
+    const currentGames = context.session.games;
+    const newGames = games.filter((game) => !currentGames.includes(game));
+
+    if (newGames.length === 0) {
+      return context.sendMessage("Все эти игры уже есть в вашем списке.");
+    }
+
+    context.session.games = currentGames.concat(newGames);
+
+    if (newGames.length === 1) {
+      return context.sendMessage(`Игра успешно добавлена: ${newGames}`);
+    }
+
+    context.sendMessage(`Игры успешно добавлены: ${newGames.join(", ")}`);
   }
 }

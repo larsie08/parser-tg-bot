@@ -21,6 +21,8 @@ export class ParserCommand extends Command {
         return context.sendMessage("В списке отслеживаемого ничего не найдено");
       }
 
+      context.session.isCheckingPrice = true;
+
       for (let i = 0; i < context.session.games.length; i++) {
         context
           .sendMessage(
@@ -33,11 +35,17 @@ export class ParserCommand extends Command {
       }
 
       this.bot.action("check__game_price", async (context) => {
+        if (!context.session.isCheckingPrice) return;
+
         // @ts-ignore
         selectedGame = context.callbackQuery.message?.text;
+        if (!selectedGame) {
+          return context.sendMessage("Ошибка при выборе игры.");
+        }
+
         gameUrl = this.handleFormatUrlSearch(selectedGame);
 
-        await context
+        context
           .sendMessage(
             "Выберите ресурс",
             Markup.keyboard(["Plati.ru", "Steam", "Отменить"])
@@ -45,6 +53,8 @@ export class ParserCommand extends Command {
           .then((message) => messagesId.push(message.message_id));
 
         this.bot.hears("Plati.ru", async () => {
+          if (!context.session.isCheckingPrice) return;
+
           const gameData = await this.fetchGameInfoPlatiMarket(gameUrl);
 
           if (!gameData || gameData.length === 0) {
@@ -63,6 +73,8 @@ export class ParserCommand extends Command {
         });
 
         this.bot.hears("Steam", async () => {
+          if (!context.session.isCheckingPrice) return;
+
           const gameData = await this.fetchGameInfoSteam(gameUrl);
 
           if (!gameData) {
@@ -71,21 +83,26 @@ export class ParserCommand extends Command {
               .then((message) => messagesId.push(message.message_id));
           }
 
+          let messageText = `Название: ${gameData.name}\nЦена: ${gameData.price}\nСсылка: ${gameData.href}`;
+
+          if (gameData.oldPrice || gameData.discount) {
+            messageText = `Название: ${gameData.name}\nСтарая цена: ${gameData.oldPrice}\nЦена: ${gameData.price}\nСкидка: ${gameData.discount}\nСсылка: ${gameData.href}`;
+          }
+
           context
-            .sendMessage(
-              `Название: ${gameData.name}\nЦена: ${gameData.price}\nСсылка: ${gameData.href}`
-            )
+            .sendMessage(messageText)
             .then((message) => messagesId.push(message.message_id));
         });
 
         this.bot.hears("Отменить", (context) => {
           context.deleteMessages(messagesId);
+          this.cleanupHandlers(context);
         });
       });
     });
   }
 
-  async fetchGameInfoPlatiMarket(gameUrl: string) {
+  private async fetchGameInfoPlatiMarket(gameUrl: string) {
     try {
       const { data } = await axios.get(
         `https://plati.market/search/${gameUrl}`
@@ -118,7 +135,7 @@ export class ParserCommand extends Command {
     return gameInfo;
   }
 
-  async fetchGameInfoSteam(gameUrl: string) {
+  private async fetchGameInfoSteam(gameUrl: string) {
     try {
       const { data } = await axios.get(
         `https://store.steampowered.com/search/?term=${gameUrl}&ndl=1`
@@ -131,23 +148,54 @@ export class ParserCommand extends Command {
   }
 
   private parseSteamData(data: string) {
-    const dom = new JSDOM(data);
-    const items = dom.window.document.getElementById("search_resultsRows");
-    const gameBlock = items?.querySelector("a");
+    try {
+      const dom = new JSDOM(data);
+      const items = dom.window.document.getElementById("search_resultsRows");
+      const gameBlock = items?.querySelector("a");
 
-    if (!gameBlock) return null;
+      if (!gameBlock) return null;
 
-    const name = gameBlock
-      .getElementsByClassName("search_name")[0]
-      .querySelector("span")?.textContent;
-    const price = gameBlock.getElementsByClassName("discount_final_price")[0]
-      ?.textContent;
-    const href = gameBlock?.href;
+      const nameElement = gameBlock
+        .getElementsByClassName("search_name")[0]
+        ?.querySelector("span");
+      const priceElement = gameBlock
+        .getElementsByClassName("search_price_discount_combined")[0]
+        ?.getElementsByClassName("discount_final_price")[0];
+      const oldPriceElement = gameBlock
+        .getElementsByClassName("search_price_discount_combined")[0]
+        ?.getElementsByClassName("discount_original_price")[0];
+      const discountElement = gameBlock
+        .getElementsByClassName("search_price_discount_combined")[0]
+        ?.getElementsByClassName("discount_pct")[0];
 
-    return { name, price, href };
+      const name = nameElement?.textContent || "Название недоступно";
+      const price = priceElement?.textContent || "Цена недоступна";
+      const oldPrice = oldPriceElement?.textContent || null;
+      const discount = discountElement?.textContent || null;
+      const href = gameBlock.href;
+
+      console.log({ name, price, oldPrice, discount, href });
+
+      const gameData = {
+        name,
+        price,
+        oldPrice,
+        discount,
+        href,
+      };
+
+      return gameData;
+    } catch (error) {
+      console.error("Ошибка при разборе данных Steam:", error);
+      return null;
+    }
   }
 
-  handleFormatUrlSearch(game: string): string {
+  private handleFormatUrlSearch(game: string): string {
     return encodeURIComponent(game);
+  }
+
+  private cleanupHandlers(context: IBotContext) {
+    context.session.isCheckingPrice = false;
   }
 }
