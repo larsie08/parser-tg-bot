@@ -5,6 +5,8 @@ import { JSDOM } from "jsdom";
 import { Command } from "./command.class";
 
 import { IBotContext } from "../context/context.interface";
+import { AppDataSource } from "../config/typeOrm.config";
+import { Game } from "../entities";
 
 export class ParserCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {
@@ -13,20 +15,23 @@ export class ParserCommand extends Command {
 
   handle(): void {
     const messagesId: number[] = [];
-    let selectedGame: string;
-    let gameUrl: string;
+    let selectedGame = "";
+    let gameUrl = "";
+    let isCheckingPrice = false;
 
     this.bot.action("check_price", async (context) => {
-      if (!context.session.games) {
+      const games = await this.handleUserGames(context);
+
+      if (!games) {
         return context.sendMessage("В списке отслеживаемого ничего не найдено");
       }
 
-      context.session.isCheckingPrice = true;
+      isCheckingPrice = true;
 
-      for (let i = 0; i < context.session.games.length; i++) {
+      for (let i = 0; i < games.length; i++) {
         context
           .sendMessage(
-            context.session.games[i],
+            games[i].name,
             Markup.inlineKeyboard([
               Markup.button.callback("Узнать цену", "check__game_price"),
             ])
@@ -35,7 +40,7 @@ export class ParserCommand extends Command {
       }
 
       this.bot.action("check__game_price", async (context) => {
-        if (!context.session.isCheckingPrice) return;
+        if (!isCheckingPrice) return;
 
         // @ts-ignore
         selectedGame = context.callbackQuery.message?.text;
@@ -53,7 +58,7 @@ export class ParserCommand extends Command {
           .then((message) => messagesId.push(message.message_id));
 
         this.bot.hears("Plati.ru", async () => {
-          if (!context.session.isCheckingPrice) return;
+          if (!isCheckingPrice) return;
 
           const gameData = await this.fetchGameInfoPlatiMarket(gameUrl);
 
@@ -73,7 +78,7 @@ export class ParserCommand extends Command {
         });
 
         this.bot.hears("Steam", async () => {
-          if (!context.session.isCheckingPrice) return;
+          if (!isCheckingPrice) return;
 
           const gameData = await this.fetchGameInfoSteam(gameUrl);
 
@@ -96,10 +101,24 @@ export class ParserCommand extends Command {
 
         this.bot.hears("Отменить", (context) => {
           context.deleteMessages(messagesId);
-          this.cleanupHandlers(context);
+          isCheckingPrice = false;
         });
       });
     });
+  }
+
+  private async handleUserGames(context: IBotContext): Promise<Game[] | null> {
+    const contextUserId = context.from?.id;
+    const gameRepository = AppDataSource.getRepository(Game);
+
+    if (!contextUserId) {
+      console.log("Не удалось определить пользователя");
+      return null;
+    }
+    const currentGames = gameRepository.find({
+      where: { userId: contextUserId },
+    });
+    return currentGames;
   }
 
   private async fetchGameInfoPlatiMarket(gameUrl: string) {
@@ -174,8 +193,6 @@ export class ParserCommand extends Command {
       const discount = discountElement?.textContent || null;
       const href = gameBlock.href;
 
-      console.log({ name, price, oldPrice, discount, href });
-
       const gameData = {
         name,
         price,
@@ -193,9 +210,5 @@ export class ParserCommand extends Command {
 
   private handleFormatUrlSearch(game: string): string {
     return encodeURIComponent(game);
-  }
-
-  private cleanupHandlers(context: IBotContext) {
-    context.session.isCheckingPrice = false;
   }
 }

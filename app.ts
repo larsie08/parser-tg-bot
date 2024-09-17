@@ -1,5 +1,5 @@
 import { Telegraf } from "telegraf";
-import LocalSession from "telegraf-session-local";
+import "reflect-metadata";
 
 import { IConfigService } from "./src/config/config.interface";
 import { ConfigService } from "./src/config/config.service";
@@ -11,6 +11,7 @@ import {
   StartCommand,
   GameAddCommand,
 } from "./src/commands";
+import { AppDataSource } from "./src/config/typeOrm.config";
 
 class Bot {
   bot: Telegraf<IBotContext>;
@@ -18,7 +19,6 @@ class Bot {
 
   constructor(private readonly ConfigService: IConfigService) {
     this.bot = new Telegraf<IBotContext>(this.ConfigService.get("TOKEN"));
-    this.bot.use(new LocalSession({ database: "session.json" }).middleware());
   }
 
   init() {
@@ -37,3 +37,10 @@ class Bot {
 const bot = new Bot(new ConfigService());
 
 bot.init();
+AppDataSource.initialize()
+  .then(() => {
+    console.log("Data Source has been initialized!");
+  })
+  .catch((error) =>
+    console.error("Error during Data Source initialization:", error)
+  );

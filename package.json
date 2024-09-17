@@ -7,7 +7,11 @@
     "build": "tsc",
     "start": "node ./dist/app.js",
     "dev": "ts-node-dev ./app.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
+    "migration:generate": "npm run typeorm migration:generate -- -d ./src/config/typeOrm.config.ts",
+    "migration:run": "npm run typeorm migration:run",
+    "migration:revert": "npm run typeorm migration:revert -- -d ./src/config/typeOrm.config.ts"
   },
   "author": "",
   "license": "ISC",
@@ -27,7 +31,10 @@
     "axios": "^1.7.2",
     "dotenv": "^16.4.5",
     "jsdom": "^25.0.0",
+    "pg": "^8.12.0",
+    "reflect-metadata": "^0.2.2",
     "telegraf": "^4.16.3",
-    "telegraf-session-local": "^2.1.1"
+    "tsconfig-paths": "^4.2.0",
+    "typeorm": "^0.3.20"
   }
 }

@@ -1,8 +1,10 @@
 import { Markup, Telegraf } from "telegraf";
 
 import { Command } from "./command.class";
+import { AppDataSource } from "../config/typeOrm.config";
 
 import { IBotContext } from "../context/context.interface";
+import { Game } from "../entities";
 
 export class GameAddCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {
@@ -10,11 +12,11 @@ export class GameAddCommand extends Command {
   }
 
   handle(): void {
-    this.bot.action("game_add", (context) => {
+    this.bot.action("game_add", async (context) => {
       let isCanceled = false;
       const messagesId: number[] = [];
 
-      context
+      await context
         .sendMessage(
           "Введите название игры\nПри добавлении нескольких игр, писать через запятую(,)",
           Markup.inlineKeyboard([Markup.button.callback("Отменить", "cancel")])
@@ -23,14 +25,10 @@ export class GameAddCommand extends Command {
 
       isCanceled = false;
 
-      this.bot.hears(/.+/, (context) => {
+      this.bot.hears(/.+/, async (context) => {
         if (isCanceled) return;
 
-        if (!Array.isArray(context.session.games)) {
-          context.session.games = [];
-        }
-
-        this.handleAddGame(context, context.message.text);
+        await this.handleAddGame(context, context.message.text);
 
         isCanceled = true;
       });
@@ -43,7 +41,7 @@ export class GameAddCommand extends Command {
     });
   }
 
-  handleAddGame(context: IBotContext, text: string) {
+  private async handleAddGame(context: IBotContext, text: string) {
     if (!text.trim()) {
       return context.sendMessage("Введите название игры для добавления.");
     }
@@ -57,19 +55,36 @@ export class GameAddCommand extends Command {
       return context.sendMessage("Не удалось распознать ни одной игры.");
     }
 
-    const currentGames = context.session.games;
-    const newGames = games.filter((game) => !currentGames.includes(game));
+    const gameRepository = AppDataSource.getRepository(Game);
+    const currentGames = await gameRepository.find({
+      where: { userId: context.from?.id },
+    });
+    const currentGameNames = currentGames.map((game) => game.name);
+
+    const newGames = games.filter((game) => !currentGameNames.includes(game));
 
     if (newGames.length === 0) {
       return context.sendMessage("Все эти игры уже есть в вашем списке.");
     }
 
-    context.session.games = currentGames.concat(newGames);
+    try {
+      for (const gameName of newGames) {
+        const game = new Game();
+        game.name = gameName;
+        game.userId = context.from!.id;
 
-    if (newGames.length === 1) {
-      return context.sendMessage(`Игра успешно добавлена: ${newGames}`);
+        await gameRepository.save(game);
+      }
+
+      const message =
+        newGames.length === 1
+          ? `Игра успешно добавлена: ${newGames[0]}`
+          : `Игры успешно добавлены: ${newGames.join(", ")}`;
+
+      return context.sendMessage(message);
+    } catch (error) {
+      console.error("Ошибка при сохранении игр:", error);
+      return context.sendMessage("Произошла ошибка при добавлении игры.");
     }
-
-    context.sendMessage(`Игры успешно добавлены: ${newGames.join(", ")}`);
   }
 }
