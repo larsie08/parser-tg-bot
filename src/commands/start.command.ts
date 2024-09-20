@@ -14,31 +14,42 @@ export class StartCommand extends Command {
   handle(): void {
     this.bot.start(async (context) => {
       const user = await this.handleUser(context);
+      const userName =
+        user?.userName || context.from?.first_name || "пользователь";
 
-      if (user) {
-        context.reply(
-          `Привет, ${user.userName}, чем могу помочь?`,
-          Markup.keyboard([["Меню парсера"]]).oneTime()
-        );
-      } else {
-        context.reply(
-          `Привет! Не удалось найти информацию о пользователе.\nЧем могу помочь?`,
-          Markup.keyboard([["Меню парсера"]]).oneTime()
-        );
-      }
+      context.reply(
+        `Привет! ${userName}, чем могу помочь?`,
+        Markup.keyboard([["Меню парсера", "Управление играми"]]).oneTime()
+      );
 
-      this.bot.hears("Меню парсера", (ctx) => {
-        ctx.reply(
-          "Выберите команду",
-          Markup.inlineKeyboard([
-            Markup.button.callback(
-              "Добавить игру в список отслеживания",
-              "game_add"
-            ),
-            Markup.button.callback("Проверить цену игры", "check_price"),
-          ])
-        );
-      });
+      this.setupMenuHandlers();
+    });
+  }
+
+  private setupMenuHandlers(): void {
+    this.bot.hears("Меню парсера", (ctx) => {
+      ctx.reply(
+        "Выберите команду",
+        Markup.inlineKeyboard([
+          Markup.button.callback("Проверить цену игры", "check_price"),
+        ])
+      );
+    });
+
+    this.bot.hears("Управление играми", (ctx) => {
+      ctx.reply(
+        "Выберите команду",
+        Markup.inlineKeyboard([
+          Markup.button.callback(
+            "Добавить игру в список отслеживания",
+            "game_add"
+          ),
+          Markup.button.callback(
+            "Удалить игру из списка отслеживания",
+            "game_delete"
+          ),
+        ])
+      );
     });
   }
 

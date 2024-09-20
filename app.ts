@@ -1,17 +1,16 @@
 import { Telegraf } from "telegraf";
 import "reflect-metadata";
 
-import { IConfigService } from "./src/config/config.interface";
-import { ConfigService } from "./src/config/config.service";
-import { IBotContext } from "./src/context/context.interface";
-
 import {
   Command,
   ParserCommand,
   StartCommand,
   GameAddCommand,
+  GameDeleteCommand,
 } from "./src/commands";
-import { AppDataSource } from "./src/config/typeOrm.config";
+
+import { IBotContext } from "./src/context/context.interface";
+import { AppDataSource, ConfigService, IConfigService } from "./src/config";
 
 class Bot {
   bot: Telegraf<IBotContext>;
@@ -26,6 +25,7 @@ class Bot {
       new StartCommand(this.bot),
       new ParserCommand(this.bot),
       new GameAddCommand(this.bot),
+      new GameDeleteCommand(this.bot),
     ];
     for (const command of this.commands) {
       command.handle();

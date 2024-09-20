@@ -1,10 +1,10 @@
 import { Markup, Telegraf } from "telegraf";
 
-import { Command } from "./command.class";
-import { AppDataSource } from "../config/typeOrm.config";
+import { Command } from "../command.class";
+import { AppDataSource } from "../../config/typeOrm.config";
 
-import { IBotContext } from "../context/context.interface";
-import { Game } from "../entities";
+import { IBotContext } from "../../context/context.interface";
+import { Game } from "../../entities";
 
 export class GameAddCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {

@@ -22,9 +22,8 @@ export class ParserCommand extends Command {
     this.bot.action("check_price", async (context) => {
       const games = await this.handleUserGames(context);
 
-      if (!games) {
+      if (!games || games.length === 0)
         return context.sendMessage("В списке отслеживаемого ничего не найдено");
-      }
 
       isCheckingPrice = true;
 
@@ -107,7 +106,7 @@ export class ParserCommand extends Command {
     });
   }
 
-  private async handleUserGames(context: IBotContext): Promise<Game[] | null> {
+  async handleUserGames(context: IBotContext): Promise<Game[] | null> {
     const contextUserId = context.from?.id;
     const gameRepository = AppDataSource.getRepository(Game);
 
