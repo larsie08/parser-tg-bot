@@ -20,7 +20,7 @@ export class ParserCommand extends Command {
     let isCheckingPrice = false;
 
     this.bot.action("check_price", async (context) => {
-      const games = await this.handleUserGames(context);
+      const games = await this.handleUserGames(context.from.id);
 
       if (!games || games.length === 0)
         return context.sendMessage("В списке отслеживаемого ничего не найдено");
@@ -106,16 +106,15 @@ export class ParserCommand extends Command {
     });
   }
 
-  async handleUserGames(context: IBotContext): Promise<Game[] | null> {
-    const contextUserId = context.from?.id;
+  async handleUserGames(userId: number): Promise<Game[] | null> {
     const gameRepository = AppDataSource.getRepository(Game);
 
-    if (!contextUserId) {
+    if (!userId) {
       console.log("Не удалось определить пользователя");
       return null;
     }
     const currentGames = gameRepository.find({
-      where: { userId: contextUserId },
+      where: { userId: userId },
     });
     return currentGames;
   }
@@ -153,7 +152,7 @@ export class ParserCommand extends Command {
     return gameInfo;
   }
 
-  private async fetchGameInfoSteam(gameUrl: string) {
+  async fetchGameInfoSteam(gameUrl: string) {
     try {
       const { data } = await axios.get(
         `https://store.steampowered.com/search/?term=${gameUrl}&ndl=1`
@@ -165,7 +164,7 @@ export class ParserCommand extends Command {
     }
   }
 
-  private parseSteamData(data: string) {
+  parseSteamData(data: string) {
     try {
       const dom = new JSDOM(data);
       const items = dom.window.document.getElementById("search_resultsRows");
@@ -207,7 +206,7 @@ export class ParserCommand extends Command {
     }
   }
 
-  private handleFormatUrlSearch(game: string): string {
+  handleFormatUrlSearch(game: string): string {
     return encodeURIComponent(game);
   }
 }

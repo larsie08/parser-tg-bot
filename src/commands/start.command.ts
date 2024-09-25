@@ -5,6 +5,7 @@ import { Command } from "./command.class";
 import { IBotContext } from "../context/context.interface";
 import { AppDataSource } from "../config/typeOrm.config";
 import { User } from "../entities";
+import { AutoParserCommand } from "./auto-parser.command";
 
 export class StartCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {
@@ -14,8 +15,7 @@ export class StartCommand extends Command {
   handle(): void {
     this.bot.start(async (context) => {
       const user = await this.handleUser(context);
-      const userName =
-        user?.userName || context.from?.first_name || "пользователь";
+      const userName = user?.userName || context.from?.first_name;
 
       context.reply(
         `Привет! ${userName}, чем могу помочь?`,

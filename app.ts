@@ -7,6 +7,7 @@ import {
   StartCommand,
   GameAddCommand,
   GameDeleteCommand,
+  AutoParserCommand,
 } from "./src/commands";
 
 import { IBotContext } from "./src/context/context.interface";
@@ -26,6 +27,7 @@ class Bot {
       new ParserCommand(this.bot),
       new GameAddCommand(this.bot),
       new GameDeleteCommand(this.bot),
+      new AutoParserCommand(this.bot),
     ];
     for (const command of this.commands) {
       command.handle();
@@ -36,10 +38,10 @@ class Bot {
 
 const bot = new Bot(new ConfigService());
 
-bot.init();
 AppDataSource.initialize()
   .then(() => {
     console.log("Data Source has been initialized!");
+    bot.init();
   })
   .catch((error) =>
     console.error("Error during Data Source initialization:", error)

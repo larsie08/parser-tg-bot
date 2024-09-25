@@ -18,7 +18,7 @@ export class GameDeleteCommand extends Command {
       const messagesId: number[] = [];
       const parserClass = new ParserCommand(this.bot);
 
-      const games = await parserClass.handleUserGames(context);
+      const games = await parserClass.handleUserGames(context.from.id);
 
       if (!games || games.length === 0) {
         return context.sendMessage("У вас нет игр для удаления.");
