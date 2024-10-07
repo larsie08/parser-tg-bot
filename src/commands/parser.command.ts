@@ -6,7 +6,16 @@ import { Command } from "./command.class";
 
 import { IBotContext } from "../context/context.interface";
 import { AppDataSource } from "../config/typeOrm.config";
+
 import { Game } from "../entities";
+
+export interface IGameData {
+  name: string;
+  price: string;
+  oldPrice: string | null;
+  discount: string | null;
+  href: string;
+}
 
 export class ParserCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {
