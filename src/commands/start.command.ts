@@ -5,7 +5,7 @@ import { Command } from "./command.class";
 import { IBotContext } from "../context/context.interface";
 import { AppDataSource } from "../config/typeOrm.config";
 import { User } from "../entities";
-import { AutoParserCommand } from "./auto-parser.command";
+import { AutoParserCommand } from "./game-parser-commands/auto-parser.command";
 
 export class StartCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {

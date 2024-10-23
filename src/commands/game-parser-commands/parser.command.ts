@@ -2,20 +2,13 @@ import { Markup, Telegraf } from "telegraf";
 import axios from "axios";
 import { JSDOM } from "jsdom";
 
-import { Command } from "./command.class";
+import { Command } from "../command.class";
 
-import { IBotContext } from "../context/context.interface";
-import { AppDataSource } from "../config/typeOrm.config";
+import { IBotContext } from "../../context/context.interface";
+import { AppDataSource } from "../../config/typeOrm.config";
 
-import { Game } from "../entities";
-
-export interface IGameData {
-  name: string;
-  price: string;
-  oldPrice: string | null;
-  discount: string | null;
-  href: string;
-}
+import { Game } from "../../entities";
+import { IGameMarketData, IGameSteamData } from "./game.interface";
 
 export class ParserCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {
@@ -128,7 +121,7 @@ export class ParserCommand extends Command {
     return currentGames;
   }
 
-  private async fetchGameInfoPlatiMarket(gameUrl: string) {
+  async fetchGameInfoPlatiMarket(gameUrl: string) {
     try {
       const { data } = await axios.get(
         `https://plati.market/search/${gameUrl}`
@@ -140,20 +133,24 @@ export class ParserCommand extends Command {
     }
   }
 
-  private parsePlatiMarketData(data: string) {
+  private parsePlatiMarketData(data: string): IGameMarketData[] {
     const gameInfo = [];
     const dom = new JSDOM(data);
     const items = dom.window.document.getElementsByClassName("shadow");
 
     for (let i = 0; i < items.length; i++) {
       const title = items[i].querySelector("h1");
-      const name = title?.querySelector("a")?.textContent;
-      const price = title?.querySelector("span")?.textContent;
-      const sales = items[i]
+      const nameElement = title?.querySelector("a");
+      const priceElement = title?.querySelector("span");
+      const salesElement = items[i]
         ?.querySelector("ol")
         ?.querySelectorAll("li")[1]
-        ?.querySelector("strong")?.textContent;
+        ?.querySelector("strong");
       const href = "https://plati.market" + title?.querySelector("a")?.href;
+
+      const name = nameElement?.textContent || "Название недоступно";
+      const price = priceElement?.textContent || "Цена недоступна";
+      const sales = salesElement?.textContent || "Количество продаж неизвестно";
 
       gameInfo.push({ name, price, sales, href });
     }
@@ -173,7 +170,7 @@ export class ParserCommand extends Command {
     }
   }
 
-  parseSteamData(data: string) {
+  private parseSteamData(data: string): IGameSteamData | null {
     try {
       const dom = new JSDOM(data);
       const items = dom.window.document.getElementById("search_resultsRows");
@@ -200,15 +197,13 @@ export class ParserCommand extends Command {
       const discount = discountElement?.textContent || null;
       const href = gameBlock.href;
 
-      const gameData = {
+      return {
         name,
         price,
         oldPrice,
         discount,
         href,
       };
-
-      return gameData;
     } catch (error) {
       console.error("Ошибка при разборе данных Steam:", error);
       return null;

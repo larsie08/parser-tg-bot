@@ -1,6 +1,6 @@
 import { Markup, Telegraf } from "telegraf";
 
-import { ParserCommand } from "../parser.command";
+import { ParserCommand } from "../game-parser-commands/parser.command";
 import { Command } from "../command.class";
 
 import { AppDataSource } from "../../config/typeOrm.config";
