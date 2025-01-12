@@ -5,6 +5,7 @@ import { AppDataSource } from "../../config/typeOrm.config";
 
 import { IBotContext } from "../../context/context.interface";
 import { Game } from "../../entities";
+import { ParserCommand } from "../game-parser-commands/parser.command";
 
 export class GameAddCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {
@@ -72,6 +73,7 @@ export class GameAddCommand extends Command {
         const game = new Game();
         game.name = gameName;
         game.userId = context.from!.id;
+        game.steamId = await this.getSteamId(gameName);
 
         await gameRepository.save(game);
       }
@@ -86,5 +88,26 @@ export class GameAddCommand extends Command {
       console.error("Ошибка при сохранении игр:", error);
       return context.sendMessage("Произошла ошибка при добавлении игры.");
     }
+  }
+
+  private async getSteamId(gameName: string): Promise<string> {
+    const parserCommand = new ParserCommand(this.bot);
+
+    const url = parserCommand.handleFormatUrlSearch(gameName);
+    const gameData = await parserCommand.fetchGameInfoSteam(url);
+
+    if (!gameData) {
+      throw new Error("Failed to fetch game data from Steam.");
+    }
+
+    return this.formatSteamId(gameData.href);
+  }
+
+  private formatSteamId(url: string): string {
+    const steamId = url.split("/")[4];
+
+    console.log("SteamId:", steamId);
+
+    return steamId
   }
 }

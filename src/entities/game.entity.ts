@@ -10,4 +10,7 @@ export class Game {
 
   @Column()
   name!: string;
+
+  @Column()
+  steamId!: string;
 }

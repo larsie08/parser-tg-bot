@@ -8,6 +8,7 @@ import {
   GameAddCommand,
   GameDeleteCommand,
   AutoParserCommand,
+  GameNewsCommand,
 } from "./src/commands";
 
 import { IBotContext } from "./src/context/context.interface";
@@ -28,6 +29,7 @@ class Bot {
       new GameAddCommand(this.bot),
       new GameDeleteCommand(this.bot),
       new AutoParserCommand(this.bot),
+      new GameNewsCommand(this.bot),
     ];
     for (const command of this.commands) {
       command.handle();

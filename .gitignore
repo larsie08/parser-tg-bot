@@ -3,3 +3,4 @@
 /node_modules
 Dockerfile
 tests
+/src/commands/steam-commands

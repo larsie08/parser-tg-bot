@@ -32,6 +32,7 @@ export class StartCommand extends Command {
         "Выберите команду",
         Markup.inlineKeyboard([
           Markup.button.callback("Проверить цену игры", "check_price"),
+          Markup.button.callback("Узнать последние новости игры", "check_news"),
         ])
       );
     });

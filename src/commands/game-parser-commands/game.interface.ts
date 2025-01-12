@@ -1,16 +1,16 @@
-export interface IGameSteamData {
+export interface IGameBaseData {
   name: string;
   price: string;
-  oldPrice: string | null;
-  discount: string | null;
   href: string;
 }
 
-export interface IGameMarketData {
-  name: string;
-  price: string;
-  sales: string;
-  href: string;
+export interface IGameSteamData extends IGameBaseData {
+  oldPrice: string | null;
+  discount: string | null;
+}
+
+export interface IGameMarketData extends IGameBaseData {
+  sales?: string;
 }
 
 export interface IGameSteamInfo extends IGameSteamData {
@@ -20,3 +20,17 @@ export interface IGameSteamInfo extends IGameSteamData {
 export interface IGameMarketInfo extends IGameMarketData {
   userId: number;
 }
+
+export type GameNewsInfo = {
+  appnews: {
+    appid: number;
+    newsitems: NewsItem[];
+  };
+};
+
+export type NewsItem = {
+  gid: string;
+  contents: string;
+  title: string;
+  url: string;
+};
