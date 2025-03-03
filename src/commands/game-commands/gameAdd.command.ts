@@ -1,11 +1,13 @@
 import { Markup, Telegraf } from "telegraf";
+import axios from "axios";
+import { JSDOM } from "jsdom";
 
 import { Command } from "../command.class";
+import { ParserCommand } from "../game-parser-commands/parser.command";
 import { AppDataSource } from "../../config/typeOrm.config";
 
 import { IBotContext } from "../../context/context.interface";
 import { Game } from "../../entities";
-import { ParserCommand } from "../game-parser-commands/parser.command";
 
 export class GameAddCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {
@@ -94,13 +96,41 @@ export class GameAddCommand extends Command {
     const parserCommand = new ParserCommand(this.bot);
 
     const url = parserCommand.handleFormatUrlSearch(gameName);
-    const gameData = await parserCommand.fetchGameInfoSteam(url);
+    const href = await this.fetchGameInfoSteam(url);
 
-    if (!gameData) {
+    if (!href) {
       throw new Error("Failed to fetch game data from Steam.");
     }
 
-    return this.formatSteamId(gameData.href);
+    return this.formatSteamId(href);
+  }
+
+  async fetchGameInfoSteam(gameUrl: string): Promise<string | null> {
+    try {
+      const { data } = await axios.get(
+        `https://store.steampowered.com/search/?term=${gameUrl}&ndl=1`
+      );
+      return this.parseSteamIdData(data);
+    } catch (error) {
+      console.error("Ошибка при получении данных с Steam:", error);
+      return null;
+    }
+  }
+
+  private parseSteamIdData(data: string): string | null {
+    try {
+      const dom = new JSDOM(data);
+      const gameBlock = dom.window.document
+        .getElementById("search_resultsRows")
+        ?.querySelector("a");
+
+      if (!gameBlock) return null;
+
+      return gameBlock.href;
+    } catch (error) {
+      console.error("Ошибка при разборе данных Steam:", error);
+      return null;
+    }
   }
 
   private formatSteamId(url: string): string {
@@ -108,6 +138,6 @@ export class GameAddCommand extends Command {
 
     console.log("SteamId:", steamId);
 
-    return steamId
+    return steamId;
   }
 }

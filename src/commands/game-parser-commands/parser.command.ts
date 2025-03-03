@@ -11,117 +11,133 @@ import { Game } from "../../entities";
 import { IGameMarketData, IGameSteamData } from "./game.interface";
 
 export class ParserCommand extends Command {
+  private messagesId: number[] = [];
+  private selectedGame = "";
+  private isCheckingPrice = false;
+
   constructor(bot: Telegraf<IBotContext>) {
     super(bot);
   }
 
   handle(): void {
-    const messagesId: number[] = [];
-    let selectedGame = "";
-    let gameUrl = "";
-    let isCheckingPrice = false;
-
     this.bot.action("check_price", async (context) => {
-      const games = await this.handleUserGames(context.from.id);
-
-      if (!games || games.length === 0)
-        return context.sendMessage("В списке отслеживаемого ничего не найдено");
-
-      isCheckingPrice = true;
-
-      for (let i = 0; i < games.length; i++) {
-        context
-          .sendMessage(
-            games[i].name,
-            Markup.inlineKeyboard([
-              Markup.button.callback("Узнать цену", "check__game_price"),
-            ])
-          )
-          .then((message) => messagesId.push(message.message_id));
-      }
-
-      this.bot.action("check__game_price", async (context) => {
-        if (!isCheckingPrice) return;
-
-        // @ts-ignore
-        selectedGame = context.callbackQuery.message?.text;
-        if (!selectedGame) {
-          return context.sendMessage("Ошибка при выборе игры.");
-        }
-
-        gameUrl = this.handleFormatUrlSearch(selectedGame);
-
-        context
-          .sendMessage(
-            "Выберите ресурс",
-            Markup.keyboard(["Plati.ru", "Steam", "Отменить"])
-          )
-          .then((message) => messagesId.push(message.message_id));
-
-        this.bot.hears("Plati.ru", async () => {
-          if (!isCheckingPrice) return;
-
-          const gameData = await this.fetchGameInfoPlatiMarket(gameUrl);
-
-          if (!gameData || gameData.length === 0) {
-            return context.sendMessage(
-              "Не удалось получить данные о цене игры."
-            );
-          }
-
-          gameData.forEach((item) =>
-            context
-              .sendMessage(
-                `Название: ${item.name}\nЦена: ${item.price}\nПродаж: ${item.sales}\nСсылка: ${item.href}`
-              )
-              .then((message) => messagesId.push(message.message_id))
-          );
-        });
-
-        this.bot.hears("Steam", async () => {
-          if (!isCheckingPrice) return;
-
-          const gameData = await this.fetchGameInfoSteam(gameUrl);
-
-          if (!gameData) {
-            return context
-              .sendMessage("Не удалось получить данные о цене игры.")
-              .then((message) => messagesId.push(message.message_id));
-          }
-
-          let messageText = `Название: ${gameData.name}\nЦена: ${gameData.price}\nСсылка: ${gameData.href}`;
-
-          if (gameData.oldPrice || gameData.discount) {
-            messageText = `Название: ${gameData.name}\nСтарая цена: ${gameData.oldPrice}\nЦена: ${gameData.price}\nСкидка: ${gameData.discount}\nСсылка: ${gameData.href}`;
-          }
-
-          context
-            .sendMessage(messageText)
-            .then((message) => messagesId.push(message.message_id));
-        });
-
-        this.bot.hears("Отменить", (context) => {
-          context.deleteMessages(messagesId);
-          isCheckingPrice = false;
-        });
-      });
+      await this.handleGameSelection(context);
     });
   }
 
-  async handleUserGames(userId: number): Promise<Game[] | null> {
-    const gameRepository = AppDataSource.getRepository(Game);
+  private async handleGameSelection(context: IBotContext): Promise<void> {
+    if (!context.from) {
+      context.sendMessage("Ошибка: не удалось определить пользователя.");
+      return;
+    }
 
+    const games = await this.handleUserGames(context.from.id);
+    if (!games?.length) {
+      context.sendMessage("В списке отслеживаемого ничего не найдено");
+      return;
+    }
+
+    this.isCheckingPrice = true;
+    for (const game of games) {
+      const message = await context.reply(
+        game.name,
+        Markup.inlineKeyboard([
+          Markup.button.callback("Узнать цену", "check__game_price"),
+        ])
+      );
+      this.messagesId.push(message.message_id);
+    }
+
+    this.bot.action("check__game_price", async (context) => {
+      await this.handlePriceCheck(context);
+    });
+  }
+
+  private async handlePriceCheck(context: IBotContext): Promise<void> {
+    if (!this.isCheckingPrice) return;
+
+    // @ts-ignore
+    this.selectedGame = context.callbackQuery.message?.text;
+
+    if (!this.selectedGame) {
+      context.sendMessage("Ошибка при выборе игры.");
+      return;
+    }
+
+    const gameUrl = this.handleFormatUrlSearch(this.selectedGame);
+
+    const message = await context.sendMessage(
+      "Выберите ресурс",
+      Markup.keyboard(["Plati.ru", "Steam", "Отменить"])
+    );
+    this.messagesId.push(message.message_id);
+
+    this.bot.hears(
+      "Plati.ru",
+      async () => await this.handlePlatiPrice(context, gameUrl)
+    );
+    this.bot.hears("Steam", async () => await this.handleSteamPrice(context));
+    this.bot.hears("Отменить", () => this.cancelOperation(context));
+  }
+
+  async handleUserGames(userId: number | undefined): Promise<Game[] | null> {
     if (!userId) {
       console.log("Не удалось определить пользователя");
       return null;
     }
-    const currentGames = gameRepository.find({
-      where: { userId: userId },
-    });
-    return currentGames;
+
+    return AppDataSource.getRepository(Game).find({ where: { userId } });
   }
 
-  async fetchGameInfoPlatiMarket(gameUrl: string) {
+  private async handlePlatiPrice(
+    context: IBotContext,
+    gameUrl: string
+  ): Promise<void> {
+    if (!this.isCheckingPrice) return;
+
+    const gameData = await this.fetchGameInfoPlatiMarket(gameUrl);
+    if (!gameData?.length) {
+      context.sendMessage("Не удалось получить данные о цене игры.");
+      return;
+    }
+
+    const filteredGames = this.filterPlatiMarketGame(gameData);
+    for (const item of filteredGames) {
+      const message = await context.sendMessage(
+        `Название: ${item.name}\nЦена: ${item.price}\nПродаж: ${item.sales}\nСсылка: ${item.href}`
+      );
+      this.messagesId.push(message.message_id);
+    }
+  }
+
+  private async handleSteamPrice(context: IBotContext): Promise<void> {
+    if (!this.isCheckingPrice) return;
+
+    const gameRepository = AppDataSource.getRepository(Game);
+    const gameId = await gameRepository
+      .findOne({
+        where: { name: this.selectedGame },
+      })
+      .then((game) => game?.steamId || "");
+
+    const gameData = await this.fetchGameInfoSteam(gameId);
+    if (!gameData) {
+      context.sendMessage("Не удалось получить данные о цене игры.");
+      return;
+    }
+
+    const messageText =
+      gameData.oldPrice || gameData.discount
+        ? `Название: ${gameData.name}\nСтарая цена: ${gameData.oldPrice}\nЦена: ${gameData.price}\nСкидка: ${gameData.discount}\nСсылка: ${gameData.href}`
+        : `Название: ${gameData.name}\nЦена: ${gameData.price}\nСсылка: ${gameData.href}`;
+
+    const message = await context.sendMessage(messageText);
+    this.messagesId.push(message.message_id);
+  }
+
+  async fetchGameInfoPlatiMarket(
+    gameUrl: string
+  ): Promise<IGameMarketData[] | null> {
     try {
       const { data } = await axios.get(
         `https://plati.market/search/${gameUrl}`
@@ -133,35 +149,10 @@ export class ParserCommand extends Command {
     }
   }
 
-  private parsePlatiMarketData(data: string): IGameMarketData[] {
-    const gameInfo = [];
-    const dom = new JSDOM(data);
-    const items = dom.window.document.getElementsByClassName("shadow");
-
-    for (let i = 0; i < items.length; i++) {
-      const title = items[i].querySelector("h1");
-      const nameElement = title?.querySelector("a");
-      const priceElement = title?.querySelector("span");
-      const salesElement = items[i]
-        ?.querySelector("ol")
-        ?.querySelectorAll("li")[1]
-        ?.querySelector("strong");
-      const href = "https://plati.market" + title?.querySelector("a")?.href;
-
-      const name = nameElement?.textContent || "Название недоступно";
-      const price = priceElement?.textContent || "Цена недоступна";
-      const sales = salesElement?.textContent || "Количество продаж неизвестно";
-
-      gameInfo.push({ name, price, sales, href });
-    }
-
-    return gameInfo;
-  }
-
-  async fetchGameInfoSteam(gameUrl: string) {
+  async fetchGameInfoSteam(gameId: string): Promise<IGameSteamData | null> {
     try {
       const { data } = await axios.get(
-        `https://store.steampowered.com/search/?term=${gameUrl}&ndl=1`
+        `https://store.steampowered.com/app/${gameId}`
       );
       return this.parseSteamData(data);
     } catch (error) {
@@ -170,32 +161,59 @@ export class ParserCommand extends Command {
     }
   }
 
+  private parsePlatiMarketData(data: string): IGameMarketData[] {
+    const dom = new JSDOM(data);
+    return [...dom.window.document.getElementsByClassName("shadow")].map(
+      (item) => {
+        const title = item.querySelector("h1");
+        return {
+          name: title?.querySelector("a")?.textContent || "Название недоступно",
+          price: title?.querySelector("span")?.textContent || "Цена недоступна",
+          sales:
+            item
+              ?.querySelector("ol")
+              ?.querySelectorAll("li")[1]
+              ?.querySelector("strong")?.textContent ||
+            "Количество продаж неизвестно",
+          href: "https://plati.market" + title?.querySelector("a")?.href,
+        };
+      }
+    );
+  }
+
   private parseSteamData(data: string): IGameSteamData | null {
     try {
       const dom = new JSDOM(data);
-      const items = dom.window.document.getElementById("search_resultsRows");
-      const gameBlock = items?.querySelector("a");
+      const gameArea = dom.window.document
+        .getElementById("game_area_purchase")
+        ?.querySelector("div");
 
-      if (!gameBlock) return null;
+      if (!gameArea) return null;
 
-      const nameElement = gameBlock
-        .getElementsByClassName("search_name")[0]
-        ?.querySelector("span");
-      const priceElement = gameBlock
-        .getElementsByClassName("search_price_discount_combined")[0]
-        ?.getElementsByClassName("discount_final_price")[0];
-      const oldPriceElement = gameBlock
-        .getElementsByClassName("search_price_discount_combined")[0]
-        ?.getElementsByClassName("discount_original_price")[0];
-      const discountElement = gameBlock
-        .getElementsByClassName("search_price_discount_combined")[0]
-        ?.getElementsByClassName("discount_pct")[0];
+      const nameElement = dom.window.document.getElementById("appHubAppName");
+      const priceElement = gameArea?.getElementsByClassName(
+        "game_purchase_price"
+      )[0];
+      const discountPriceElement = gameArea.getElementsByClassName(
+        "discount_final_price"
+      )[0];
+      const oldPriceElement = gameArea.getElementsByClassName(
+        "discount_original_price"
+      )[0];
+      const discountElement =
+        gameArea.getElementsByClassName("discount_pct")[0];
+      const hrefElement = dom.window.document
+        .getElementsByClassName("blockbg")[0]
+        .querySelectorAll("a");
 
       const name = nameElement?.textContent || "Название недоступно";
-      const price = priceElement?.textContent || "Цена недоступна";
+      const price =
+        priceElement?.textContent?.trim() ||
+        discountPriceElement?.textContent?.trim() ||
+        "Цена недоступна";
       const oldPrice = oldPriceElement?.textContent || null;
       const discount = discountElement?.textContent || null;
-      const href = gameBlock.href;
+      const href = hrefElement[hrefElement.length - 1].href;
 
       return {
         name,
@@ -210,7 +228,35 @@ export class ParserCommand extends Command {
     }
   }
 
+  private filterPlatiMarketGame(games: IGameMarketData[]): IGameMarketData[] {
+    const gamesWithSales = games.filter((game) => Number(game.sales) !== 0);
+
+    const toCheck = [
+      "account",
+      "аккаунт",
+      "акк",
+      "аренда",
+      "rent",
+      "dlc",
+      "дополнение",
+    ];
+
+    const filteredGames = gamesWithSales.filter((game) => {
+      const gameName = game.name.toLowerCase();
+      const isSteamAccount = toCheck.some((word) => gameName.includes(word));
+
+      return !isSteamAccount;
+    });
+
+    return filteredGames;
+  }
+
   handleFormatUrlSearch(game: string): string {
     return encodeURIComponent(game);
+  }
+
+  private cancelOperation(context: IBotContext): void {
+    context.deleteMessages(this.messagesId);
+    this.isCheckingPrice = false;
   }
 }
