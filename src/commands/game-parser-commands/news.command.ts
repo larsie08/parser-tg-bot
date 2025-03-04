@@ -6,7 +6,6 @@ import { Command } from "../command.class";
 
 import { IBotContext } from "../../context/context.interface";
 import { GameNewsInfo, NewsItem } from "./game.interface";
-import { Game } from "../../entities";
 
 export class GameNewsCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {

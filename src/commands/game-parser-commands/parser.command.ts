@@ -103,9 +103,7 @@ export class ParserCommand extends Command {
 
     const filteredGames = this.filterPlatiMarketGame(gameData);
     for (const item of filteredGames) {
-      const message = await context.sendMessage(
-        `Название: ${item.name}\nЦена: ${item.price}\nПродаж: ${item.sales}\nСсылка: ${item.href}`
-      );
+      const message = await context.sendMessage(this.createGameMessage(item));
       this.messagesId.push(message.message_id);
     }
   }
@@ -126,12 +124,7 @@ export class ParserCommand extends Command {
       return;
     }
 
-    const messageText =
-      gameData.oldPrice || gameData.discount
-        ? `Название: ${gameData.name}\nСтарая цена: ${gameData.oldPrice}\nЦена: ${gameData.price}\nСкидка: ${gameData.discount}\nСсылка: ${gameData.href}`
-        : `Название: ${gameData.name}\nЦена: ${gameData.price}\nСсылка: ${gameData.href}`;
-
-    const message = await context.sendMessage(messageText);
+    const message = await context.sendMessage(this.createGameMessage(gameData));
     this.messagesId.push(message.message_id);
   }
 
@@ -184,9 +177,7 @@ export class ParserCommand extends Command {
   private parseSteamData(data: string): IGameSteamData | null {
     try {
       const dom = new JSDOM(data);
-      const gameArea = dom.window.document
-        .getElementById("game_area_purchase")
-        ?.querySelector("div");
+      const gameArea = dom.window.document.getElementById("game_area_purchase");
 
       if (!gameArea) return null;
 
@@ -205,6 +196,9 @@ export class ParserCommand extends Command {
       const hrefElement = dom.window.document
         .getElementsByClassName("blockbg")[0]
         .querySelectorAll("a");
+      const releaseDateElement = dom.window.document
+        .getElementById("game_area_purchase")
+        ?.getElementsByClassName("game_area_comingsoon")[0];
 
       const name = nameElement?.textContent || "Название недоступно";
       const price =
@@ -214,6 +208,13 @@ export class ParserCommand extends Command {
       const oldPrice = oldPriceElement?.textContent || null;
       const discount = discountElement?.textContent || null;
       const href = hrefElement[hrefElement.length - 1].href;
+      const releaseDate =
+        releaseDateElement
+          ?.querySelector("h1")
+          ?.querySelector("span")
+          ?.textContent?.trim() || null;
+      const releaseTime =
+        releaseDateElement?.querySelector("p")?.textContent?.trim() || null;
 
       return {
         name,
@@ -221,6 +222,8 @@ export class ParserCommand extends Command {
         oldPrice,
         discount,
         href,
+        releaseDate,
+        releaseTime,
       };
     } catch (error) {
       console.error("Ошибка при разборе данных Steam:", error);
@@ -249,6 +252,37 @@ export class ParserCommand extends Command {
     });
 
     return filteredGames;
+  }
+
+  createGameMessage(
+    gameData: IGameSteamData | IGameMarketData,
+    isChanged?: boolean
+  ): string {
+    const messageParts: string[] = [`Название: ${gameData.name}`];
+
+    if ("sales" in gameData && gameData.sales) {
+      messageParts.push(`Цена: ${gameData.price}`, `Продаж: ${gameData.sales}`);
+    } else if ("releaseDate" in gameData && gameData.releaseDate) {
+      messageParts.push(`Дата выхода: ${gameData.releaseDate}`);
+      if (gameData.releaseTime)
+        messageParts.push(`Время выхода: ${gameData.releaseTime}`);
+    } else {
+      if ("discount" in gameData && gameData.oldPrice && gameData.discount) {
+        messageParts.push(
+          `Старая цена: ${gameData.oldPrice}`,
+          `Цена: ${gameData.price}`,
+          `Скидка: ${gameData.discount}`
+        );
+      } else {
+        messageParts.push(`Цена: ${gameData.price}`);
+      }
+    }
+
+    messageParts.push(`Ссылка: ${gameData.href}`);
+
+    return isChanged
+      ? `Изменение цены на игру!\n${messageParts.join("\n")}`
+      : messageParts.join("\n");
   }
 
   handleFormatUrlSearch(game: string): string {

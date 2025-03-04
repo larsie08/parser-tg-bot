@@ -7,6 +7,8 @@ export interface IGameBaseData {
 export interface IGameSteamData extends IGameBaseData {
   oldPrice: string | null;
   discount: string | null;
+  releaseTime: string | null;
+  releaseDate: string | null;
 }
 
 export interface IGameMarketData extends IGameBaseData {

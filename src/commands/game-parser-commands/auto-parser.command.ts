@@ -136,13 +136,20 @@ export class AutoParserCommand extends Command {
         continue;
       }
 
-      this.processSteamGame(steamGameData, user, steamGames, notify);
+      this.processSteamGame(
+        steamGameData,
+        user,
+        steamGames,
+        notify,
+        parserClass
+      );
       this.processMarketGames(
         marketGamesData,
         user,
         marketGames,
         game.name,
-        notify
+        notify,
+        parserClass
       );
       this.processGameNews(newsMap, user, game, newsClass, notify);
     }
@@ -152,7 +159,8 @@ export class AutoParserCommand extends Command {
     steamGameData: IGameSteamData,
     user: User,
     steamGames: Map<string, IGameSteamInfo>,
-    notify: boolean
+    notify: boolean,
+    parserClass: ParserCommand
   ): Promise<void> {
     const currentSteamGame = steamGames.get(steamGameData.name);
 
@@ -165,7 +173,10 @@ export class AutoParserCommand extends Command {
     });
 
     if (notify && (isPriceChanged || !currentSteamGame)) {
-      const message = this.createGameMessage(steamGameData, isPriceChanged);
+      const message = parserClass.createGameMessage(
+        steamGameData,
+        isPriceChanged
+      );
       await this.bot.telegram.sendMessage(user.userId, message);
     }
   }
@@ -175,7 +186,8 @@ export class AutoParserCommand extends Command {
     user: User,
     marketGames: Map<string, IGameMarketInfo[]>,
     gameName: string,
-    notify: boolean
+    notify: boolean,
+    parserClass: ParserCommand
   ): Promise<void> {
     const currentMarketGames = marketGames.get(gameName) || [];
 
@@ -184,7 +196,7 @@ export class AutoParserCommand extends Command {
         notify &&
         !currentMarketGames.some((game) => game.name === gameData.name)
       ) {
-        const message = this.createGameMessage(gameData, true);
+        const message = parserClass.createGameMessage(gameData, true);
         await this.bot.telegram.sendMessage(
           user.userId,
           `Появилось новое предложение!\n${message}`
@@ -226,28 +238,5 @@ export class AutoParserCommand extends Command {
         );
       }
     }
-  }
-
-  private createGameMessage(
-    gameData: IGameSteamData | IGameMarketData,
-    isChanged?: boolean
-  ): string {
-    let messageText: string;
-
-    if ("sales" in gameData && gameData.sales) {
-      messageText = `Название: ${gameData.name}\nЦена: ${gameData.price}\nПродаж: ${gameData.sales}\nСсылка: ${gameData.href}`;
-    } else {
-      messageText = `Название: ${gameData.name}\nЦена: ${gameData.price}\nСсылка: ${gameData.href}`;
-
-      if ("discount" in gameData && gameData.oldPrice && gameData.discount) {
-        messageText = `Название: ${gameData.name}\nСтарая цена: ${gameData.oldPrice}\nЦена: ${gameData.price}\nСкидка: ${gameData.discount}\nСсылка: ${gameData.href}`;
-      }
-    }
-
-    if (isChanged) {
-      messageText = `Изменение цены на игру!\n${messageText}`;
-    }
-
-    return messageText;
   }
 }
