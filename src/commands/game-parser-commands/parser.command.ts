@@ -256,33 +256,47 @@ export class ParserCommand extends Command {
 
   createGameMessage(
     gameData: IGameSteamData | IGameMarketData,
-    isChanged?: boolean
+    isPriceChanged?: boolean,
+    isReleaseDateChanged?: boolean,
+    isReleaseTimeChanged?: boolean
   ): string {
-    const messageParts: string[] = [`Название: ${gameData.name}`];
+    const messageParts: string[] = [`🎮 *Название:* ${gameData.name}`];
 
     if ("sales" in gameData && gameData.sales) {
-      messageParts.push(`Цена: ${gameData.price}`, `Продаж: ${gameData.sales}`);
+      messageParts.push(
+        `💰 *Цена:* ${gameData.price}`,
+        `📊 *Продаж:* ${gameData.sales}`
+      );
     } else if ("releaseDate" in gameData && gameData.releaseDate) {
-      messageParts.push(`Дата выхода: ${gameData.releaseDate}`);
+      messageParts.push(`📅 *Дата выхода:* ${gameData.releaseDate}`);
       if (gameData.releaseTime)
-        messageParts.push(`Время выхода: ${gameData.releaseTime}`);
+        messageParts.push(`⏰ *Время выхода:* ${gameData.releaseTime}`);
+    } else if (
+      "discount" in gameData &&
+      gameData.oldPrice &&
+      gameData.discount
+    ) {
+      messageParts.push(
+        `💸 *Старая цена:* ${gameData.oldPrice}`,
+        `💰 *Новая цена:* ${gameData.price}`,
+        `🔥 *Скидка:* ${gameData.discount}`
+      );
     } else {
-      if ("discount" in gameData && gameData.oldPrice && gameData.discount) {
-        messageParts.push(
-          `Старая цена: ${gameData.oldPrice}`,
-          `Цена: ${gameData.price}`,
-          `Скидка: ${gameData.discount}`
-        );
-      } else {
-        messageParts.push(`Цена: ${gameData.price}`);
-      }
+      messageParts.push(`💰 *Цена:* ${gameData.price}`);
     }
 
-    messageParts.push(`Ссылка: ${gameData.href}`);
+    messageParts.push(`🔗 [Ссылка](${gameData.href})`);
 
-    return isChanged
-      ? `Изменение цены на игру!\n${messageParts.join("\n")}`
-      : messageParts.join("\n");
+    let prefix = "";
+    if (isPriceChanged) {
+      prefix = "🔔 *Изменение цены!*\n";
+    } else if (isReleaseDateChanged) {
+      prefix = "📅 *Изменение даты выхода!*\n";
+    } else if (isReleaseTimeChanged) {
+      prefix = "⏰ *Изменение времени выхода!*\n";
+    }
+
+    return prefix + messageParts.join("\n");
   }
 
   handleFormatUrlSearch(game: string): string {

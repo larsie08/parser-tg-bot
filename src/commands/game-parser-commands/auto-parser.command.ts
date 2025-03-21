@@ -113,7 +113,7 @@ export class AutoParserCommand extends Command {
         newsMap,
         true
       );
-    }, 60 * 60 * 1000);
+    }, 60 * 120 * 1000);
   }
 
   private async autoParser(
@@ -127,32 +127,78 @@ export class AutoParserCommand extends Command {
     notify: boolean
   ): Promise<void> {
     for (const game of games) {
-      const url = parserClass.handleFormatUrlSearch(game.name);
-      const steamGameData = await parserClass.fetchGameInfoSteam(url);
-      const marketGamesData = await parserClass.fetchGameInfoPlatiMarket(url);
+      try {
+        const url = parserClass.handleFormatUrlSearch(game.name);
+        const gameEntity = await AppDataSource.getRepository(Game).findOne({
+          where: { name: game.name },
+        });
+        const gameId = gameEntity?.steamId || "";
 
-      if (!steamGameData || !marketGamesData || marketGamesData.length === 0) {
-        console.log(`Не удалось получить данные для игры: ${game.name}`);
-        continue;
+        const marketGamesData = await parserClass.fetchGameInfoPlatiMarket(url);
+        this.handleMarketData(
+          marketGamesData,
+          game,
+          user,
+          marketGames,
+          notify,
+          parserClass
+        );
+
+        const steamGameData = await parserClass.fetchGameInfoSteam(gameId);
+        this.handleSteamData(
+          steamGameData,
+          game,
+          user,
+          steamGames,
+          notify,
+          parserClass,
+          newsClass,
+          newsMap
+        );
+      } catch (error) {
+        console.error(`Ошибка при обработке игры ${game.name}:`, error);
       }
-
-      this.processSteamGame(
-        steamGameData,
-        user,
-        steamGames,
-        notify,
-        parserClass
-      );
-      this.processMarketGames(
-        marketGamesData,
-        user,
-        marketGames,
-        game.name,
-        notify,
-        parserClass
-      );
-      this.processGameNews(newsMap, user, game, newsClass, notify);
     }
+  }
+
+  private handleMarketData(
+    marketGamesData: IGameMarketData[] | null,
+    game: Game,
+    user: User,
+    marketGames: Map<string, IGameMarketInfo[]>,
+    notify: boolean,
+    parserClass: ParserCommand
+  ): void {
+    if (!marketGamesData || marketGamesData.length === 0) {
+      console.log(`❌ Не удалось получить данные для ${game.name} на Plati.ru`);
+      return;
+    }
+    this.processMarketGames(
+      marketGamesData,
+      user,
+      marketGames,
+      game.name,
+      notify,
+      parserClass
+    );
+  }
+
+  private handleSteamData(
+    steamGameData: IGameSteamData | null,
+    game: Game,
+    user: User,
+    steamGames: Map<string, IGameSteamInfo>,
+    notify: boolean,
+    parserClass: ParserCommand,
+    newsClass: GameNewsCommand,
+    newsMap: Map<number, NewsItem[]>
+  ): void {
+    if (!steamGameData) {
+      console.log(`❌ Не удалось получить данные для ${game.name} на Steam`);
+      return;
+    }
+    this.processSteamGame(steamGameData, user, steamGames, notify, parserClass);
+    this.processGameNews(newsMap, user, game, newsClass, notify);
   }
 
   private async processSteamGame(
@@ -164,18 +210,31 @@ export class AutoParserCommand extends Command {
   ): Promise<void> {
     const currentSteamGame = steamGames.get(steamGameData.name);
 
-    const isPriceChanged =
-      currentSteamGame && currentSteamGame.price !== steamGameData.price;
+    const changesDetected = {
+      priceChanged: currentSteamGame?.price !== steamGameData.price,
+      releaseDateChanged:
+        currentSteamGame?.releaseDate !== steamGameData.releaseDate,
+      releaseTimeChanged:
+        currentSteamGame?.releaseTime !== steamGameData.releaseTime,
+    };
 
     steamGames.set(steamGameData.name, {
       userId: user.userId,
       ...steamGameData,
     });
 
-    if (notify && (isPriceChanged || !currentSteamGame)) {
+    if (
+      notify &&
+      (changesDetected.priceChanged ||
+        changesDetected.releaseDateChanged ||
+        changesDetected.releaseTimeChanged ||
+        !currentSteamGame)
+    ) {
       const message = parserClass.createGameMessage(
         steamGameData,
-        isPriceChanged
+        changesDetected.priceChanged,
+        changesDetected.releaseDateChanged,
+        changesDetected.releaseTimeChanged
       );
       await this.bot.telegram.sendMessage(user.userId, message);
     }
@@ -220,7 +279,7 @@ export class AutoParserCommand extends Command {
     const newsData = await newsClass.fetchGameNews(game.steamId);
 
     if (!newsData) {
-      return;
+      return console.log(`Не удалось получить новости для игры: ${game.name}`);
     }
 
     const previousNews = newsMap.get(game.id) || [];

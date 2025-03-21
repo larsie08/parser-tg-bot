@@ -28,7 +28,7 @@ class Bot {
       new ParserCommand(this.bot),
       new GameAddCommand(this.bot),
       new GameDeleteCommand(this.bot),
-      // new AutoParserCommand(this.bot),
+      new AutoParserCommand(this.bot),
       new GameNewsCommand(this.bot),
     ];
     for (const command of this.commands) {
