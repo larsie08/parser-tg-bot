@@ -5,7 +5,6 @@ import { Command } from "./command.class";
 import { IBotContext } from "../context/context.interface";
 import { AppDataSource } from "../config/typeOrm.config";
 import { User } from "../entities";
-import { AutoParserCommand } from "./game-parser-commands/auto-parser.command";
 
 export class StartCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {
@@ -19,7 +18,7 @@ export class StartCommand extends Command {
 
       context.reply(
         `Привет! ${userName}, чем могу помочь?`,
-        Markup.keyboard([["Меню парсера", "Управление играми"]]).oneTime()
+        Markup.keyboard([["Меню парсера", "Управление играми"]]).oneTime(),
       );
 
       this.setupMenuHandlers();
@@ -33,7 +32,7 @@ export class StartCommand extends Command {
         Markup.inlineKeyboard([
           Markup.button.callback("Проверить цену игры", "check_price"),
           Markup.button.callback("Узнать последние новости игры", "check_news"),
-        ])
+        ]),
       );
     });
 
@@ -43,13 +42,13 @@ export class StartCommand extends Command {
         Markup.inlineKeyboard([
           Markup.button.callback(
             "Добавить игру в список отслеживания",
-            "game_add"
+            "game_add",
           ),
           Markup.button.callback(
             "Удалить игру из списка отслеживания",
-            "game_delete"
+            "game_delete",
           ),
-        ])
+        ]),
       );
     });
   }
@@ -62,7 +61,7 @@ export class StartCommand extends Command {
       console.log(
         "Ошибка инициализации пользователя",
         contextUserId,
-        contextUserName
+        contextUserName,
       );
       return null;
     }

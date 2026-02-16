@@ -46,5 +46,5 @@ AppDataSource.initialize()
     bot.init();
   })
   .catch((error) =>
-    console.error("Error during Data Source initialization:", error)
+    console.error("Error during Data Source initialization:", error),
   );

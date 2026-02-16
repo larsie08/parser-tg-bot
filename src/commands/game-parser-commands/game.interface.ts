@@ -11,15 +11,7 @@ export interface IGameSteamData extends IGameBaseData {
   releaseDate: string | null;
 }
 
-export interface IGameMarketData extends IGameBaseData {
-  sales?: string;
-}
-
 export interface IGameSteamInfo extends IGameSteamData {
-  userId: number;
-}
-
-export interface IGameMarketInfo extends IGameMarketData {
   userId: number;
 }
 
