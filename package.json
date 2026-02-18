@@ -2,16 +2,17 @@
   "name": "game-parser-bot",
   "version": "1.0.0",
   "description": "",
+  "type": "commonjs",
   "main": "index.js",
   "scripts": {
     "build": "tsc",
     "start": "node ./dist/app.js",
     "dev": "ts-node-dev ./app.ts",
     "test": "jest",
-    "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
-    "migration:generate": "npm run typeorm migration:generate -- -d ./src/config/typeOrm.config.ts",
-    "migration:run": "npm run typeorm migration:run -- --d ./src/config/typeOrm.config.ts",
-    "migration:revert": "npm run typeorm migration:revert -- -d ./src/config/typeOrm.config.ts"
+    "typeorm": "ts-node --project tsconfig.json -r tsconfig-paths/register ./node_modules/.bin/typeorm -d ./src/config/typeOrm.config.ts",
+    "migration:generate": "npm run typeorm -- migration:generate ./src/migrations/migration",
+    "migration:run": "npm run typeorm -- migration:run",
+    "migration:revert": "npm run typeorm -- migration:revert"
   },
   "author": "",
   "license": "ISC",

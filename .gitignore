@@ -4,3 +4,4 @@
 Dockerfile
 tests
 /src/commands/steam-commands
+/src/migrations/
