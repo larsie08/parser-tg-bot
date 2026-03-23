@@ -22,7 +22,7 @@ export class GameAddCommand extends Command {
       await context
         .sendMessage(
           "Введите название игры\nПри добавлении нескольких игр, писать через запятую(,)",
-          Markup.inlineKeyboard([Markup.button.callback("Отменить", "cancel")])
+          Markup.inlineKeyboard([Markup.button.callback("Отменить", "cancel")]),
         )
         .then((message) => messagesId.push(message.message_id));
 
@@ -108,7 +108,7 @@ export class GameAddCommand extends Command {
   async fetchGameInfoSteam(gameUrl: string): Promise<string | null> {
     try {
       const { data } = await axios.get(
-        `https://store.steampowered.com/search/?term=${gameUrl}&ndl=1`
+        `https://store.steampowered.com/search/?term=${gameUrl}&ignore_preferences=1`,
       );
       return this.parseSteamIdData(data);
     } catch (error) {

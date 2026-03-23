@@ -117,7 +117,6 @@ export class AutoParserCommand extends Command {
   ): Promise<void> {
     for (const game of games) {
       try {
-        // const url = parserClass.handleFormatUrlSearch(game.name);
         const gameEntity = await AppDataSource.getRepository(Game).findOne({
           where: { name: game.name },
         });
