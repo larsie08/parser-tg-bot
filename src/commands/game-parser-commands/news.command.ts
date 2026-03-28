@@ -4,8 +4,7 @@ import axios from "axios";
 import { ParserCommand } from "./parser.command";
 import { Command } from "../command.class";
 
-import { IBotContext } from "../../context/context.interface";
-import { GameNewsInfo, NewsItem } from "./game.interface";
+import { GameNewsInfo, IBotContext, NewsItem } from "../../context";
 
 export class GameNewsCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {
@@ -24,11 +23,13 @@ export class GameNewsCommand extends Command {
 
       const parserCommand = new ParserCommand(this.bot);
 
-      const games = await parserCommand.handleUserGames(userId);
+      const user = await parserCommand.handleUserGames(userId);
+
+      const games = user?.games;
 
       if (!games || games.length === 0) {
         return context.sendMessage(
-          "В списке отслеживаемого ничего не найдено."
+          "В списке отслеживаемого ничего не найдено.",
         );
       }
 
@@ -42,7 +43,7 @@ export class GameNewsCommand extends Command {
         }
 
         const selectedGame = games.find(
-          (game) => game.name === selectedGameName
+          (game) => game.name === selectedGameName,
         );
 
         if (!selectedGame) {
@@ -62,7 +63,7 @@ export class GameNewsCommand extends Command {
 
   private async displayGames(
     context: IBotContext,
-    games: any[]
+    games: any[],
   ): Promise<number[]> {
     const messageIds: number[] = [];
     for (const game of games) {
@@ -70,7 +71,7 @@ export class GameNewsCommand extends Command {
         game.name,
         Markup.inlineKeyboard([
           Markup.button.callback("Узнать новость", "check__game_news"),
-        ])
+        ]),
       );
       messageIds.push(message.message_id);
     }
@@ -80,7 +81,7 @@ export class GameNewsCommand extends Command {
   async fetchGameNews(gameId: string): Promise<GameNewsInfo | null> {
     try {
       const { data } = await axios.get(
-        `http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=${gameId}&count=2&maxlength=300&format=json`
+        `http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=${gameId}&count=2&maxlength=300&format=json`,
       );
       return data;
     } catch (error) {

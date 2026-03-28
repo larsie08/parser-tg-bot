@@ -6,8 +6,8 @@ import { Command } from "../command.class";
 import { ParserCommand } from "../game-parser-commands/parser.command";
 import { AppDataSource } from "../../config/typeOrm.config";
 
-import { IBotContext } from "../../context/context.interface";
-import { Game } from "../../entities";
+import { Game, User } from "../../entities";
+import { IBotContext, PendingGame } from "../../context";
 
 export class GameAddCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {
@@ -16,7 +16,6 @@ export class GameAddCommand extends Command {
 
   handle(): void {
     this.bot.action("game_add", async (context) => {
-      let isCanceled = false;
       const messagesId: number[] = [];
 
       await context
@@ -26,21 +25,45 @@ export class GameAddCommand extends Command {
         )
         .then((message) => messagesId.push(message.message_id));
 
-      isCanceled = false;
+      context.session.state = null;
 
       this.bot.hears(/.+/, async (context) => {
-        if (isCanceled) return;
+        if (typeof context.session.state === "string") return;
 
         await this.handleAddGame(context, context.message.text);
 
-        isCanceled = true;
+        context.session.state = "WAITING_GAME";
       });
 
       this.bot.action("cancel", () => {
-        isCanceled = true;
-
+        context.session.state = "CANCELED_GAME";
         context.deleteMessages(messagesId);
       });
+    });
+
+    this.bot.action("confirm_add_game", async (context) => {
+      const game = context.session.pendingGame?.shift();
+
+      if (!game) {
+        return;
+      }
+
+      await this.saveGame(game.steamGameName, game.steamId, game.user);
+
+      await context.sendMessage(`Игра успешно добавлена ${game.steamGameName}`);
+
+      return await this.askNextGame(context);
+    });
+
+    this.bot.action("confirm_cancel_game", async (context) => {
+      const game = context.session.pendingGame?.shift();
+      context.session.state = null;
+
+      await context.sendMessage(
+        `Отмена операции по добавлению ${game?.steamGameName}.`,
+      );
+
+      await this.askNextGame(context);
     });
   }
 
@@ -55,57 +78,150 @@ export class GameAddCommand extends Command {
       .filter((game) => game.length > 0);
 
     if (games.length === 0) {
-      return context.sendMessage("Не удалось распознать ни одной игры.");
+      return await context.sendMessage("Не удалось распознать ни одной игры.");
     }
 
-    const gameRepository = AppDataSource.getRepository(Game);
-    const currentGames = await gameRepository.find({
+    const user = await AppDataSource.getRepository(User).findOne({
       where: { userId: context.from?.id },
+      relations: { games: true },
     });
-    const currentGameNames = currentGames.map((game) => game.name);
 
-    const newGames = games.filter((game) => !currentGameNames.includes(game));
+    if (!user) {
+      return context.sendMessage("Пользователь не найден.");
+    }
+
+    const userGames = user?.games;
+
+    const currentGameNames =
+      userGames?.map((game) => game.name.toLowerCase()) || [];
+
+    const newGames = games.filter((game) => !currentGameNames?.includes(game));
+    const alreadyAddedGames = games.filter((game) =>
+      currentGameNames.includes(game),
+    );
 
     if (newGames.length === 0) {
-      return context.sendMessage("Все эти игры уже есть в вашем списке.");
+      return await context.sendMessage("Все эти игры уже есть в вашем списке.");
     }
+
+    if (alreadyAddedGames.length > 0) {
+      const message = this.editMessageGames(alreadyAddedGames, true);
+
+      await context.sendMessage(message);
+    }
+
+    const pendingGames: PendingGame[] = [];
+    const addedGames: string[] = [];
 
     try {
       for (const gameName of newGames) {
-        const game = new Game();
-        game.name = gameName;
-        game.userId = context.from!.id;
-        game.steamId = await this.getSteamId(gameName);
+        const steamInfo = await this.getSteamInfo(gameName);
 
-        await gameRepository.save(game);
+        if (steamInfo.name.toLowerCase() === gameName.toLowerCase()) {
+          await this.saveGame(steamInfo.name, steamInfo.steamId, user);
+          addedGames.push(steamInfo.name);
+          continue;
+        }
+
+        pendingGames.push({
+          steamGameName: steamInfo.name,
+          steamId: steamInfo.steamId,
+          user,
+          href: steamInfo.href,
+        });
       }
 
-      const message =
-        newGames.length === 1
-          ? `Игра успешно добавлена: ${newGames[0]}`
-          : `Игры успешно добавлены: ${newGames.join(", ")}`;
+      if (pendingGames.length > 0) {
+        context.session.pendingGame = pendingGames;
 
-      return context.sendMessage(message);
+        await this.askNextGame(context);
+      }
+
+      const message = this.editMessageGames(addedGames, false, pendingGames);
+
+      return await context.sendMessage(message);
     } catch (error) {
       console.error("Ошибка при сохранении игр:", error);
-      return context.sendMessage("Произошла ошибка при добавлении игры.");
+      return await context.sendMessage("Произошла ошибка при добавлении игры.");
     }
   }
 
-  private async getSteamId(gameName: string): Promise<string> {
+  private async saveGame(name: string, steamId: string, user: User) {
+    const gameRepository = AppDataSource.getRepository(Game);
+
+    const game = gameRepository.create({
+      name,
+      steamId,
+      user,
+    });
+
+    await gameRepository.save(game);
+  }
+
+  private async askNextGame(context: IBotContext) {
+    const game = context.session.pendingGame?.[0];
+
+    if (!game) {
+      return;
+    }
+
+    await context.sendMessage(
+      `Добавить игру?\nНазвание: ${game.steamGameName}\nСсылка: ${game.href}`,
+      Markup.inlineKeyboard([
+        Markup.button.callback("Добавить", "confirm_add_game"),
+        Markup.button.callback("Отменить", "confirm_cancel_game"),
+      ]),
+    );
+  }
+
+  private editMessageGames(
+    games: string[],
+    isAlreadyAddedGames: boolean,
+    pendingGames?: PendingGame[],
+  ): string {
+    if (isAlreadyAddedGames)
+      return games.length === 1
+        ? `Игра уже находится в вашем списке: ${games[0]}`
+        : `Игры уже есть в вашем списке: ${games.join(", ")}`;
+
+    if (pendingGames && pendingGames?.length > 0) {
+      const gameNames = pendingGames.map((game) => game.steamGameName);
+      return games.length === 0
+        ? `Следующие игры ожидают подтверждения: ${gameNames.join(", ")}`
+        : games.length === 1
+          ? `Следующие игры ожидают подтверждения: ${gameNames.join(", ")}\nИгра успешно добавлена: ${games[0]}`
+          : `Следующие игры ожидают подтверждения: ${gameNames.join(", ")}\nИгры успешно добавлены: ${games.join(", ")}`;
+    }
+
+    return games.length === 0
+      ? "Игра не была добавлена"
+      : games.length === 1
+        ? `Игра успешно добавлена: ${games[0]}`
+        : `Игры успешно добавлены: ${games.join(", ")}`;
+  }
+
+  private async getSteamInfo(
+    gameName: string,
+  ): Promise<{ name: string; steamId: string; href: string }> {
     const parserCommand = new ParserCommand(this.bot);
 
     const url = parserCommand.handleFormatUrlSearch(gameName);
-    const href = await this.fetchGameInfoSteam(url);
+    const data = await this.fetchGameInfoSteam(url);
 
-    if (!href) {
-      throw new Error("Failed to fetch game data from Steam.");
+    if (!data) {
+      throw new Error("Ошибка при получении данных с Steam:");
     }
 
-    return this.formatSteamId(href);
+    return {
+      name: data.name,
+      steamId: data.href.split("/")[4],
+      href: data.href,
+    };
   }
 
-  async fetchGameInfoSteam(gameUrl: string): Promise<string | null> {
+  private async fetchGameInfoSteam(
+    gameUrl: string,
+  ): Promise<{ href: string; name: string } | null> {
     try {
       const { data } = await axios.get(
         `https://store.steampowered.com/search/?term=${gameUrl}&ignore_preferences=1`,
@@ -117,27 +233,28 @@ export class GameAddCommand extends Command {
     }
   }
 
-  private parseSteamIdData(data: string): string | null {
+  private parseSteamIdData(
+    data: string,
+  ): { href: string; name: string } | null {
     try {
       const dom = new JSDOM(data);
       const gameBlock = dom.window.document
         .getElementById("search_resultsRows")
         ?.querySelector("a");
 
-      if (!gameBlock) return null;
+      const gameName = gameBlock
+        ?.getElementsByClassName("search_name")[0]
+        .querySelector("span")?.textContent;
 
-      return gameBlock.href;
+      if (!gameName || !gameBlock.href) {
+        console.log("Ошибка при разборе данных Steam:", gameName, gameBlock);
+        return null;
+      }
+
+      return { href: gameBlock.href, name: gameName };
     } catch (error) {
       console.error("Ошибка при разборе данных Steam:", error);
       return null;
     }
-  }
-
-  private formatSteamId(url: string): string {
-    const steamId = url.split("/")[4];
-
-    console.log("SteamId:", steamId);
-
-    return steamId;
   }
 }

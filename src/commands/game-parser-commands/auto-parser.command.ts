@@ -8,7 +8,7 @@ import { AppDataSource } from "../../config";
 import { IBotContext } from "../../context/context.interface";
 
 import { Game, User } from "../../entities";
-import { IGameSteamData, IGameSteamInfo, NewsItem } from "./game.interface";
+import { IGameSteamData, IGameSteamInfo, NewsItem } from "../../context";
 
 export class AutoParserCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {
@@ -62,12 +62,11 @@ export class AutoParserCommand extends Command {
     notify: boolean,
   ): Promise<void> {
     try {
-      const games = await parserClass.handleUserGames(user.userId);
-      if (games && games.length > 0) {
+      if (user.games && user.games.length > 0) {
         await this.autoParser(
           parserClass,
           newsClass,
-          games,
+          user.games,
           user,
           steamGames,
           newsMap,

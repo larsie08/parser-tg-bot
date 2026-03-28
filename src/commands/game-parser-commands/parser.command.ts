@@ -4,11 +4,10 @@ import { JSDOM } from "jsdom";
 
 import { Command } from "../command.class";
 
-import { IBotContext } from "../../context/context.interface";
 import { AppDataSource } from "../../config/typeOrm.config";
 
-import { Game } from "../../entities";
-import { IGameSteamData } from "./game.interface";
+import { Game, User } from "../../entities";
+import { IBotContext, IGameSteamData } from "../../context";
 
 export class ParserCommand extends Command {
   private messagesId: number[] = [];
@@ -31,7 +30,9 @@ export class ParserCommand extends Command {
       return;
     }
 
-    const games = await this.handleUserGames(context.from.id);
+    const user = await this.handleUserGames(context.from.id);
+    const games = user?.games;
+
     if (!games?.length) {
       context.sendMessage("В списке отслеживаемого ничего не найдено");
       return;
@@ -77,13 +78,16 @@ export class ParserCommand extends Command {
     this.bot.hears("Отменить", () => this.cancelOperation(context));
   }
 
-  async handleUserGames(userId: number | undefined): Promise<Game[] | null> {
+  async handleUserGames(userId: number | undefined): Promise<User | null> {
     if (!userId) {
       console.log("Не удалось определить пользователя");
       return null;
     }
 
-    return AppDataSource.getRepository(Game).find({ where: { userId } });
+    return AppDataSource.getRepository(User).findOne({
+      where: { userId },
+      relations: { games: true },
+    });
   }
 
   private async handleSteamPrice(context: IBotContext): Promise<void> {

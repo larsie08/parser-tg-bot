@@ -1,4 +1,4 @@
-import { Telegraf } from "telegraf";
+import { session, Telegraf } from "telegraf";
 import "reflect-metadata";
 
 import {
@@ -11,8 +11,9 @@ import {
   GameNewsCommand,
 } from "./src/commands";
 
-import { IBotContext } from "./src/context/context.interface";
 import { AppDataSource, ConfigService, IConfigService } from "./src/config";
+
+import { IBotContext } from "./src/context";
 
 class Bot {
   bot: Telegraf<IBotContext>;
@@ -20,6 +21,15 @@ class Bot {
 
   constructor(private readonly ConfigService: IConfigService) {
     this.bot = new Telegraf<IBotContext>(this.ConfigService.get("TOKEN"));
+
+    this.bot.use(
+      session({
+        defaultSession: () => ({
+          state: null,
+          pendingGame: null,
+        }),
+      }),
+    );
   }
 
   init() {
