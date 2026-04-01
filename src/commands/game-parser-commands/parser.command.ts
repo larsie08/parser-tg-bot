@@ -4,9 +4,8 @@ import { JSDOM } from "jsdom";
 
 import { Command } from "../command.class";
 
-import { AppDataSource } from "../../config/typeOrm.config";
+import { GameService, UserService } from "../../services";
 
-import { Game, User } from "../../entities";
 import { IBotContext, IGameSteamData } from "../../context";
 
 export class ParserCommand extends Command {
@@ -30,7 +29,7 @@ export class ParserCommand extends Command {
       return;
     }
 
-    const user = await this.handleUserGames(context.from.id);
+    const user = await new UserService().getUserWithGames(context.from.id);
     const games = user?.games;
 
     if (!games?.length) {
@@ -78,29 +77,15 @@ export class ParserCommand extends Command {
     this.bot.hears("Отменить", () => this.cancelOperation(context));
   }
 
-  async handleUserGames(userId: number | undefined): Promise<User | null> {
-    if (!userId) {
-      console.log("Не удалось определить пользователя");
-      return null;
-    }
-
-    return AppDataSource.getRepository(User).findOne({
-      where: { userId },
-      relations: { games: true },
-    });
-  }
-
   private async handleSteamPrice(context: IBotContext): Promise<void> {
     if (!this.isCheckingPrice) return;
 
-    const gameRepository = AppDataSource.getRepository(Game);
-    const gameId = await gameRepository
-      .findOne({
-        where: { name: this.selectedGame },
-      })
+    const gameId = await new GameService()
+      .getUserGame(this.selectedGame)
       .then((game) => game?.steamId || "");
 
     const gameData = await this.fetchGameInfoSteam(gameId);
+
     if (!gameData) {
       context.sendMessage("Не удалось получить данные о цене игры.");
       return;

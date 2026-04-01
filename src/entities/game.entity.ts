@@ -4,9 +4,12 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
+
 import { User } from "./user.entity";
+import { News } from "./news.entity";
 
 @Entity()
 export class Game {
@@ -22,6 +25,9 @@ export class Game {
   @ManyToOne(() => User, (user) => user.games)
   @JoinColumn({ name: "user_id" })
   user!: User;
+
+  @OneToMany(() => News, (news) => news.game)
+  news!: News[];
 
   @CreateDateColumn()
   createdAt!: Date;

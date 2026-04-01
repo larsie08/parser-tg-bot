@@ -1,10 +1,13 @@
 import { Markup, Telegraf } from "telegraf";
 import axios from "axios";
 
-import { ParserCommand } from "./parser.command";
 import { Command } from "../command.class";
 
+import { GameService, NewsService, UserService } from "../../services";
+
 import { GameNewsInfo, IBotContext, NewsItem } from "../../context";
+import { Game, News } from "../../entities";
+import { AppDataSource } from "../../config";
 
 export class GameNewsCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {
@@ -12,18 +15,12 @@ export class GameNewsCommand extends Command {
   }
 
   handle(): void {
-    this.bot.action("check_news", async (context) => {
+    this.bot.action("check_news", async (context: IBotContext) => {
       const messagesId: number[] = [];
-      const userId = context.from?.id;
 
-      if (!userId) {
-        await context.sendMessage("Пользователь не найден.");
-        return;
-      }
+      if (!context.from?.id) throw new Error("Не определен пользователь");
 
-      const parserCommand = new ParserCommand(this.bot);
-
-      const user = await parserCommand.handleUserGames(userId);
+      const user = await new UserService().getUserWithGames(context.from.id);
 
       const games = user?.games;
 
@@ -34,36 +31,44 @@ export class GameNewsCommand extends Command {
       }
 
       messagesId.push(...(await this.displayGames(context, games)));
+    });
 
-      this.bot.action("check__game_news", async (context) => {
-        const selectedGameName = (context.callbackQuery.message as any).text;
+    this.bot.action("check__game_news", async (context) => {
+      const selectedGameName = (context.callbackQuery.message as any).text;
 
-        if (!selectedGameName) {
-          return context.sendMessage("Ошибка при выборе игры.");
-        }
+      if (!selectedGameName) {
+        return context.sendMessage("Ошибка при выборе игры.");
+      }
 
-        const selectedGame = games.find(
-          (game) => game.name === selectedGameName,
-        );
+      const selectedGame = await new GameService().getUserGame(
+        selectedGameName,
+      );
 
-        if (!selectedGame) {
-          return context.sendMessage("Игра не найдена.");
-        }
+      if (!selectedGame) {
+        console.log("Игра не найдена.", selectedGame);
+        return context.sendMessage("Игра не найдена.");
+      }
 
-        const news = await this.fetchGameNews(selectedGame.steamId);
+      const news = await this.fetchGameNews(selectedGame.steamId);
 
-        if (!news) {
-          return context.sendMessage("Новости не найдены.");
-        }
+      if (!news)
+        return context.sendMessage("Не удалось получить ни одной новости.");
 
-        this.sendNewsToUser(news, userId);
-      });
+      const newNews = await this.compareNewNews(news, selectedGame.steamId);
+
+      if (!news) {
+        return context.sendMessage("Новости не найдены.");
+      }
+
+      await this.saveNewsToDB(newNews, selectedGame);
+
+      await this.sendNewsToUser(news, context.from?.id);
     });
   }
 
   private async displayGames(
     context: IBotContext,
-    games: any[],
+    games: Game[],
   ): Promise<number[]> {
     const messageIds: number[] = [];
     for (const game of games) {
@@ -87,6 +92,36 @@ export class GameNewsCommand extends Command {
     } catch (error) {
       console.error("Ошибка при запросе новостей Steam:", error);
       return null;
+    }
+  }
+
+  async compareNewNews(
+    news: GameNewsInfo,
+    gameSteamId: string,
+  ): Promise<GameNewsInfo> {
+    const ids = news.appnews.newsitems.map((item) => item.gid);
+
+    const existingNews = await new NewsService().getNewsGame(ids, gameSteamId);
+
+    const existingIds = new Set(existingNews.map((item) => item.newsId));
+
+    const newNewsItems = news.appnews.newsitems.filter(
+      (item) => !existingIds.has(item.gid),
+    );
+
+    return {
+      appnews: {
+        ...news.appnews,
+        newsitems: newNewsItems,
+      },
+    };
+  }
+
+  async saveNewsToDB(news: GameNewsInfo, game: Game): Promise<void> {
+    const newsItems = news.appnews.newsitems;
+
+    for (const item of newsItems) {
+      await new NewsService().saveNewsGame(item.title, item.gid, game);
     }
   }
 

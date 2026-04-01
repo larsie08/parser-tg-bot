@@ -7,6 +7,8 @@ import { AppDataSource } from "../../config/typeOrm.config";
 
 import { Game } from "../../entities";
 import { IBotContext } from "../../context";
+import { UserService } from "../../services/user.service";
+import { GameService } from "../../services/game.service";
 
 export class GameDeleteCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {
@@ -14,18 +16,19 @@ export class GameDeleteCommand extends Command {
   }
 
   handle(): void {
-    this.bot.action("game_delete", async (context) => {
+    this.bot.action("game_delete", async (context: IBotContext) => {
       const messagesId: number[] = [];
-      const parserClass = new ParserCommand(this.bot);
 
-      const user = await parserClass.handleUserGames(context.from.id);
+      if (!context.from?.id) throw new Error("Не определен пользователь");
+
+      const user = await new UserService().getUserWithGames(context.from?.id);
       const games = user?.games;
 
       if (!games || games.length === 0) {
         return context.sendMessage("У вас нет игр для удаления.");
       }
 
-      games.forEach(async (game) => {
+      for (const game of games) {
         await context
           .sendMessage(
             game.name,
@@ -34,7 +37,7 @@ export class GameDeleteCommand extends Command {
             ]),
           )
           .then((message) => messagesId.push(message.message_id));
-      });
+      }
 
       await context
         .sendMessage(
@@ -45,39 +48,32 @@ export class GameDeleteCommand extends Command {
         )
         .then((message) => messagesId.push(message.message_id));
 
-      this.bot.action(/delete_(\d+)/, async (ctx) => {
-        const gameId = parseInt(ctx.match[1]);
-        await this.handleDeleteGame(ctx, gameId, games);
-
-        const gameMessageId = ctx.callbackQuery.message?.message_id;
-        if (gameMessageId) {
-          await ctx.deleteMessage(gameMessageId);
-        }
-      });
-
       this.bot.action("cancel_delete", async (ctx) => {
         context.deleteMessages(messagesId);
 
         await ctx.sendMessage("Удаление отменено.");
       });
     });
+
+    this.bot.action(/delete_(\d+)/, async (context: IBotContext) => {
+      const selectedGameName = (context.callbackQuery?.message as any).text;
+
+      const game = await new GameService().getUserGame(selectedGameName);
+
+      if (!game) throw new Error(`Не удалось найти игру при удалении: ${game}`);
+
+      await this.handleDeleteGame(context, game);
+
+      const gameMessageId = context.callbackQuery?.message?.message_id;
+      if (gameMessageId) {
+        await context.deleteMessage(gameMessageId);
+      }
+    });
   }
 
-  private async handleDeleteGame(
-    context: IBotContext,
-    gameId: number,
-    games: Game[],
-  ) {
-    const gameRepository = AppDataSource.getRepository(Game);
-
+  private async handleDeleteGame(context: IBotContext, game: Game) {
     try {
-      const game = games.find((game) => game.id === gameId);
-
-      if (!game) {
-        return await context.sendMessage("Не удалось найти игру для удаления.");
-      }
-
-      await gameRepository.remove(game);
+      await new GameService().deleteGame(game);
       await context.sendMessage(`Игра "${game.name}" успешно удалена.`);
     } catch (error) {
       console.error("Ошибка при удалении игры:", error);

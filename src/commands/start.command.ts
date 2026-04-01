@@ -3,6 +3,7 @@ import { Markup, Telegraf } from "telegraf";
 import { Command } from "./command.class";
 
 import { AppDataSource } from "../config/typeOrm.config";
+import { UserService } from "../services/user.service";
 import { User } from "../entities";
 import { IBotContext } from "../context";
 
@@ -53,40 +54,30 @@ export class StartCommand extends Command {
     });
   }
 
-  private async handleUser(context: IBotContext): Promise<User | null> {
-    const contextUserId = context.from?.id;
-    const contextUserName = context.from?.first_name;
+  private async handleUser(context: IBotContext): Promise<User> {
+    if (!context.from)
+      throw new Error("Не удалось определить пользователя при добавлении.");
 
-    if (!contextUserId || !contextUserName) {
-      console.log(
-        "Ошибка инициализации пользователя",
-        contextUserId,
-        contextUserName,
-      );
-      return null;
-    }
-
-    const userRepository = AppDataSource.getRepository(User);
-
-    const currentUser = await userRepository.findOne({
-      where: { userId: contextUserId },
-    });
+    const currentUser = await new UserService().getUser(context.from?.id);
 
     if (!currentUser) {
       console.log("Пользователь не найден, добавляем в базу...");
-      const user = new User();
-      user.userId = contextUserId;
-      user.userName = contextUserName;
 
       try {
-        await userRepository.save(user);
+        const user = await new UserService().saveUser(
+          context.from?.id,
+          context.from?.first_name,
+        );
+
         console.log("Пользователь успешно сохранён в базу данных!");
+
+        return user;
       } catch (error) {
-        console.error("Ошибка сохранения пользователя:", error);
+        throw new Error("Ошибка сохранения пользователя:");
       }
-    } else {
-      console.log("Пользователь уже существует:", currentUser);
     }
+
+    console.log("Пользователь уже существует:", currentUser);
 
     return currentUser;
   }

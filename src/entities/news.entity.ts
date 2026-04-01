@@ -2,27 +2,27 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  OneToMany,
+  JoinColumn,
+  ManyToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
 
 import { Game } from "./game.entity";
 
 @Entity()
-export class User {
+export class News {
   @PrimaryGeneratedColumn()
   id!: number;
 
   @Column()
-  userId!: number;
+  name!: string;
 
   @Column()
-  userName!: string;
+  newsId!: string;
 
-  @OneToMany(() => Game, (game) => game.user, {
-    onDelete: "CASCADE",
-  })
-  games!: Game[];
+  @ManyToOne(() => Game, (game) => game.news)
+  @JoinColumn({ name: "game_id" })
+  game!: Game;
 
   @CreateDateColumn()
   createdAt!: Date;

@@ -9,6 +9,7 @@ import { IBotContext } from "../../context/context.interface";
 
 import { Game, User } from "../../entities";
 import { IGameSteamData, IGameSteamInfo, NewsItem } from "../../context";
+import { UserService } from "../../services/user.service";
 
 export class AutoParserCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {
@@ -16,8 +17,9 @@ export class AutoParserCommand extends Command {
   }
 
   async handle(): Promise<void> {
-    const userRepository = AppDataSource.getRepository(User);
-    const users = await userRepository.find();
+    const users = await new UserService().getAllUsers();
+
+    if (!users) throw new Error("Не найдено ни одного пользователя.");
 
     this.startAutoParser(users);
   }

@@ -8,6 +8,7 @@ import { AppDataSource } from "../../config/typeOrm.config";
 
 import { Game, User } from "../../entities";
 import { IBotContext, PendingGame } from "../../context";
+import { UserService } from "../../services/user.service";
 
 export class GameAddCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {
@@ -72,6 +73,8 @@ export class GameAddCommand extends Command {
       return context.sendMessage("Введите название игры для добавления.");
     }
 
+    if (!context.from?.id) throw new Error("Не определен пользователь");
+
     const games = text
       .split(",")
       .map((game) => game.trim())
@@ -81,10 +84,7 @@ export class GameAddCommand extends Command {
       return await context.sendMessage("Не удалось распознать ни одной игры.");
     }
 
-    const user = await AppDataSource.getRepository(User).findOne({
-      where: { userId: context.from?.id },
-      relations: { games: true },
-    });
+    const user = await new UserService().getUserWithGames(context.from?.id);
 
     if (!user) {
       return context.sendMessage("Пользователь не найден.");
