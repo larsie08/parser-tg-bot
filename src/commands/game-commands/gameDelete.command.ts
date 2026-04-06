@@ -1,14 +1,9 @@
 import { Markup, Telegraf } from "telegraf";
 
-import { ParserCommand } from "../game-parser-commands/parser.command";
-import { Command } from "../command.class";
-
-import { AppDataSource } from "../../config/typeOrm.config";
+import { GameService, UserService } from "../../services";
 
 import { Game } from "../../entities";
-import { IBotContext } from "../../context";
-import { UserService } from "../../services/user.service";
-import { GameService } from "../../services/game.service";
+import { Command, IBotContext } from "../../context";
 
 export class GameDeleteCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {

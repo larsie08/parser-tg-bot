@@ -5,11 +5,14 @@ import {
   JoinColumn,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from "typeorm";
 
 import { User } from "./user.entity";
 import { News } from "./news.entity";
+import { GameMeta } from "./gameMeta.entity";
 
 @Entity()
 export class Game {
@@ -29,6 +32,12 @@ export class Game {
   @OneToMany(() => News, (news) => news.game)
   news!: News[];
 
+  @OneToOne(() => GameMeta, (meta) => meta.game)
+  meta?: GameMeta;
+
   @CreateDateColumn()
   createdAt!: Date;
+
+  @UpdateDateColumn()
+  updatedAt!: Date;
 }

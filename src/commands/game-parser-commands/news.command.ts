@@ -1,13 +1,10 @@
 import { Markup, Telegraf } from "telegraf";
 import axios from "axios";
 
-import { Command } from "../command.class";
-
 import { GameService, NewsService, UserService } from "../../services";
 
-import { GameNewsInfo, IBotContext, NewsItem } from "../../context";
-import { Game, News } from "../../entities";
-import { AppDataSource } from "../../config";
+import { Command, GameNewsInfo, IBotContext, NewsItem } from "../../context";
+import { Game } from "../../entities";
 
 export class GameNewsCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {
@@ -34,7 +31,11 @@ export class GameNewsCommand extends Command {
     });
 
     this.bot.action("check__game_news", async (context) => {
-      const selectedGameName = (context.callbackQuery.message as any).text;
+      const selectedGameName: string =
+        context.callbackQuery?.message &&
+        "text" in context.callbackQuery.message
+          ? context.callbackQuery.message.text
+          : "";
 
       if (!selectedGameName) {
         return context.sendMessage("Ошибка при выборе игры.");

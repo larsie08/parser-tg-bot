@@ -1,6 +1,6 @@
 import { Context } from "telegraf";
 
-import { User } from "../entities";
+import { Game, User } from "../entities";
 
 export interface PendingGame {
   steamGameName: string;
@@ -11,6 +11,7 @@ export interface PendingGame {
 
 export interface SessionData {
   state: string | null;
+  parserSelectedGame: string | null;
   pendingGame: PendingGame[] | null;
 }
 

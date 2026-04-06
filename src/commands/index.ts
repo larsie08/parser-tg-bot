@@ -1,4 +1,3 @@
-export * from "./command.class";
 export * from "./start.command";
 export * from "./game-parser-commands/parser.command";
 export * from "./game-parser-commands/auto-parser.command";

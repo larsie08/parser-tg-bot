@@ -1,11 +1,9 @@
 import { Markup, Telegraf } from "telegraf";
 
-import { Command } from "./command.class";
+import { UserService } from "../services";
 
-import { AppDataSource } from "../config/typeOrm.config";
-import { UserService } from "../services/user.service";
 import { User } from "../entities";
-import { IBotContext } from "../context";
+import { Command, IBotContext } from "../context";
 
 export class StartCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {

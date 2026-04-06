@@ -2,13 +2,13 @@ import { Markup, Telegraf } from "telegraf";
 import axios from "axios";
 import { JSDOM } from "jsdom";
 
-import { Command } from "../command.class";
 import { ParserCommand } from "../game-parser-commands/parser.command";
 import { AppDataSource } from "../../config/typeOrm.config";
 
+import { UserService } from "../../services";
+
 import { Game, User } from "../../entities";
-import { IBotContext, PendingGame } from "../../context";
-import { UserService } from "../../services/user.service";
+import { Command, IBotContext, PendingGame } from "../../context";
 
 export class GameAddCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {
@@ -80,24 +80,19 @@ export class GameAddCommand extends Command {
       .map((game) => game.trim())
       .filter((game) => game.length > 0);
 
-    if (games.length === 0) {
+    if (games.length === 0)
       return await context.sendMessage("Не удалось распознать ни одной игры.");
-    }
 
     const user = await new UserService().getUserWithGames(context.from?.id);
 
-    if (!user) {
-      return context.sendMessage("Пользователь не найден.");
-    }
+    if (!user) return context.sendMessage("Пользователь не найден.");
 
-    const userGames = user?.games;
+    const userNameGames =
+      user?.games.map((game) => game.name.toLowerCase()) || [];
 
-    const currentGameNames =
-      userGames?.map((game) => game.name.toLowerCase()) || [];
-
-    const newGames = games.filter((game) => !currentGameNames?.includes(game));
+    const newGames = games.filter((game) => !userNameGames?.includes(game));
     const alreadyAddedGames = games.filter((game) =>
-      currentGameNames.includes(game),
+      userNameGames.includes(game),
     );
 
     if (newGames.length === 0) {

@@ -1,8 +1,7 @@
-import { session, Telegraf } from "telegraf";
 import "reflect-metadata";
+import { session, Telegraf } from "telegraf";
 
 import {
-  Command,
   ParserCommand,
   StartCommand,
   GameAddCommand,
@@ -13,7 +12,7 @@ import {
 
 import { AppDataSource, ConfigService, IConfigService } from "./src/config";
 
-import { IBotContext } from "./src/context";
+import { Command, IBotContext } from "./src/context";
 
 class Bot {
   bot: Telegraf<IBotContext>;
@@ -26,6 +25,7 @@ class Bot {
       session({
         defaultSession: () => ({
           state: null,
+          parserSelectedGame: null,
           pendingGame: null,
         }),
       }),

@@ -9,8 +9,10 @@ export class UserService {
     });
   }
 
-  async getAllUsers(): Promise<User[] | null> {
-    return await AppDataSource.getRepository(User).find();
+  async getAllUsersWithGames(): Promise<User[] | null> {
+    return await AppDataSource.getRepository(User).find({
+      relations: { games: true },
+    });
   }
 
   async getUser(id: number): Promise<User | null> {

@@ -3,8 +3,9 @@ import { Game } from "../entities";
 
 export class GameService {
   async getUserGame(gameName: string): Promise<Game | null> {
-    return await AppDataSource.getRepository(Game).findOneBy({
-      name: gameName,
+    return await AppDataSource.getRepository(Game).findOne({
+      where: { name: gameName },
+      relations: { meta: true },
     });
   }
 

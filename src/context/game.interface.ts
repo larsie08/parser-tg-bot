@@ -1,14 +1,14 @@
 export interface IGameBaseData {
   name: string;
-  price: string;
+  price: string | undefined;
   href: string;
 }
 
 export interface IGameSteamData extends IGameBaseData {
-  oldPrice: string | null;
-  discount: string | null;
-  releaseTime: string | null;
-  releaseDate: string | null;
+  oldPrice: string | undefined;
+  discount: string | undefined;
+  releaseTime: string | undefined;
+  releaseDate: string | undefined;
 }
 
 export interface IGameSteamInfo extends IGameSteamData {

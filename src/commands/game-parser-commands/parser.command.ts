@@ -2,17 +2,12 @@ import { Markup, Telegraf } from "telegraf";
 import axios from "axios";
 import { JSDOM } from "jsdom";
 
-import { Command } from "../command.class";
+import { GameMetaService, GameService, UserService } from "../../services";
 
-import { GameService, UserService } from "../../services";
-
-import { IBotContext, IGameSteamData } from "../../context";
+import { Command, IBotContext, IGameSteamData } from "../../context";
+import { Game } from "../../entities";
 
 export class ParserCommand extends Command {
-  private messagesId: number[] = [];
-  private selectedGame = "";
-  private isCheckingPrice = false;
-
   constructor(bot: Telegraf<IBotContext>) {
     super(bot);
   }
@@ -21,6 +16,25 @@ export class ParserCommand extends Command {
     this.bot.action("check_price", async (context) => {
       await this.handleGameSelection(context);
     });
+
+    this.bot.action("check__game_price", async (context: IBotContext) => {
+      context.session.parserSelectedGame =
+        context.callbackQuery?.message &&
+        "text" in context.callbackQuery.message
+          ? context.callbackQuery.message.text
+          : "";
+
+      await this.handlePriceCheck(context);
+    });
+
+    this.bot.hears(
+      "Steam",
+      async (context: IBotContext) => await this.handleSteamPrice(context),
+    );
+
+    this.bot.hears("Отменить", (context: IBotContext) =>
+      this.cancelOperation(context),
+    );
   }
 
   private async handleGameSelection(context: IBotContext): Promise<void> {
@@ -37,62 +51,47 @@ export class ParserCommand extends Command {
       return;
     }
 
-    this.isCheckingPrice = true;
+    context.session.state = "WAITING_GAME";
+
     for (const game of games) {
-      const message = await context.reply(
+      await context.reply(
         game.name,
         Markup.inlineKeyboard([
           Markup.button.callback("Узнать цену", "check__game_price"),
         ]),
       );
-      this.messagesId.push(message.message_id);
     }
-
-    this.bot.action("check__game_price", async (context) => {
-      await this.handlePriceCheck(context);
-    });
   }
 
   private async handlePriceCheck(context: IBotContext): Promise<void> {
-    if (!this.isCheckingPrice) return;
-
-    const contextMessage = context.callbackQuery?.message;
-
-    if (contextMessage && "text" in contextMessage) {
-      this.selectedGame = contextMessage.text;
-    }
-
-    if (!this.selectedGame) {
-      context.sendMessage("Ошибка при выборе игры.");
-      return;
-    }
-
-    const message = await context.sendMessage(
+    await context.sendMessage(
       "Выберите ресурс",
       Markup.keyboard(["Steam", "Отменить"]),
     );
-    this.messagesId.push(message.message_id);
-
-    this.bot.hears("Steam", async () => await this.handleSteamPrice(context));
-    this.bot.hears("Отменить", () => this.cancelOperation(context));
   }
 
   private async handleSteamPrice(context: IBotContext): Promise<void> {
-    if (!this.isCheckingPrice) return;
+    if (!context.session.parserSelectedGame)
+      throw new Error(
+        `Произошла ошибка с контекстом бота ${context.session.parserSelectedGame}`,
+      );
 
-    const gameId = await new GameService()
-      .getUserGame(this.selectedGame)
-      .then((game) => game?.steamId || "");
+    const game = await new GameService().getUserGame(
+      context.session.parserSelectedGame,
+    );
 
-    const gameData = await this.fetchGameInfoSteam(gameId);
+    if (!game) throw new Error("Не удалось найти игру в базе данных.");
+
+    const gameData = await this.fetchGameInfoSteam(game.steamId);
 
     if (!gameData) {
       context.sendMessage("Не удалось получить данные о цене игры.");
       return;
     }
 
-    const message = await context.sendMessage(this.createGameMessage(gameData));
-    this.messagesId.push(message.message_id);
+    await this.updateGameInfo(gameData, game);
+
+    await context.sendMessage(this.createGameMessage(gameData));
   }
 
   async fetchGameInfoSteam(gameId: string): Promise<IGameSteamData | null> {
@@ -136,18 +135,18 @@ export class ParserCommand extends Command {
       const name = nameElement?.textContent || "Название недоступно";
       const price =
         priceElement?.textContent?.trim() ||
-        discountPriceElement?.textContent?.trim() ||
-        "Цена недоступна";
-      const oldPrice = oldPriceElement?.textContent || null;
-      const discount = discountElement?.textContent || null;
+        discountPriceElement?.textContent?.trim();
+
+      const oldPrice = oldPriceElement?.textContent;
+      const discount = discountElement?.textContent;
       const href = hrefElement[hrefElement.length - 1].href;
-      const releaseDate =
-        releaseDateElement
-          ?.querySelector("h1")
-          ?.querySelector("span")
-          ?.textContent?.trim() || null;
-      const releaseTime =
-        releaseDateElement?.querySelector("p")?.textContent?.trim() || null;
+      const releaseDate = releaseDateElement
+        ?.querySelector("h1")
+        ?.querySelector("span")
+        ?.textContent?.trim();
+      const releaseTime = releaseDateElement
+        ?.querySelector("p")
+        ?.textContent?.trim();
 
       return {
         name,
@@ -166,9 +165,7 @@ export class ParserCommand extends Command {
 
   createGameMessage(
     gameData: IGameSteamData,
-    isPriceChanged?: boolean,
-    isReleaseDateChanged?: boolean,
-    isReleaseTimeChanged?: boolean,
+    diff?: Partial<IGameSteamData>,
   ): string {
     const messageParts: string[] = [`🎮 *Название:* ${gameData.name}`];
 
@@ -177,15 +174,12 @@ export class ParserCommand extends Command {
         `💰 *Цена:* ${gameData.price}`,
         `📊 *Продаж:* ${gameData.sales}`,
       );
-    } else if ("releaseDate" in gameData && gameData.releaseDate) {
+    } else if (gameData.releaseDate) {
       messageParts.push(`📅 *Дата выхода:* ${gameData.releaseDate}`);
-      if (gameData.releaseTime)
+      if (gameData.releaseTime) {
         messageParts.push(`⏰ *Время выхода:* ${gameData.releaseTime}`);
-    } else if (
-      "discount" in gameData &&
-      gameData.oldPrice &&
-      gameData.discount
-    ) {
+      }
+    } else if (gameData.oldPrice && gameData.discount) {
       messageParts.push(
         `💸 *Старая цена:* ${gameData.oldPrice}`,
         `💰 *Новая цена:* ${gameData.price}`,
@@ -197,24 +191,41 @@ export class ParserCommand extends Command {
 
     messageParts.push(`🔗 [Ссылка](${gameData.href})`);
 
+    const changedFields = Object.keys(diff ?? {});
+
     let prefix = "";
-    if (isPriceChanged) {
+
+    if (changedFields.includes("price") || changedFields.includes("oldPrice")) {
       prefix = "🔔 *Изменение цены!*\n";
-    } else if (isReleaseDateChanged) {
+    } else if (changedFields.includes("releaseDate")) {
       prefix = "📅 *Изменение даты выхода!*\n";
-    } else if (isReleaseTimeChanged) {
+    } else if (changedFields.includes("releaseTime")) {
       prefix = "⏰ *Изменение времени выхода!*\n";
     }
 
     return prefix + messageParts.join("\n");
   }
 
+  private async updateGameInfo(
+    gameData: IGameSteamData,
+    game: Game,
+  ): Promise<void> {
+    if (
+      (!gameData.releaseDate || !gameData.releaseTime) &&
+      gameData.price === game.meta?.price
+    )
+      return;
+
+    return await new GameMetaService().upsertMetaInfo(gameData, game);
+  }
+
   handleFormatUrlSearch(game: string): string {
     return encodeURIComponent(game);
   }
 
-  private cancelOperation(context: IBotContext): void {
-    context.deleteMessages(this.messagesId);
-    this.isCheckingPrice = false;
+  private async cancelOperation(context: IBotContext): Promise<void> {
+    // context.deleteMessages(this.messagesId);
+    context.session.state = null;
+    await context.sendMessage("Отмена операции.");
   }
 }
