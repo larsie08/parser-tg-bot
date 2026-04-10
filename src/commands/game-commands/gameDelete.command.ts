@@ -59,6 +59,8 @@ export class GameDeleteCommand extends Command {
 
       await this.handleDeleteGame(context, game);
 
+      await context.sendMessage(`Игра "${game.name}" успешно удалена.`);
+
       const gameMessageId = context.callbackQuery?.message?.message_id;
       if (gameMessageId) {
         await context.deleteMessage(gameMessageId);
@@ -68,8 +70,8 @@ export class GameDeleteCommand extends Command {
 
   private async handleDeleteGame(context: IBotContext, game: Game) {
     try {
+      await new UserService().deleteUserGame(context.from!.id, game);
       await new GameService().deleteGame(game);
-      await context.sendMessage(`Игра "${game.name}" успешно удалена.`);
     } catch (error) {
       console.error("Ошибка при удалении игры:", error);
       await context.sendMessage("Произошла ошибка при удалении игры.");

@@ -5,7 +5,7 @@ import { JSDOM } from "jsdom";
 import { ParserCommand } from "../game-parser-commands/parser.command";
 import { AppDataSource } from "../../config/typeOrm.config";
 
-import { UserService } from "../../services";
+import { GameService, UserService } from "../../services";
 
 import { Game, User } from "../../entities";
 import { Command, IBotContext, PendingGame } from "../../context";
@@ -141,19 +141,20 @@ export class GameAddCommand extends Command {
     }
   }
 
-  private async saveGame(name: string, steamId: string, user: User) {
-    const gameRepository = AppDataSource.getRepository(Game);
-
-    const game = gameRepository.create({
-      name,
-      steamId,
-      user,
-    });
-
-    await gameRepository.save(game);
+  private async saveGame(
+    name: string,
+    steamId: string,
+    user: User,
+  ): Promise<void> {
+    try {
+      const game = await new GameService().saveGame(name, steamId);
+      await new UserService().addUserGame(user, game);
+    } catch (error) {
+      throw new Error("Произошла ошибка при добавлениие игры.");
+    }
   }
 
-  private async askNextGame(context: IBotContext) {
+  private async askNextGame(context: IBotContext): Promise<void> {
     const game = context.session.pendingGame?.[0];
 
     if (!game) {

@@ -2,8 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinColumn,
-  ManyToOne,
+  ManyToMany,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
@@ -25,15 +24,14 @@ export class Game {
   @Column()
   steamId!: string;
 
-  @ManyToOne(() => User, (user) => user.games)
-  @JoinColumn({ name: "user_id" })
-  user!: User;
+  @ManyToMany(() => User, (user) => user.games)
+  users!: User[];
+
+  @OneToOne(() => GameMeta, (meta) => meta.game, { cascade: true })
+  meta!: GameMeta;
 
   @OneToMany(() => News, (news) => news.game)
   news!: News[];
-
-  @OneToOne(() => GameMeta, (meta) => meta.game)
-  meta?: GameMeta;
 
   @CreateDateColumn()
   createdAt!: Date;

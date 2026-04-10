@@ -4,11 +4,12 @@ import { Game, GameMeta } from "../entities";
 
 export class GameMetaService {
   async upsertMetaInfo(gameData: IGameSteamData, game: Game): Promise<void> {
-    const repo = AppDataSource.getRepository(GameMeta);
+    const gameMetaRepo = AppDataSource.getRepository(GameMeta);
+    const gameRepo = AppDataSource.getRepository(Game);
 
-    let meta = await repo.findOne({ where: { game: { id: game.id } } });
+    let meta = await gameMetaRepo.findOneBy({ game });
 
-    if (!meta) meta = repo.create({ game });
+    if (!meta) meta = gameMetaRepo.create({ game });
 
     Object.assign(meta, {
       price: gameData.price,
@@ -19,12 +20,17 @@ export class GameMetaService {
       href: gameData.href,
     });
 
-    await repo.save(meta);
+    await gameMetaRepo.save(meta);
+
+    if (!game.meta || game.meta.game !== meta.game) {
+      game.meta = meta;
+      await gameRepo.save(game);
+    }
   }
 
   async getMetaInfo(game: Game): Promise<GameMeta | null> {
     return await AppDataSource.getRepository(GameMeta).findOneBy({
-      game_id: game.id,
+      game,
     });
   }
 }

@@ -2,7 +2,8 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  OneToMany,
+  JoinTable,
+  ManyToMany,
   PrimaryGeneratedColumn,
 } from "typeorm";
 
@@ -19,8 +20,19 @@ export class User {
   @Column()
   userName!: string;
 
-  @OneToMany(() => Game, (game) => game.user, {
+  @ManyToMany(() => Game, (game) => game.users, {
     onDelete: "CASCADE",
+  })
+  @JoinTable({
+    name: "user_games",
+    joinColumn: {
+      name: "user_id",
+      referencedColumnName: "id",
+    },
+    inverseJoinColumn: {
+      name: "game_id",
+      referencedColumnName: "id",
+    },
   })
   games!: Game[];
 

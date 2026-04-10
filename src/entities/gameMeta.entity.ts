@@ -4,19 +4,19 @@ import {
   Entity,
   JoinColumn,
   OneToOne,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
 import { Game } from "./game.entity";
 
 @Entity()
 export class GameMeta {
-  @OneToOne(() => Game, (game) => game.meta)
+  @PrimaryGeneratedColumn()
+  id!: number;
+
+  @OneToOne(() => Game, (game) => game.meta, { onDelete: "CASCADE" })
   @JoinColumn({ name: "game_id" })
   game!: Game;
-
-  @PrimaryColumn()
-  game_id!: number;
 
   @Column({ nullable: true })
   price?: string;

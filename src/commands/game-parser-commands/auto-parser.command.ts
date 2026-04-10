@@ -3,9 +3,9 @@ import { Telegraf } from "telegraf";
 import { ParserCommand } from "./parser.command";
 import { GameNewsCommand } from "./news.command";
 
-import { GameMetaService, UserService } from "../../services";
+import { GameMetaService, GameService } from "../../services";
 
-import { Game, User } from "../../entities";
+import { Game } from "../../entities";
 import { Command, IBotContext, IGameSteamData } from "../../context";
 
 export class AutoParserCommand extends Command {
@@ -16,53 +16,43 @@ export class AutoParserCommand extends Command {
   async handle(): Promise<void> {
     setInterval(
       async () => {
-        const users = await new UserService().getAllUsersWithGames();
+        const games = await new GameService().getGamesOfUsers();
 
-        if (!users) throw new Error("Не найдено ни одного пользователя.");
+        if (!games) throw new Error("Не найдено ни одной игры.");
 
-        for (const user of users) await this.processUserGames(user);
+        for (const game of games) {
+          try {
+            await this.autoParser(game);
+          } catch (error) {
+            throw new Error(
+              `Ошибка обработки игр для пользователей. ${game.users}:`,
+            );
+          }
+        }
       },
-      60 * 120 * 1000,
+      30 * 60 * 1000,
     );
   }
 
-  private async processUserGames(user: User): Promise<void> {
-    try {
-      if (user.games.length === 0)
-        return console.log(
-          `Нет игр для отслеживания у пользователя ${user.userId}.`,
-        );
-
-      await this.autoParser(user);
-    } catch (error) {
-      throw new Error(`Ошибка обработки игр для пользователя ${user.userId}:`);
-    }
-  }
-
-  private async autoParser(user: User): Promise<void> {
+  private async autoParser(game: Game): Promise<void> {
     const parserClass = new ParserCommand(this.bot);
     const newsClass = new GameNewsCommand(this.bot);
 
-    for (const game of user.games) {
-      try {
-        const steamGameData = await parserClass.fetchGameInfoSteam(
-          game.steamId,
-        );
+    try {
+      const steamGameData = await parserClass.fetchGameInfoSteam(game.steamId);
 
-        if (!steamGameData)
-          throw new Error(`Ошибка при обработке игры ${game.name}:`);
-
-        this.processSteamGame(steamGameData, user.userId, game, parserClass);
-        this.processGameNews(user.userId, game, newsClass);
-      } catch (error) {
+      if (!steamGameData)
         throw new Error(`Ошибка при обработке игры ${game.name}:`);
-      }
+
+      this.processSteamGame(steamGameData, game, parserClass);
+      this.processGameNews(game, newsClass);
+    } catch (error) {
+      throw new Error(`Ошибка при обработке игры ${game.name}:`);
     }
   }
 
   private async processSteamGame(
     steamGameData: IGameSteamData,
-    userID: number,
     game: Game,
     parserClass: ParserCommand,
   ): Promise<void> {
@@ -78,7 +68,8 @@ export class AutoParserCommand extends Command {
       changesDetected,
     );
 
-    await this.bot.telegram.sendMessage(userID, message);
+    for (const user of game.users)
+      await this.bot.telegram.sendMessage(user.userId, message);
   }
 
   private async getDiffData(
@@ -112,7 +103,6 @@ export class AutoParserCommand extends Command {
   }
 
   private async processGameNews(
-    userId: number,
     game: Game,
     newsClass: GameNewsCommand,
   ): Promise<void> {
@@ -127,7 +117,8 @@ export class AutoParserCommand extends Command {
     await newsClass.saveNewsToDB(existedNews, game);
 
     if (existedNews.appnews.newsitems.length > 0) {
-      await newsClass.sendNewsToUser(existedNews, userId);
+      for (const user of game.users)
+        await newsClass.sendNewsToUser(existedNews, user.userId);
     }
   }
 }

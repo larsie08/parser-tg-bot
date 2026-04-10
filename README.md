@@ -1,4 +1,4 @@
-# 🎮 Game News and Market Tracker Bot
+# 🎮 Game News Tracker Bot
 
 This bot is designed to help users track news, prices, and updates for their favorite games on Steam and other marketplaces. With automated parsing, price alerts, and news notifications, it ensures you never miss out on important updates.
 
