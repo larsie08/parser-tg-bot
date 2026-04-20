@@ -2,6 +2,7 @@ import { Markup, Telegraf } from "telegraf";
 import axios from "axios";
 
 import { GameService, NewsService, UserService } from "../../services";
+import { notifyUserAboutError } from "../../utils";
 
 import { Command, GameNewsInfo, IBotContext, NewsItem } from "../../context";
 import { Game } from "../../entities";
@@ -13,21 +14,19 @@ export class GameNewsCommand extends Command {
 
   handle(): void {
     this.bot.action("check_news", async (context: IBotContext) => {
-      const messagesId: number[] = [];
-
       if (!context.from?.id) throw new Error("Не определен пользователь");
 
       const user = await new UserService().getUserWithGames(context.from.id);
 
       const games = user?.games;
 
-      if (!games || games.length === 0) {
-        return context.sendMessage(
+      if (!games || games.length === 0)
+        return notifyUserAboutError(
+          context,
           "В списке отслеживаемого ничего не найдено.",
         );
-      }
 
-      messagesId.push(...(await this.displayGames(context, games)));
+      await this.displayGames(context, games);
     });
 
     this.bot.action("check__game_news", async (context) => {
@@ -37,41 +36,40 @@ export class GameNewsCommand extends Command {
           ? context.callbackQuery.message.text
           : "";
 
-      if (!selectedGameName) {
-        return context.sendMessage("Ошибка при выборе игры.");
-      }
+      if (!selectedGameName)
+        return notifyUserAboutError(context, "Ошибка при выборе игры.");
 
       const selectedGame = await new GameService().getUserGame(
         selectedGameName,
       );
 
       if (!selectedGame) {
-        console.log("Игра не найдена.", selectedGame);
-        return context.sendMessage("Игра не найдена.");
+        console.log("Игра не найдена:", selectedGame);
+        return notifyUserAboutError(context, "Игра не найдена.");
       }
 
       const news = await this.fetchGameNews(selectedGame.steamId);
 
       if (!news)
-        return context.sendMessage("Не удалось получить ни одной новости.");
+        return notifyUserAboutError(
+          context,
+          "Не удалось получить ни одной новости.",
+        );
 
       const newNews = await this.compareNewNews(news, selectedGame.steamId);
 
-      if (!news) {
-        return context.sendMessage("Новости не найдены.");
-      }
+      if (!news) return notifyUserAboutError(context, "Новости не найдены.");
 
       await this.saveNewsToDB(newNews, selectedGame);
 
-      await this.sendNewsToUser(news, context.from?.id);
+      await this.sendNewsToUser(context, news);
     });
   }
 
   private async displayGames(
     context: IBotContext,
     games: Game[],
-  ): Promise<number[]> {
-    const messageIds: number[] = [];
+  ): Promise<void> {
     for (const game of games) {
       const message = await context.sendMessage(
         game.name,
@@ -79,9 +77,9 @@ export class GameNewsCommand extends Command {
           Markup.button.callback("Узнать новость", "check__game_news"),
         ]),
       );
-      messageIds.push(message.message_id);
+
+      context.session.messagesId.gameNewsMessagesId.push(message.message_id);
     }
-    return messageIds;
   }
 
   async fetchGameNews(gameId: string): Promise<GameNewsInfo | null> {
@@ -126,14 +124,17 @@ export class GameNewsCommand extends Command {
     }
   }
 
-  async sendNewsToUser(news: GameNewsInfo, userId: number): Promise<void> {
+  private async sendNewsToUser(
+    context: IBotContext,
+    news: GameNewsInfo,
+  ): Promise<void> {
     for (const item of news.appnews.newsitems) {
       const message = this.createNewsMessage(item, news.appnews.newsitems);
-      await this.bot.telegram.sendMessage(userId, message);
+      await context.sendMessage(message).then((message) => message.message_id);
     }
   }
 
-  private createNewsMessage(currentNews: NewsItem, news?: NewsItem[]): string {
+  createNewsMessage(currentNews: NewsItem, news?: NewsItem[]): string {
     let message: string = `Новость: ${currentNews.title}\nТекст: ${currentNews.contents}\nСсылка: ${currentNews.url}`;
 
     if (news && !news.some((item) => item.gid === currentNews.gid)) {

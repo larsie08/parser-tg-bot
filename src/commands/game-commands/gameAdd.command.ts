@@ -3,12 +3,12 @@ import axios from "axios";
 import { JSDOM } from "jsdom";
 
 import { ParserCommand } from "../game-parser-commands/parser.command";
-import { AppDataSource } from "../../config/typeOrm.config";
 
 import { GameService, UserService } from "../../services";
 
-import { Game, User } from "../../entities";
+import { User } from "../../entities";
 import { Command, IBotContext, PendingGame } from "../../context";
+import { notifyUserAboutError } from "../../utils";
 
 export class GameAddCommand extends Command {
   constructor(bot: Telegraf<IBotContext>) {
@@ -16,42 +16,57 @@ export class GameAddCommand extends Command {
   }
 
   handle(): void {
-    this.bot.action("game_add", async (context) => {
-      const messagesId: number[] = [];
-
+    this.bot.action("game_add", async (context: IBotContext) => {
       await context
         .sendMessage(
           "Введите название игры\nПри добавлении нескольких игр, писать через запятую(,)",
           Markup.inlineKeyboard([Markup.button.callback("Отменить", "cancel")]),
         )
-        .then((message) => messagesId.push(message.message_id));
+        .then((message) =>
+          context.session.messagesId.gameAddMessagesId.push(message.message_id),
+        );
 
       context.session.state = null;
 
       this.bot.hears(/.+/, async (context) => {
         if (typeof context.session.state === "string") return;
 
-        await this.handleAddGame(context, context.message.text);
+        context.session.messagesId.gameAddMessagesId.push(
+          context.message?.message_id,
+        );
+
+        await this.handleAddGame(context, context.message?.text);
 
         context.session.state = "WAITING_GAME";
       });
+    });
 
-      this.bot.action("cancel", () => {
-        context.session.state = "CANCELED_GAME";
-        context.deleteMessages(messagesId);
-      });
+    this.bot.action("cancel", async (context: IBotContext) => {
+      context.session.state = "CANCELED_GAME";
+      await context.deleteMessages(
+        context.session.messagesId.gameAddMessagesId,
+      );
     });
 
     this.bot.action("confirm_add_game", async (context) => {
       const game = context.session.pendingGame?.shift();
 
-      if (!game) {
-        return;
-      }
+      if (!game)
+        return notifyUserAboutError(
+          context,
+          "Произошла ошибка при выборе игры.",
+        );
+
+      if (context.session.lastAskNextGameMessageId)
+        await context.deleteMessage(context.session.lastAskNextGameMessageId);
 
       await this.saveGame(game.steamGameName, game.steamId, game.user);
 
-      await context.sendMessage(`Игра успешно добавлена ${game.steamGameName}`);
+      await context
+        .sendMessage(`Игра успешно добавлена ${game.steamGameName}`)
+        .then((message) =>
+          context.session.messagesId.gameAddMessagesId.push(message.message_id),
+        );
 
       return await this.askNextGame(context);
     });
@@ -60,20 +75,25 @@ export class GameAddCommand extends Command {
       const game = context.session.pendingGame?.shift();
       context.session.state = null;
 
-      await context.sendMessage(
-        `Отмена операции по добавлению ${game?.steamGameName}.`,
-      );
+      if (context.session.lastAskNextGameMessageId)
+        await context.deleteMessage(context.session.lastAskNextGameMessageId);
+
+      await context
+        .sendMessage(`Отмена операции по добавлению ${game?.steamGameName}.`)
+        .then((message) =>
+          context.session.messagesId.gameAddMessagesId.push(message.message_id),
+        );
 
       await this.askNextGame(context);
     });
   }
 
   private async handleAddGame(context: IBotContext, text: string) {
-    if (!text.trim()) {
-      return context.sendMessage("Введите название игры для добавления.");
-    }
-
-    if (!context.from?.id) throw new Error("Не определен пользователь");
+    if (!text.trim())
+      return notifyUserAboutError(
+        context,
+        "Введите название игры для добавления.",
+      );
 
     const games = text
       .split(",")
@@ -81,11 +101,14 @@ export class GameAddCommand extends Command {
       .filter((game) => game.length > 0);
 
     if (games.length === 0)
-      return await context.sendMessage("Не удалось распознать ни одной игры.");
+      return notifyUserAboutError(
+        context,
+        "Не удалось распознать ни одной игры.",
+      );
 
-    const user = await new UserService().getUserWithGames(context.from?.id);
+    const user = await new UserService().getUserWithGames(context.from!.id);
 
-    if (!user) return context.sendMessage("Пользователь не найден.");
+    if (!user) return console.log("Пользователь не найден.", context.from);
 
     const userNameGames =
       user?.games.map((game) => game.name.toLowerCase()) || [];
@@ -95,14 +118,20 @@ export class GameAddCommand extends Command {
       userNameGames.includes(game),
     );
 
-    if (newGames.length === 0) {
-      return await context.sendMessage("Все эти игры уже есть в вашем списке.");
-    }
+    if (newGames.length === 0)
+      return notifyUserAboutError(
+        context,
+        "Все эти игры уже есть в вашем списке.",
+      );
 
     if (alreadyAddedGames.length > 0) {
       const message = this.editMessageGames(alreadyAddedGames, true);
 
-      await context.sendMessage(message);
+      await context
+        .sendMessage(message)
+        .then((message) =>
+          context.session.messagesId.gameAddMessagesId.push(message.message_id),
+        );
     }
 
     const pendingGames: PendingGame[] = [];
@@ -134,10 +163,17 @@ export class GameAddCommand extends Command {
 
       const message = this.editMessageGames(addedGames, false, pendingGames);
 
-      return await context.sendMessage(message);
+      await context
+        .sendMessage(message)
+        .then((message) =>
+          context.session.messagesId.gameAddMessagesId.push(message.message_id),
+        );
     } catch (error) {
       console.error("Ошибка при сохранении игр:", error);
-      return await context.sendMessage("Произошла ошибка при добавлении игры.");
+      return notifyUserAboutError(
+        context,
+        "Произошла ошибка при добавлении игры.",
+      );
     }
   }
 
@@ -150,24 +186,28 @@ export class GameAddCommand extends Command {
       const game = await new GameService().saveGame(name, steamId);
       await new UserService().addUserGame(user, game);
     } catch (error) {
-      throw new Error("Произошла ошибка при добавлениие игры.");
+      console.error("Произошла ошибка при добавлениие игры.", error);
     }
   }
 
   private async askNextGame(context: IBotContext): Promise<void> {
     const game = context.session.pendingGame?.[0];
 
-    if (!game) {
-      return;
-    }
+    if (!game)
+      return notifyUserAboutError(context, "Произошла ошибка при выборе игры.");
 
-    await context.sendMessage(
-      `Добавить игру?\nНазвание: ${game.steamGameName}\nСсылка: ${game.href}`,
-      Markup.inlineKeyboard([
-        Markup.button.callback("Добавить", "confirm_add_game"),
-        Markup.button.callback("Отменить", "confirm_cancel_game"),
-      ]),
-    );
+    await context
+      .sendMessage(
+        `Добавить игру?\nНазвание: ${game.steamGameName}\nСсылка: ${game.href}`,
+        Markup.inlineKeyboard([
+          Markup.button.callback("Добавить", "confirm_add_game"),
+          Markup.button.callback("Отменить", "confirm_cancel_game"),
+        ]),
+      )
+      .then(
+        (message) =>
+          (context.session.lastAskNextGameMessageId = message.message_id),
+      );
   }
 
   private editMessageGames(

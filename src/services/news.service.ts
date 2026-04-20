@@ -1,7 +1,7 @@
 import { In } from "typeorm";
 
-import { AppDataSource } from "../config";
 import { Game, News } from "../entities";
+import { AppDataSource } from "../config/typeOrm.config";
 
 export class NewsService {
   async getNewsGame(ids: string[], gameId: string): Promise<News[]> {

@@ -1,4 +1,4 @@
-import { AppDataSource } from "../config";
+import { AppDataSource } from "../config/typeOrm.config";
 import { IGameSteamData } from "../context";
 import { Game, GameMeta } from "../entities";
 

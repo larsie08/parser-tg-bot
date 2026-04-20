@@ -3,6 +3,7 @@ import axios from "axios";
 import { JSDOM } from "jsdom";
 
 import { GameMetaService, GameService, UserService } from "../../services";
+import { notifyUserAboutError, timeoutDeleteMessage } from "../../utils";
 
 import { Command, IBotContext, IGameSteamData } from "../../context";
 import { Game } from "../../entities";
@@ -24,7 +25,13 @@ export class ParserCommand extends Command {
           ? context.callbackQuery.message.text
           : "";
 
-      await this.handlePriceCheck(context);
+      await context
+        .sendMessage("Выберите ресурс", Markup.keyboard(["Steam", "Отменить"]))
+        .then((message) =>
+          context.session.messagesId.gameParserMessageId.push(
+            message.message_id,
+          ),
+        );
     });
 
     this.bot.hears(
@@ -32,42 +39,46 @@ export class ParserCommand extends Command {
       async (context: IBotContext) => await this.handleSteamPrice(context),
     );
 
-    this.bot.hears("Отменить", (context: IBotContext) =>
-      this.cancelOperation(context),
-    );
+    this.bot.hears("Отменить", (context: IBotContext) => {
+      const userMessageId = context.message?.message_id;
+
+      this.cancelOperation(context, userMessageId);
+    });
   }
 
   private async handleGameSelection(context: IBotContext): Promise<void> {
     if (!context.from) {
-      context.sendMessage("Ошибка: не удалось определить пользователя.");
-      return;
+      return notifyUserAboutError(
+        context,
+        "Ошибка: не удалось определить пользователя.",
+      );
     }
 
     const user = await new UserService().getUserWithGames(context.from.id);
     const games = user?.games;
 
-    if (!games?.length) {
-      context.sendMessage("В списке отслеживаемого ничего не найдено");
-      return;
-    }
+    if (!games?.length)
+      return notifyUserAboutError(
+        context,
+        "В списке отслеживаемого ничего не найдено",
+      );
 
     context.session.state = "WAITING_GAME";
 
     for (const game of games) {
-      await context.reply(
-        game.name,
-        Markup.inlineKeyboard([
-          Markup.button.callback("Узнать цену", "check__game_price"),
-        ]),
-      );
+      await context
+        .sendMessage(
+          game.name,
+          Markup.inlineKeyboard([
+            Markup.button.callback("Узнать цену", "check__game_price"),
+          ]),
+        )
+        .then((message) =>
+          context.session.messagesId.gameParserMessageId.push(
+            message.message_id,
+          ),
+        );
     }
-  }
-
-  private async handlePriceCheck(context: IBotContext): Promise<void> {
-    await context.sendMessage(
-      "Выберите ресурс",
-      Markup.keyboard(["Steam", "Отменить"]),
-    );
   }
 
   private async handleSteamPrice(context: IBotContext): Promise<void> {
@@ -85,13 +96,19 @@ export class ParserCommand extends Command {
     const gameData = await this.fetchGameInfoSteam(game.steamId);
 
     if (!gameData) {
-      context.sendMessage("Не удалось получить данные о цене игры.");
-      return;
+      return notifyUserAboutError(
+        context,
+        "Не удалось получить данные о цене игры.",
+      );
     }
 
     await this.updateGameInfo(gameData, game);
 
-    await context.sendMessage(this.createGameMessage(gameData));
+    await context
+      .sendMessage(this.createGameMessage(gameData))
+      .then((message) =>
+        context.session.messagesId.gameParserMessageId.push(message.message_id),
+      );
   }
 
   async fetchGameInfoSteam(gameId: string): Promise<IGameSteamData | null> {
@@ -223,9 +240,20 @@ export class ParserCommand extends Command {
     return encodeURIComponent(game);
   }
 
-  private async cancelOperation(context: IBotContext): Promise<void> {
-    // context.deleteMessages(this.messagesId);
+  private async cancelOperation(
+    context: IBotContext,
+    userMessageId: number | undefined,
+  ): Promise<void> {
+    if (userMessageId) await context.deleteMessage(userMessageId);
+
+    await context.deleteMessages(
+      context.session.messagesId.gameParserMessageId,
+    );
+
     context.session.state = null;
-    await context.sendMessage("Отмена операции.");
+
+    const message = await context.sendMessage("Отмена операции.");
+
+    timeoutDeleteMessage(context, message.message_id);
   }
 }

@@ -10,9 +10,10 @@ import {
   GameNewsCommand,
 } from "./src/commands";
 
-import { AppDataSource, ConfigService, IConfigService } from "./src/config";
+import { Command, IBotContext, IConfigService } from "./src/context";
+import { AppDataSource } from "./src/config/typeOrm.config";
 
-import { Command, IBotContext } from "./src/context";
+import { ConfigService } from "./src/services";
 
 class Bot {
   bot: Telegraf<IBotContext>;
@@ -27,6 +28,13 @@ class Bot {
           state: null,
           parserSelectedGame: null,
           pendingGame: null,
+          messagesId: {
+            gameAddMessagesId: [],
+            gameDeleteMessagesId: [],
+            gameNewsMessagesId: [],
+            gameParserMessageId: [],
+          },
+          lastAskNextGameMessageId: null,
         }),
       }),
     );

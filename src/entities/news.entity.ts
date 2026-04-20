@@ -20,7 +20,7 @@ export class News {
   @Column()
   newsId!: string;
 
-  @ManyToOne(() => Game, (game) => game.news)
+  @ManyToOne(() => Game, (game) => game.news, { onDelete: "CASCADE" })
   @JoinColumn({ name: "game_id" })
   game!: Game;
 

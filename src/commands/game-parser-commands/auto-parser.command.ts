@@ -117,8 +117,16 @@ export class AutoParserCommand extends Command {
     await newsClass.saveNewsToDB(existedNews, game);
 
     if (existedNews.appnews.newsitems.length > 0) {
-      for (const user of game.users)
-        await newsClass.sendNewsToUser(existedNews, user.userId);
+      for (const user of game.users) {
+        for (const news of existedNews.appnews.newsitems) {
+          const message = newsClass.createNewsMessage(
+            news,
+            existedNews.appnews.newsitems,
+          );
+
+          await this.bot.telegram.sendMessage(user.userId, message);
+        }
+      }
     }
   }
 }

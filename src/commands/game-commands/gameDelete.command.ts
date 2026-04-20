@@ -1,6 +1,7 @@
 import { Markup, Telegraf } from "telegraf";
 
 import { GameService, UserService } from "../../services";
+import { notifyUserAboutError, timeoutDeleteMessage } from "../../utils";
 
 import { Game } from "../../entities";
 import { Command, IBotContext } from "../../context";
@@ -12,16 +13,11 @@ export class GameDeleteCommand extends Command {
 
   handle(): void {
     this.bot.action("game_delete", async (context: IBotContext) => {
-      const messagesId: number[] = [];
-
-      if (!context.from?.id) throw new Error("Не определен пользователь");
-
-      const user = await new UserService().getUserWithGames(context.from?.id);
+      const user = await new UserService().getUserWithGames(context.from!.id);
       const games = user?.games;
 
-      if (!games || games.length === 0) {
-        return context.sendMessage("У вас нет игр для удаления.");
-      }
+      if (!games || games.length === 0)
+        return notifyUserAboutError(context, "У вас нет игр для удаления.");
 
       for (const game of games) {
         await context
@@ -31,7 +27,11 @@ export class GameDeleteCommand extends Command {
               Markup.button.callback("Удалить", `delete_${game.id}`),
             ]),
           )
-          .then((message) => messagesId.push(message.message_id));
+          .then((message) =>
+            context.session.messagesId.gameDeleteMessagesId.push(
+              message.message_id,
+            ),
+          );
       }
 
       await context
@@ -41,30 +41,60 @@ export class GameDeleteCommand extends Command {
             Markup.button.callback("Отменить", "cancel_delete"),
           ]),
         )
-        .then((message) => messagesId.push(message.message_id));
-
-      this.bot.action("cancel_delete", async (ctx) => {
-        context.deleteMessages(messagesId);
-
-        await ctx.sendMessage("Удаление отменено.");
-      });
+        .then((message) =>
+          context.session.messagesId.gameDeleteMessagesId.push(
+            message.message_id,
+          ),
+        );
     });
 
     this.bot.action(/delete_(\d+)/, async (context: IBotContext) => {
-      const selectedGameName = (context.callbackQuery?.message as any).text;
+      const selectedGameName: string =
+        context.callbackQuery?.message &&
+        "text" in context.callbackQuery.message
+          ? context.callbackQuery.message.text
+          : "";
+
+      if (!selectedGameName)
+        return notifyUserAboutError(context, "Ошибка при выборе игры.");
 
       const game = await new GameService().getUserGame(selectedGameName);
 
-      if (!game) throw new Error(`Не удалось найти игру при удалении: ${game}`);
+      if (!game)
+        return notifyUserAboutError(
+          context,
+          `Не удалось найти игру при удалении: ${game}`,
+        );
 
       await this.handleDeleteGame(context, game);
 
-      await context.sendMessage(`Игра "${game.name}" успешно удалена.`);
+      await context
+        .sendMessage(`Игра "${game.name}" успешно удалена.`)
+        .then((message) =>
+          context.session.messagesId.gameDeleteMessagesId.push(
+            message.message_id,
+          ),
+        );
 
-      const gameMessageId = context.callbackQuery?.message?.message_id;
-      if (gameMessageId) {
-        await context.deleteMessage(gameMessageId);
+      if (context.callbackQuery?.message) {
+        try {
+          const gameMessageId = context.callbackQuery?.message?.message_id;
+
+          await context.deleteMessage(gameMessageId);
+        } catch (error) {
+          console.error("Не удалось удалить сообщение пользователя.", error);
+        }
       }
+    });
+
+    this.bot.action("cancel_delete", async (context: IBotContext) => {
+      await context.deleteMessages(
+        context.session.messagesId.gameDeleteMessagesId,
+      );
+
+      const message = await context.sendMessage("Удаление отменено.");
+
+      timeoutDeleteMessage(context, message.message_id);
     });
   }
 
@@ -74,7 +104,9 @@ export class GameDeleteCommand extends Command {
       await new GameService().deleteGame(game);
     } catch (error) {
       console.error("Ошибка при удалении игры:", error);
-      await context.sendMessage("Произошла ошибка при удалении игры.");
+      await context
+        .sendMessage("Произошла ошибка при удалении игры.")
+        .then((message) => message.message_id);
     }
   }
 }

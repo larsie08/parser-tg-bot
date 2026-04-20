@@ -1,4 +1,4 @@
-import { AppDataSource } from "../config";
+import { AppDataSource } from "../config/typeOrm.config";
 import { Game } from "../entities";
 
 export class GameService {
