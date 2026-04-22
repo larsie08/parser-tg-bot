@@ -4,6 +4,7 @@ import { ParserCommand } from "./parser.command";
 import { GameNewsCommand } from "./news.command";
 
 import { GameMetaService, GameService } from "../../services";
+import { createNewsMessage, filterRelevantNews } from "../../utils";
 
 import { Game } from "../../entities";
 import { Command, IBotContext, IGameSteamData } from "../../context";
@@ -112,15 +113,21 @@ export class AutoParserCommand extends Command {
       return console.log(`Не удалось получить новости для игры: ${game.name}`);
     }
 
-    const existedNews = await newsClass.compareNewNews(newsData, game.steamId);
+    const filteredNews = filterRelevantNews(newsData);
+
+    const existedNews = await newsClass.compareNewNews(
+      filteredNews,
+      game.steamId,
+    );
 
     await newsClass.saveNewsToDB(existedNews, game);
 
     if (existedNews.appnews.newsitems.length > 0) {
       for (const user of game.users) {
         for (const news of existedNews.appnews.newsitems) {
-          const message = newsClass.createNewsMessage(
+          const message = createNewsMessage(
             news,
+            game.name,
             existedNews.appnews.newsitems,
           );
 

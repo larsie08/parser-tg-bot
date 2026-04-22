@@ -2,9 +2,13 @@ import { Markup, Telegraf } from "telegraf";
 import axios from "axios";
 
 import { GameService, NewsService, UserService } from "../../services";
-import { notifyUserAboutError } from "../../utils";
+import {
+  createNewsMessage,
+  filterRelevantNews,
+  notifyUserAboutError,
+} from "../../utils";
 
-import { Command, GameNewsInfo, IBotContext, NewsItem } from "../../context";
+import { Command, GameNewsInfo, IBotContext } from "../../context";
 import { Game } from "../../entities";
 
 export class GameNewsCommand extends Command {
@@ -56,13 +60,18 @@ export class GameNewsCommand extends Command {
           "Не удалось получить ни одной новости.",
         );
 
-      const newNews = await this.compareNewNews(news, selectedGame.steamId);
+      const filteredNews = filterRelevantNews(news);
+
+      const newNews = await this.compareNewNews(
+        filteredNews,
+        selectedGame.steamId,
+      );
 
       if (!news) return notifyUserAboutError(context, "Новости не найдены.");
 
       await this.saveNewsToDB(newNews, selectedGame);
 
-      await this.sendNewsToUser(context, news);
+      await this.sendNewsToUser(context, news, selectedGame.name);
     });
   }
 
@@ -85,7 +94,7 @@ export class GameNewsCommand extends Command {
   async fetchGameNews(gameId: string): Promise<GameNewsInfo | null> {
     try {
       const { data } = await axios.get(
-        `http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=${gameId}&count=2&maxlength=300&format=json`,
+        `http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=${gameId}&count=3&maxlength=300&format=json`,
       );
       return data;
     } catch (error) {
@@ -127,20 +136,11 @@ export class GameNewsCommand extends Command {
   private async sendNewsToUser(
     context: IBotContext,
     news: GameNewsInfo,
+    gameName: string,
   ): Promise<void> {
     for (const item of news.appnews.newsitems) {
-      const message = this.createNewsMessage(item, news.appnews.newsitems);
+      const message = createNewsMessage(item, gameName, news.appnews.newsitems);
       await context.sendMessage(message).then((message) => message.message_id);
     }
-  }
-
-  createNewsMessage(currentNews: NewsItem, news?: NewsItem[]): string {
-    let message: string = `Новость: ${currentNews.title}\nТекст: ${currentNews.contents}\nСсылка: ${currentNews.url}`;
-
-    if (news && !news.some((item) => item.gid === currentNews.gid)) {
-      message = `Новая новость!\nНовость: ${currentNews.title}\nТекст: ${currentNews.contents}\nСсылка: ${currentNews.url}`;
-    }
-
-    return message;
   }
 }

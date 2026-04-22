@@ -27,5 +27,8 @@ export type NewsItem = {
   contents: string;
   title: string;
   url: string;
+  feed_type: number;
+  feedname: string;
+  feedlabel: string;
   tags: string[];
 };
