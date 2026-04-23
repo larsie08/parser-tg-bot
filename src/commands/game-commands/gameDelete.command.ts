@@ -7,13 +7,17 @@ import { Game } from "../../entities";
 import { Command, IBotContext } from "../../context";
 
 export class GameDeleteCommand extends Command {
-  constructor(bot: Telegraf<IBotContext>) {
+  constructor(
+    bot: Telegraf<IBotContext>,
+    private userService: UserService,
+    private gameService: GameService,
+  ) {
     super(bot);
   }
 
   handle(): void {
     this.bot.action("game_delete", async (context: IBotContext) => {
-      const user = await new UserService().getUserWithGames(context.from!.id);
+      const user = await this.userService.getUserWithGames(context.from!.id);
       const games = user?.games;
 
       if (!games || games.length === 0)
@@ -100,8 +104,8 @@ export class GameDeleteCommand extends Command {
 
   private async handleDeleteGame(context: IBotContext, game: Game) {
     try {
-      await new UserService().deleteUserGame(context.from!.id, game);
-      await new GameService().deleteGame(game);
+      await this.userService.deleteUserGame(context.from!.id, game);
+      await this.gameService.deleteGame(game);
     } catch (error) {
       console.error("Ошибка при удалении игры:", error);
       await context

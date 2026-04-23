@@ -3,13 +3,22 @@ import axios from "axios";
 import { JSDOM } from "jsdom";
 
 import { GameMetaService, GameService, UserService } from "../../services";
-import { notifyUserAboutError, timeoutDeleteMessage } from "../../utils";
+import {
+  createGameMessage,
+  notifyUserAboutError,
+  timeoutDeleteMessage,
+} from "../../utils";
 
 import { Command, IBotContext, IGameSteamData } from "../../context";
 import { Game } from "../../entities";
 
 export class ParserCommand extends Command {
-  constructor(bot: Telegraf<IBotContext>) {
+  constructor(
+    bot: Telegraf<IBotContext>,
+    private gameMetaService: GameMetaService,
+    private userService: UserService,
+    private gameService: GameService,
+  ) {
     super(bot);
   }
 
@@ -54,7 +63,7 @@ export class ParserCommand extends Command {
       );
     }
 
-    const user = await new UserService().getUserWithGames(context.from.id);
+    const user = await this.userService.getUserWithGames(context.from.id);
     const games = user?.games;
 
     if (!games?.length)
@@ -87,7 +96,7 @@ export class ParserCommand extends Command {
         `Произошла ошибка с контекстом бота ${context.session.parserSelectedGame}`,
       );
 
-    const game = await new GameService().getUserGame(
+    const game = await this.gameService.getUserGame(
       context.session.parserSelectedGame,
     );
 
@@ -95,17 +104,16 @@ export class ParserCommand extends Command {
 
     const gameData = await this.fetchGameInfoSteam(game.steamId);
 
-    if (!gameData) {
+    if (!gameData)
       return notifyUserAboutError(
         context,
         "Не удалось получить данные о цене игры.",
       );
-    }
 
     await this.updateGameInfo(gameData, game);
 
     await context
-      .sendMessage(this.createGameMessage(gameData))
+      .sendMessage(createGameMessage(gameData, game))
       .then((message) =>
         context.session.messagesId.gameParserMessageId.push(message.message_id),
       );
@@ -180,49 +188,6 @@ export class ParserCommand extends Command {
     }
   }
 
-  createGameMessage(
-    gameData: IGameSteamData,
-    diff?: Partial<IGameSteamData>,
-  ): string {
-    const messageParts: string[] = [`🎮 *Название:* ${gameData.name}`];
-
-    if ("sales" in gameData && gameData.sales) {
-      messageParts.push(
-        `💰 *Цена:* ${gameData.price}`,
-        `📊 *Продаж:* ${gameData.sales}`,
-      );
-    } else if (gameData.releaseDate) {
-      messageParts.push(`📅 *Дата выхода:* ${gameData.releaseDate}`);
-      if (gameData.releaseTime) {
-        messageParts.push(`⏰ *Время выхода:* ${gameData.releaseTime}`);
-      }
-    } else if (gameData.oldPrice && gameData.discount) {
-      messageParts.push(
-        `💸 *Старая цена:* ${gameData.oldPrice}`,
-        `💰 *Новая цена:* ${gameData.price}`,
-        `🔥 *Скидка:* ${gameData.discount}`,
-      );
-    } else {
-      messageParts.push(`💰 *Цена:* ${gameData.price}`);
-    }
-
-    messageParts.push(`🔗 [Ссылка](${gameData.href})`);
-
-    const changedFields = Object.keys(diff ?? {});
-
-    let prefix = "";
-
-    if (changedFields.includes("price") || changedFields.includes("oldPrice")) {
-      prefix = "🔔 *Изменение цены!*\n";
-    } else if (changedFields.includes("releaseDate")) {
-      prefix = "📅 *Изменение даты выхода!*\n";
-    } else if (changedFields.includes("releaseTime")) {
-      prefix = "⏰ *Изменение времени выхода!*\n";
-    }
-
-    return prefix + messageParts.join("\n");
-  }
-
   private async updateGameInfo(
     gameData: IGameSteamData,
     game: Game,
@@ -233,11 +198,7 @@ export class ParserCommand extends Command {
     )
       return;
 
-    return await new GameMetaService().upsertMetaInfo(gameData, game);
-  }
-
-  handleFormatUrlSearch(game: string): string {
-    return encodeURIComponent(game);
+    return await this.gameMetaService.upsertMetaInfo(gameData, game);
   }
 
   private async cancelOperation(

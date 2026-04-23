@@ -3,21 +3,36 @@ import { Telegraf } from "telegraf";
 import { ParserCommand } from "./parser.command";
 import { GameNewsCommand } from "./news.command";
 
-import { GameMetaService, GameService } from "../../services";
-import { createNewsMessage, filterRelevantNews } from "../../utils";
+import {
+  GameMetaService,
+  GameService,
+  NewsService,
+  UserService,
+} from "../../services";
+import {
+  createGameMessage,
+  createNewsMessage,
+  filterRelevantNews,
+} from "../../utils";
 
 import { Game } from "../../entities";
 import { Command, IBotContext, IGameSteamData } from "../../context";
 
 export class AutoParserCommand extends Command {
-  constructor(bot: Telegraf<IBotContext>) {
+  constructor(
+    bot: Telegraf<IBotContext>,
+    private gameService: GameService,
+    private gameMetaService: GameMetaService,
+    private userService: UserService,
+    private newsService: NewsService,
+  ) {
     super(bot);
   }
 
   async handle(): Promise<void> {
     setInterval(
       async () => {
-        const games = await new GameService().getGamesOfUsers();
+        const games = await this.gameService.getGamesOfUsers();
 
         if (!games) throw new Error("Не найдено ни одной игры.");
 
@@ -36,8 +51,18 @@ export class AutoParserCommand extends Command {
   }
 
   private async autoParser(game: Game): Promise<void> {
-    const parserClass = new ParserCommand(this.bot);
-    const newsClass = new GameNewsCommand(this.bot);
+    const parserClass = new ParserCommand(
+      this.bot,
+      this.gameMetaService,
+      this.userService,
+      this.gameService,
+    );
+    const newsClass = new GameNewsCommand(
+      this.bot,
+      this.newsService,
+      this.userService,
+      this.gameService,
+    );
 
     try {
       const steamGameData = await parserClass.fetchGameInfoSteam(game.steamId);
@@ -45,7 +70,7 @@ export class AutoParserCommand extends Command {
       if (!steamGameData)
         throw new Error(`Ошибка при обработке игры ${game.name}:`);
 
-      this.processSteamGame(steamGameData, game, parserClass);
+      this.processSteamGame(steamGameData, game);
       this.processGameNews(game, newsClass);
     } catch (error) {
       throw new Error(`Ошибка при обработке игры ${game.name}:`);
@@ -55,19 +80,15 @@ export class AutoParserCommand extends Command {
   private async processSteamGame(
     steamGameData: IGameSteamData,
     game: Game,
-    parserClass: ParserCommand,
   ): Promise<void> {
     const changesDetected = await this.getDiffData(game, steamGameData);
     const hasAnyChange = Object.values(changesDetected).length;
 
     if (game.meta || hasAnyChange === 0) return;
 
-    await new GameMetaService().upsertMetaInfo(steamGameData, game);
+    await this.gameMetaService.upsertMetaInfo(steamGameData, game);
 
-    const message = parserClass.createGameMessage(
-      steamGameData,
-      changesDetected,
-    );
+    const message = createGameMessage(steamGameData, changesDetected);
 
     for (const user of game.users)
       await this.bot.telegram.sendMessage(user.userId, message);
@@ -79,7 +100,7 @@ export class AutoParserCommand extends Command {
   ): Promise<Partial<IGameSteamData>> {
     const changes: Partial<IGameSteamData> = {};
     const meta: Partial<IGameSteamData> =
-      (await new GameMetaService().getMetaInfo(game)) ?? {};
+      (await this.gameMetaService.getMetaInfo(game)) ?? {};
 
     for (const key of Object.keys(steamGameData) as (keyof IGameSteamData)[]) {
       if (key === "name" || key === "href") continue;

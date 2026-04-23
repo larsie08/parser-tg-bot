@@ -13,7 +13,13 @@ import {
 import { Command, IBotContext, IConfigService } from "./src/context";
 import { AppDataSource } from "./src/config/typeOrm.config";
 
-import { ConfigService } from "./src/services";
+import {
+  GameMetaService,
+  GameService,
+  NewsService,
+  UserService,
+} from "./src/services";
+import { ConfigService } from "./src/config";
 
 class Bot {
   bot: Telegraf<IBotContext>;
@@ -41,14 +47,26 @@ class Bot {
   }
 
   init() {
+    const gameService = new GameService();
+    const gameMetaService = new GameMetaService();
+    const newsService = new NewsService();
+    const userService = new UserService();
+
     this.commands = [
-      new StartCommand(this.bot),
-      new ParserCommand(this.bot),
-      new GameAddCommand(this.bot),
-      new GameDeleteCommand(this.bot),
-      new AutoParserCommand(this.bot),
-      new GameNewsCommand(this.bot),
+      new StartCommand(this.bot, userService),
+      new ParserCommand(this.bot, gameMetaService, userService, gameService),
+      new GameAddCommand(this.bot, userService, gameService),
+      new GameDeleteCommand(this.bot, userService, gameService),
+      new AutoParserCommand(
+        this.bot,
+        gameService,
+        gameMetaService,
+        userService,
+        newsService,
+      ),
+      new GameNewsCommand(this.bot, newsService, userService, gameService),
     ];
+
     for (const command of this.commands) {
       command.handle();
     }

@@ -2,16 +2,18 @@ import { Markup, Telegraf } from "telegraf";
 import axios from "axios";
 import { JSDOM } from "jsdom";
 
-import { ParserCommand } from "../game-parser-commands/parser.command";
-
 import { GameService, UserService } from "../../services";
 
 import { User } from "../../entities";
 import { Command, IBotContext, PendingGame } from "../../context";
-import { notifyUserAboutError } from "../../utils";
+import { handleFormatUrlSearch, notifyUserAboutError } from "../../utils";
 
 export class GameAddCommand extends Command {
-  constructor(bot: Telegraf<IBotContext>) {
+  constructor(
+    bot: Telegraf<IBotContext>,
+    private userService: UserService,
+    private gameService: GameService,
+  ) {
     super(bot);
   }
 
@@ -106,7 +108,7 @@ export class GameAddCommand extends Command {
         "Не удалось распознать ни одной игры.",
       );
 
-    const user = await new UserService().getUserWithGames(context.from!.id);
+    const user = await this.userService?.getUserWithGames(context.from!.id);
 
     if (!user) return console.log("Пользователь не найден.", context.from);
 
@@ -183,8 +185,8 @@ export class GameAddCommand extends Command {
     user: User,
   ): Promise<void> {
     try {
-      const game = await new GameService().saveGame(name, steamId);
-      await new UserService().addUserGame(user, game);
+      const game = await this.gameService.saveGame(name, steamId);
+      await this.userService.addUserGame(user, game);
     } catch (error) {
       console.error("Произошла ошибка при добавлениие игры.", error);
     }
@@ -239,9 +241,7 @@ export class GameAddCommand extends Command {
   private async getSteamInfo(
     gameName: string,
   ): Promise<{ name: string; steamId: string; href: string }> {
-    const parserCommand = new ParserCommand(this.bot);
-
-    const url = parserCommand.handleFormatUrlSearch(gameName);
+    const url = handleFormatUrlSearch(gameName);
     const data = await this.fetchGameInfoSteam(url);
 
     if (!data) {

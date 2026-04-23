@@ -12,7 +12,12 @@ import { Command, GameNewsInfo, IBotContext } from "../../context";
 import { Game } from "../../entities";
 
 export class GameNewsCommand extends Command {
-  constructor(bot: Telegraf<IBotContext>) {
+  constructor(
+    bot: Telegraf<IBotContext>,
+    private newsService: NewsService,
+    private userService: UserService,
+    private gameService: GameService,
+  ) {
     super(bot);
   }
 
@@ -20,7 +25,7 @@ export class GameNewsCommand extends Command {
     this.bot.action("check_news", async (context: IBotContext) => {
       if (!context.from?.id) throw new Error("Не определен пользователь");
 
-      const user = await new UserService().getUserWithGames(context.from.id);
+      const user = await this.userService.getUserWithGames(context.from.id);
 
       const games = user?.games;
 
@@ -43,9 +48,7 @@ export class GameNewsCommand extends Command {
       if (!selectedGameName)
         return notifyUserAboutError(context, "Ошибка при выборе игры.");
 
-      const selectedGame = await new GameService().getUserGame(
-        selectedGameName,
-      );
+      const selectedGame = await this.gameService.getUserGame(selectedGameName);
 
       if (!selectedGame) {
         console.log("Игра не найдена:", selectedGame);
@@ -109,7 +112,7 @@ export class GameNewsCommand extends Command {
   ): Promise<GameNewsInfo> {
     const ids = news.appnews.newsitems.map((item) => item.gid);
 
-    const existingNews = await new NewsService().getNewsGame(ids, gameSteamId);
+    const existingNews = await this.newsService.getNewsGame(ids, gameSteamId);
 
     const existingIds = new Set(existingNews.map((item) => item.newsId));
 
@@ -129,7 +132,7 @@ export class GameNewsCommand extends Command {
     const newsItems = news.appnews.newsitems;
 
     for (const item of newsItems) {
-      await new NewsService().saveNewsGame(item.title, item.gid, game);
+      await this.newsService.saveNewsGame(item.title, item.gid, game);
     }
   }
 

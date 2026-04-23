@@ -13,7 +13,10 @@ export class GameMetaService {
 
     Object.assign(meta, {
       price: gameData.price,
-      oldPrice: gameData.oldPrice ?? null,
+      oldPrice:
+        meta.oldPrice && gameData.price && meta.oldPrice >= gameData.price
+          ? gameData.price
+          : meta.oldPrice || null,
       discount: gameData.discount ?? null,
       releaseDate: gameData.releaseDate ?? null,
       releaseTime: gameData.releaseTime ?? null,

@@ -6,7 +6,10 @@ import { User } from "../entities";
 import { Command, IBotContext } from "../context";
 
 export class StartCommand extends Command {
-  constructor(bot: Telegraf<IBotContext>) {
+  constructor(
+    bot: Telegraf<IBotContext>,
+    private userService: UserService,
+  ) {
     super(bot);
   }
 
@@ -56,13 +59,13 @@ export class StartCommand extends Command {
     if (!context.from)
       throw new Error("Не удалось определить пользователя при добавлении.");
 
-    const currentUser = await new UserService().getUser(context.from?.id);
+    const currentUser = await this.userService.getUser(context.from?.id);
 
     if (!currentUser) {
       console.log("Пользователь не найден, добавляем в базу...");
 
       try {
-        const user = await new UserService().saveUser(
+        const user = await this.userService.saveUser(
           context.from?.id,
           context.from?.first_name,
         );
