@@ -1,11 +1,17 @@
 import { Markup, Telegraf } from "telegraf";
-import axios from "axios";
 
-import { GameService, NewsService, UserService } from "../../services";
 import {
+  GameService,
+  NewsService,
+  SteamService,
+  UserService,
+} from "../../services";
+import {
+  compareNewNews,
   createNewsMessage,
   filterRelevantNews,
   notifyUserAboutError,
+  sendAndTrackMessage,
 } from "../../utils";
 
 import { Command, GameNewsInfo, IBotContext } from "../../context";
@@ -17,6 +23,7 @@ export class GameNewsCommand extends Command {
     private newsService: NewsService,
     private userService: UserService,
     private gameService: GameService,
+    private steamService: SteamService,
   ) {
     super(bot);
   }
@@ -55,7 +62,7 @@ export class GameNewsCommand extends Command {
         return notifyUserAboutError(context, "Игра не найдена.");
       }
 
-      const news = await this.fetchGameNews(selectedGame.steamId);
+      const news = await this.steamService.fetchGameNews(selectedGame.steamId);
 
       if (!news)
         return notifyUserAboutError(
@@ -65,10 +72,7 @@ export class GameNewsCommand extends Command {
 
       const filteredNews = filterRelevantNews(news);
 
-      const newNews = await this.compareNewNews(
-        filteredNews,
-        selectedGame.steamId,
-      );
+      const newNews = await compareNewNews(filteredNews, selectedGame.steamId);
 
       if (!news) return notifyUserAboutError(context, "Новости не найдены.");
 
@@ -94,41 +98,7 @@ export class GameNewsCommand extends Command {
     }
   }
 
-  async fetchGameNews(gameId: string): Promise<GameNewsInfo | null> {
-    try {
-      const { data } = await axios.get(
-        `http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=${gameId}&count=3&maxlength=300&format=json`,
-      );
-      return data;
-    } catch (error) {
-      console.error("Ошибка при запросе новостей Steam:", error);
-      return null;
-    }
-  }
-
-  async compareNewNews(
-    news: GameNewsInfo,
-    gameSteamId: string,
-  ): Promise<GameNewsInfo> {
-    const ids = news.appnews.newsitems.map((item) => item.gid);
-
-    const existingNews = await this.newsService.getNewsGame(ids, gameSteamId);
-
-    const existingIds = new Set(existingNews.map((item) => item.newsId));
-
-    const newNewsItems = news.appnews.newsitems.filter(
-      (item) => !existingIds.has(item.gid),
-    );
-
-    return {
-      appnews: {
-        ...news.appnews,
-        newsitems: newNewsItems,
-      },
-    };
-  }
-
-  async saveNewsToDB(news: GameNewsInfo, game: Game): Promise<void> {
+  private async saveNewsToDB(news: GameNewsInfo, game: Game): Promise<void> {
     const newsItems = news.appnews.newsitems;
 
     for (const item of newsItems) {
@@ -142,8 +112,11 @@ export class GameNewsCommand extends Command {
     gameName: string,
   ): Promise<void> {
     for (const item of news.appnews.newsitems) {
-      const message = createNewsMessage(item, gameName, news.appnews.newsitems);
-      await context.sendMessage(message).then((message) => message.message_id);
+      await sendAndTrackMessage(
+        context,
+        createNewsMessage(item, gameName, news.appnews.newsitems),
+        "gameNewsMessagesId",
+      );
     }
   }
 }

@@ -1,11 +1,15 @@
 import { Markup, Telegraf } from "telegraf";
-import axios from "axios";
-import { JSDOM } from "jsdom";
 
-import { GameMetaService, GameService, UserService } from "../../services";
+import {
+  GameMetaService,
+  GameService,
+  SteamService,
+  UserService,
+} from "../../services";
 import {
   createGameMessage,
   notifyUserAboutError,
+  sendAndTrackMessage,
   timeoutDeleteMessage,
 } from "../../utils";
 
@@ -18,6 +22,7 @@ export class ParserCommand extends Command {
     private gameMetaService: GameMetaService,
     private userService: UserService,
     private gameService: GameService,
+    private steamService: SteamService,
   ) {
     super(bot);
   }
@@ -102,7 +107,7 @@ export class ParserCommand extends Command {
 
     if (!game) throw new Error("Не удалось найти игру в базе данных.");
 
-    const gameData = await this.fetchGameInfoSteam(game.steamId);
+    const gameData = await this.steamService.fetchGameInfoSteam(game.steamId);
 
     if (!gameData)
       return notifyUserAboutError(
@@ -112,80 +117,11 @@ export class ParserCommand extends Command {
 
     await this.updateGameInfo(gameData, game);
 
-    await context
-      .sendMessage(createGameMessage(gameData, game))
-      .then((message) =>
-        context.session.messagesId.gameParserMessageId.push(message.message_id),
-      );
-  }
-
-  async fetchGameInfoSteam(gameId: string): Promise<IGameSteamData | null> {
-    try {
-      const { data } = await axios.get(
-        `https://store.steampowered.com/app/${gameId}`,
-      );
-      return this.parseSteamData(data);
-    } catch (error) {
-      console.error("Ошибка при получении данных с Steam:", error);
-      return null;
-    }
-  }
-
-  private parseSteamData(data: string): IGameSteamData | null {
-    try {
-      const dom = new JSDOM(data);
-      const gameArea = dom.window.document.getElementById("game_area_purchase");
-
-      if (!gameArea) return null;
-
-      const nameElement = dom.window.document.getElementById("appHubAppName");
-      const priceElement = gameArea?.getElementsByClassName(
-        "game_purchase_price",
-      )[0];
-      const discountPriceElement = gameArea.getElementsByClassName(
-        "discount_final_price",
-      )[0];
-      const oldPriceElement = gameArea.getElementsByClassName(
-        "discount_original_price",
-      )[0];
-      const discountElement =
-        gameArea.getElementsByClassName("discount_pct")[0];
-      const hrefElement = dom.window.document
-        .getElementsByClassName("blockbg")[0]
-        .querySelectorAll("a");
-      const releaseDateElement = dom.window.document
-        .getElementById("game_area_purchase")
-        ?.getElementsByClassName("game_area_comingsoon")[0];
-
-      const name = nameElement?.textContent || "Название недоступно";
-      const price =
-        priceElement?.textContent?.trim() ||
-        discountPriceElement?.textContent?.trim();
-
-      const oldPrice = oldPriceElement?.textContent;
-      const discount = discountElement?.textContent;
-      const href = hrefElement[hrefElement.length - 1].href;
-      const releaseDate = releaseDateElement
-        ?.querySelector("h1")
-        ?.querySelector("span")
-        ?.textContent?.trim();
-      const releaseTime = releaseDateElement
-        ?.querySelector("p")
-        ?.textContent?.trim();
-
-      return {
-        name,
-        price,
-        oldPrice,
-        discount,
-        href,
-        releaseDate,
-        releaseTime,
-      };
-    } catch (error) {
-      console.error("Ошибка при разборе данных Steam:", error);
-      return null;
-    }
+    await sendAndTrackMessage(
+      context,
+      createGameMessage(gameData, game),
+      "gameParserMessageId",
+    );
   }
 
   private async updateGameInfo(

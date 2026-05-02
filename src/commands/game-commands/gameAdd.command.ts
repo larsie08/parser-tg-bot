@@ -1,18 +1,21 @@
 import { Markup, Telegraf } from "telegraf";
-import axios from "axios";
-import { JSDOM } from "jsdom";
 
-import { GameService, UserService } from "../../services";
+import { GameService, SteamService, UserService } from "../../services";
+import {
+  handleFormatUrlSearch,
+  notifyUserAboutError,
+  sendAndTrackMessage,
+} from "../../utils";
 
 import { User } from "../../entities";
 import { Command, IBotContext, PendingGame } from "../../context";
-import { handleFormatUrlSearch, notifyUserAboutError } from "../../utils";
 
 export class GameAddCommand extends Command {
   constructor(
     bot: Telegraf<IBotContext>,
     private userService: UserService,
     private gameService: GameService,
+    private steamService: SteamService,
   ) {
     super(bot);
   }
@@ -64,11 +67,11 @@ export class GameAddCommand extends Command {
 
       await this.saveGame(game.steamGameName, game.steamId, game.user);
 
-      await context
-        .sendMessage(`Игра успешно добавлена ${game.steamGameName}`)
-        .then((message) =>
-          context.session.messagesId.gameAddMessagesId.push(message.message_id),
-        );
+      await sendAndTrackMessage(
+        context,
+        `Игра успешно добавлена ${game.steamGameName}`,
+        "gameAddMessagesId",
+      );
 
       return await this.askNextGame(context);
     });
@@ -80,27 +83,18 @@ export class GameAddCommand extends Command {
       if (context.session.lastAskNextGameMessageId)
         await context.deleteMessage(context.session.lastAskNextGameMessageId);
 
-      await context
-        .sendMessage(`Отмена операции по добавлению ${game?.steamGameName}.`)
-        .then((message) =>
-          context.session.messagesId.gameAddMessagesId.push(message.message_id),
-        );
+      await sendAndTrackMessage(
+        context,
+        `Отмена операции по добавлению ${game?.steamGameName}.`,
+        "gameAddMessagesId",
+      );
 
       await this.askNextGame(context);
     });
   }
 
   private async handleAddGame(context: IBotContext, text: string) {
-    if (!text.trim())
-      return notifyUserAboutError(
-        context,
-        "Введите название игры для добавления.",
-      );
-
-    const games = text
-      .split(",")
-      .map((game) => game.trim())
-      .filter((game) => game.length > 0);
+    const games = this.parseGameNamesFromMessage(text);
 
     if (games.length === 0)
       return notifyUserAboutError(
@@ -108,17 +102,11 @@ export class GameAddCommand extends Command {
         "Не удалось распознать ни одной игры.",
       );
 
-    const user = await this.userService?.getUserWithGames(context.from!.id);
+    const user = await this.userService.getUserWithGames(context.from!.id);
 
     if (!user) return console.log("Пользователь не найден.", context.from);
 
-    const userNameGames =
-      user?.games.map((game) => game.name.toLowerCase()) || [];
-
-    const newGames = games.filter((game) => !userNameGames?.includes(game));
-    const alreadyAddedGames = games.filter((game) =>
-      userNameGames.includes(game),
-    );
+    const { newGames, alreadyAddedGames } = this.filterGames(games, user);
 
     if (newGames.length === 0)
       return notifyUserAboutError(
@@ -127,35 +115,18 @@ export class GameAddCommand extends Command {
       );
 
     if (alreadyAddedGames.length > 0) {
-      const message = this.editMessageGames(alreadyAddedGames, true);
-
-      await context
-        .sendMessage(message)
-        .then((message) =>
-          context.session.messagesId.gameAddMessagesId.push(message.message_id),
-        );
+      await sendAndTrackMessage(
+        context,
+        this.editMessageGames(alreadyAddedGames, true),
+        "gameAddMessagesId",
+      );
     }
 
-    const pendingGames: PendingGame[] = [];
-    const addedGames: string[] = [];
-
     try {
-      for (const gameName of newGames) {
-        const steamInfo = await this.getSteamInfo(gameName);
-
-        if (steamInfo.name.toLowerCase() === gameName.toLowerCase()) {
-          await this.saveGame(steamInfo.name, steamInfo.steamId, user);
-          addedGames.push(steamInfo.name);
-          continue;
-        }
-
-        pendingGames.push({
-          steamGameName: steamInfo.name,
-          steamId: steamInfo.steamId,
-          user,
-          href: steamInfo.href,
-        });
-      }
+      const { addedGames, pendingGames } = await this.processGames(
+        newGames,
+        user,
+      );
 
       if (pendingGames.length > 0) {
         context.session.pendingGame = pendingGames;
@@ -163,13 +134,11 @@ export class GameAddCommand extends Command {
         await this.askNextGame(context);
       }
 
-      const message = this.editMessageGames(addedGames, false, pendingGames);
-
-      await context
-        .sendMessage(message)
-        .then((message) =>
-          context.session.messagesId.gameAddMessagesId.push(message.message_id),
-        );
+      await sendAndTrackMessage(
+        context,
+        this.editMessageGames(addedGames, false, pendingGames),
+        "gameAddMessagesId",
+      );
     } catch (error) {
       console.error("Ошибка при сохранении игр:", error);
       return notifyUserAboutError(
@@ -177,6 +146,73 @@ export class GameAddCommand extends Command {
         "Произошла ошибка при добавлении игры.",
       );
     }
+  }
+
+  private parseGameNamesFromMessage(text: string): string[] {
+    if (!text?.trim()) return [];
+
+    return text
+      .split(",")
+      .map((game) => game.trim())
+      .filter((game) => game.length > 0);
+  }
+
+  private filterGames(
+    games: string[],
+    user: User,
+  ): { newGames: string[]; alreadyAddedGames: string[] } {
+    const existing = user.games.map((g) => g.name.toLowerCase());
+
+    return {
+      newGames: games.filter((g) => !existing.includes(g.toLowerCase())),
+      alreadyAddedGames: games.filter((g) =>
+        existing.includes(g.toLowerCase()),
+      ),
+    };
+  }
+
+  private async processGames(
+    games: string[],
+    user: User,
+  ): Promise<{ addedGames: string[]; pendingGames: PendingGame[] }> {
+    const addedGames: string[] = [];
+    const pendingGames: PendingGame[] = [];
+
+    for (const gameName of games) {
+      const steamInfo = await this.getSteamInfo(gameName);
+
+      if (steamInfo.name.toLowerCase() === gameName.toLowerCase()) {
+        await this.saveGame(steamInfo.name, steamInfo.steamId, user);
+        addedGames.push(steamInfo.name);
+        continue;
+      }
+
+      pendingGames.push({
+        steamGameName: steamInfo.name,
+        steamId: steamInfo.steamId,
+        user,
+        href: steamInfo.href,
+      });
+    }
+
+    return { addedGames, pendingGames };
+  }
+
+  async getSteamInfo(
+    gameName: string,
+  ): Promise<{ name: string; steamId: string; href: string }> {
+    const url = handleFormatUrlSearch(gameName);
+    const data = await this.steamService.fetchGameIdSteam(url);
+
+    if (!data) {
+      throw new Error("Ошибка при получении данных с Steam:");
+    }
+
+    return {
+      name: data.name,
+      steamId: data.href.split("/")[4],
+      href: data.href,
+    };
   }
 
   private async saveGame(
@@ -236,61 +272,5 @@ export class GameAddCommand extends Command {
       : games.length === 1
         ? `Игра успешно добавлена: ${games[0]}`
         : `Игры успешно добавлены: ${games.join(", ")}`;
-  }
-
-  private async getSteamInfo(
-    gameName: string,
-  ): Promise<{ name: string; steamId: string; href: string }> {
-    const url = handleFormatUrlSearch(gameName);
-    const data = await this.fetchGameInfoSteam(url);
-
-    if (!data) {
-      throw new Error("Ошибка при получении данных с Steam:");
-    }
-
-    return {
-      name: data.name,
-      steamId: data.href.split("/")[4],
-      href: data.href,
-    };
-  }
-
-  private async fetchGameInfoSteam(
-    gameUrl: string,
-  ): Promise<{ href: string; name: string } | null> {
-    try {
-      const { data } = await axios.get(
-        `https://store.steampowered.com/search/?term=${gameUrl}&ignore_preferences=1`,
-      );
-      return this.parseSteamIdData(data);
-    } catch (error) {
-      console.error("Ошибка при получении данных с Steam:", error);
-      return null;
-    }
-  }
-
-  private parseSteamIdData(
-    data: string,
-  ): { href: string; name: string } | null {
-    try {
-      const dom = new JSDOM(data);
-      const gameBlock = dom.window.document
-        .getElementById("search_resultsRows")
-        ?.querySelector("a");
-
-      const gameName = gameBlock
-        ?.getElementsByClassName("search_name")[0]
-        .querySelector("span")?.textContent;
-
-      if (!gameName || !gameBlock.href) {
-        console.log("Ошибка при разборе данных Steam:", gameName, gameBlock);
-        return null;
-      }
-
-      return { href: gameBlock.href, name: gameName };
-    } catch (error) {
-      console.error("Ошибка при разборе данных Steam:", error);
-      return null;
-    }
   }
 }

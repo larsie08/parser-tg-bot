@@ -17,6 +17,7 @@ import {
   GameMetaService,
   GameService,
   NewsService,
+  SteamService,
   UserService,
 } from "./src/services";
 import { ConfigService } from "./src/config";
@@ -51,20 +52,33 @@ class Bot {
     const gameMetaService = new GameMetaService();
     const newsService = new NewsService();
     const userService = new UserService();
+    const steamService = new SteamService();
 
     this.commands = [
       new StartCommand(this.bot, userService),
-      new ParserCommand(this.bot, gameMetaService, userService, gameService),
-      new GameAddCommand(this.bot, userService, gameService),
+      new ParserCommand(
+        this.bot,
+        gameMetaService,
+        userService,
+        gameService,
+        steamService,
+      ),
+      new GameAddCommand(this.bot, userService, gameService, steamService),
       new GameDeleteCommand(this.bot, userService, gameService),
       new AutoParserCommand(
         this.bot,
         gameService,
         gameMetaService,
-        userService,
         newsService,
+        steamService,
       ),
-      new GameNewsCommand(this.bot, newsService, userService, gameService),
+      new GameNewsCommand(
+        this.bot,
+        newsService,
+        userService,
+        gameService,
+        steamService,
+      ),
     ];
 
     for (const command of this.commands) {

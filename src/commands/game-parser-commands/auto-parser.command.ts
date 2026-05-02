@@ -1,15 +1,13 @@
 import { Telegraf } from "telegraf";
 
-import { ParserCommand } from "./parser.command";
-import { GameNewsCommand } from "./news.command";
-
 import {
   GameMetaService,
   GameService,
   NewsService,
-  UserService,
+  SteamService,
 } from "../../services";
 import {
+  compareNewNews,
   createGameMessage,
   createNewsMessage,
   filterRelevantNews,
@@ -23,8 +21,8 @@ export class AutoParserCommand extends Command {
     bot: Telegraf<IBotContext>,
     private gameService: GameService,
     private gameMetaService: GameMetaService,
-    private userService: UserService,
     private newsService: NewsService,
+    private steamService: SteamService,
   ) {
     super(bot);
   }
@@ -51,27 +49,16 @@ export class AutoParserCommand extends Command {
   }
 
   private async autoParser(game: Game): Promise<void> {
-    const parserClass = new ParserCommand(
-      this.bot,
-      this.gameMetaService,
-      this.userService,
-      this.gameService,
-    );
-    const newsClass = new GameNewsCommand(
-      this.bot,
-      this.newsService,
-      this.userService,
-      this.gameService,
-    );
-
     try {
-      const steamGameData = await parserClass.fetchGameInfoSteam(game.steamId);
+      const steamGameData = await this.steamService.fetchGameInfoSteam(
+        game.steamId,
+      );
 
       if (!steamGameData)
         throw new Error(`Ошибка при обработке игры ${game.name}:`);
 
       this.processSteamGame(steamGameData, game);
-      this.processGameNews(game, newsClass);
+      this.processGameNews(game);
     } catch (error) {
       throw new Error(`Ошибка при обработке игры ${game.name}:`);
     }
@@ -124,11 +111,8 @@ export class AutoParserCommand extends Command {
     return changes;
   }
 
-  private async processGameNews(
-    game: Game,
-    newsClass: GameNewsCommand,
-  ): Promise<void> {
-    const newsData = await newsClass.fetchGameNews(game.steamId);
+  private async processGameNews(game: Game): Promise<void> {
+    const newsData = await this.steamService.fetchGameNews(game.steamId);
 
     if (!newsData) {
       return console.log(`Не удалось получить новости для игры: ${game.name}`);
@@ -136,12 +120,11 @@ export class AutoParserCommand extends Command {
 
     const filteredNews = filterRelevantNews(newsData);
 
-    const existedNews = await newsClass.compareNewNews(
-      filteredNews,
-      game.steamId,
-    );
+    const existedNews = await compareNewNews(filteredNews, game.steamId);
 
-    await newsClass.saveNewsToDB(existedNews, game);
+    for (const news of existedNews.appnews.newsitems) {
+      await this.newsService.saveNewsGame(news.title, news.gid, game);
+    }
 
     if (existedNews.appnews.newsitems.length > 0) {
       for (const user of game.users) {

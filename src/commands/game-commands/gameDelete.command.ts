@@ -1,7 +1,11 @@
 import { Markup, Telegraf } from "telegraf";
 
 import { GameService, UserService } from "../../services";
-import { notifyUserAboutError, timeoutDeleteMessage } from "../../utils";
+import {
+  notifyUserAboutError,
+  sendAndTrackMessage,
+  timeoutDeleteMessage,
+} from "../../utils";
 
 import { Game } from "../../entities";
 import { Command, IBotContext } from "../../context";
@@ -72,13 +76,11 @@ export class GameDeleteCommand extends Command {
 
       await this.handleDeleteGame(context, game);
 
-      await context
-        .sendMessage(`Игра "${game.name}" успешно удалена.`)
-        .then((message) =>
-          context.session.messagesId.gameDeleteMessagesId.push(
-            message.message_id,
-          ),
-        );
+      await sendAndTrackMessage(
+        context,
+        `Игра "${game.name}" успешно удалена.`,
+        "gameDeleteMessagesId",
+      );
 
       if (context.callbackQuery?.message) {
         try {
@@ -108,9 +110,11 @@ export class GameDeleteCommand extends Command {
       await this.gameService.deleteGame(game);
     } catch (error) {
       console.error("Ошибка при удалении игры:", error);
-      await context
-        .sendMessage("Произошла ошибка при удалении игры.")
-        .then((message) => message.message_id);
+      await sendAndTrackMessage(
+        context,
+        "Произошла ошибка при удалении игры.",
+        "gameDeleteMessagesId",
+      );
     }
   }
 }

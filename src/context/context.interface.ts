@@ -16,6 +16,8 @@ type MessagesId = {
   gameParserMessageId: number[];
 };
 
+export type MessagesIdKey = keyof MessagesId;
+
 export interface SessionData {
   state: string | null;
   parserSelectedGame: string | null;
