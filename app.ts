@@ -34,7 +34,7 @@ class Bot {
         defaultSession: () => ({
           state: null,
           parserSelectedGame: null,
-          pendingGame: null,
+          pendingGame: [],
           messagesId: {
             gameAddMessagesId: [],
             gameDeleteMessagesId: [],

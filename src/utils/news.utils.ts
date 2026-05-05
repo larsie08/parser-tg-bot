@@ -1,4 +1,5 @@
 import { GameNewsInfo, NewsItem } from "../context";
+import { News } from "../entities";
 import { NewsService } from "../services";
 
 export function filterRelevantNews(news: GameNewsInfo): GameNewsInfo {
@@ -38,22 +39,18 @@ export function createNewsMessage(
 }
 
 export async function compareNewNews(
-  news: GameNewsInfo,
-  gameSteamId: string,
+  filteredCurrentNews: GameNewsInfo,
+  news: News[],
 ): Promise<GameNewsInfo> {
-  const ids = news.appnews.newsitems.map((item) => item.gid);
+  const existingIds = new Set(news.map((item) => item.newsId));
 
-  const existingNews = await new NewsService().getNewsGame(ids, gameSteamId);
-
-  const existingIds = new Set(existingNews.map((item) => item.newsId));
-
-  const newNewsItems = news.appnews.newsitems.filter(
+  const newNewsItems = filteredCurrentNews.appnews.newsitems.filter(
     (item) => !existingIds.has(item.gid),
   );
 
   return {
     appnews: {
-      ...news.appnews,
+      ...filteredCurrentNews.appnews,
       newsitems: newNewsItems,
     },
   };

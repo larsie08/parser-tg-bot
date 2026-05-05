@@ -198,7 +198,7 @@ export class GameAddCommand extends Command {
     return { addedGames, pendingGames };
   }
 
-  async getSteamInfo(
+  private async getSteamInfo(
     gameName: string,
   ): Promise<{ name: string; steamId: string; href: string }> {
     const url = handleFormatUrlSearch(gameName);
@@ -229,10 +229,13 @@ export class GameAddCommand extends Command {
   }
 
   private async askNextGame(context: IBotContext): Promise<void> {
+    if (context.session.pendingGame.length === 0) return;
+
     const game = context.session.pendingGame?.[0];
 
-    if (!game)
+    if (!game) {
       return notifyUserAboutError(context, "Произошла ошибка при выборе игры.");
+    }
 
     await context
       .sendMessage(

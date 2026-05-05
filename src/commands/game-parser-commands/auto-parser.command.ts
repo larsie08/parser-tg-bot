@@ -13,7 +13,7 @@ import {
   filterRelevantNews,
 } from "../../utils";
 
-import { Game } from "../../entities";
+import { Game, GameMeta } from "../../entities";
 import { Command, IBotContext, IGameSteamData } from "../../context";
 
 export class AutoParserCommand extends Command {
@@ -36,7 +36,7 @@ export class AutoParserCommand extends Command {
 
         for (const game of games) {
           try {
-            await this.autoParser(game);
+            await this.handleAutoParser(game);
           } catch (error) {
             throw new Error(
               `Ошибка обработки игр для пользователей. ${game.users}:`,
@@ -44,13 +44,14 @@ export class AutoParserCommand extends Command {
           }
         }
       },
-      30 * 60 * 1000,
+      // 30 * 60 * 1000,
+      30000,
     );
   }
 
-  private async autoParser(game: Game): Promise<void> {
+  private async handleAutoParser(game: Game): Promise<void> {
     try {
-      const steamGameData = await this.steamService.fetchGameInfoSteam(
+      const steamGameData = await this.steamService.fetchGameMetaInfoSteam(
         game.steamId,
       );
 
@@ -68,69 +69,42 @@ export class AutoParserCommand extends Command {
     steamGameData: IGameSteamData,
     game: Game,
   ): Promise<void> {
-    const changesDetected = await this.getDiffData(game, steamGameData);
+    const changesDetected = this.getDiffData(game, steamGameData);
     const hasAnyChange = Object.values(changesDetected).length;
 
-    if (game.meta || hasAnyChange === 0) return;
+    const hasMetaData =
+      game.meta != null && Object.values(game.meta).some((v) => v != null);
 
-    await this.gameMetaService.upsertMetaInfo(steamGameData, game);
+    if (hasAnyChange === 0) return;
 
-    const message = createGameMessage(steamGameData, changesDetected);
+    if (hasMetaData) {
+      const message = createGameMessage(steamGameData, changesDetected);
 
-    for (const user of game.users)
-      await this.bot.telegram.sendMessage(user.userId, message);
-  }
-
-  private async getDiffData(
-    game: Game,
-    steamGameData: IGameSteamData,
-  ): Promise<Partial<IGameSteamData>> {
-    const changes: Partial<IGameSteamData> = {};
-    const meta: Partial<IGameSteamData> =
-      (await this.gameMetaService.getMetaInfo(game)) ?? {};
-
-    for (const key of Object.keys(steamGameData) as (keyof IGameSteamData)[]) {
-      if (key === "name" || key === "href") continue;
-
-      const newValue = steamGameData[key] ?? undefined;
-      const metaNewValue = meta[key] ?? undefined;
-
-      if (
-        (key === "releaseDate" && metaNewValue !== newValue) ||
-        (key === "releaseTime" && metaNewValue !== newValue)
-      ) {
-        changes[key] = newValue;
-        continue;
-      }
-
-      if (metaNewValue !== newValue) {
-        changes[key] = newValue;
-      }
+      for (const user of game.users)
+        await this.bot.telegram.sendMessage(user.userId, message);
     }
 
-    return changes;
+    await this.gameMetaService.upsertMetaInfo(steamGameData, game);
   }
 
   private async processGameNews(game: Game): Promise<void> {
-    const newsData = await this.steamService.fetchGameNews(game.steamId);
+    const fetchedNews = await this.steamService.fetchGameNews(game.steamId);
 
-    if (!newsData) {
+    if (!fetchedNews) {
       return console.log(`Не удалось получить новости для игры: ${game.name}`);
     }
 
-    const filteredNews = filterRelevantNews(newsData);
+    const filteredNews = filterRelevantNews(fetchedNews);
 
-    const existedNews = await compareNewNews(filteredNews, game.steamId);
+    const news = await this.newsService.getNewsGame(game.steamId);
 
-    for (const news of existedNews.appnews.newsitems) {
-      await this.newsService.saveNewsGame(news.title, news.gid, game);
-    }
+    const existedNews = await compareNewNews(filteredNews, news);
 
-    if (existedNews.appnews.newsitems.length > 0) {
+    if (existedNews.appnews.newsitems.length > 0 && news.length !== 0) {
       for (const user of game.users) {
-        for (const news of existedNews.appnews.newsitems) {
+        for (const newsItem of existedNews.appnews.newsitems) {
           const message = createNewsMessage(
-            news,
+            newsItem,
             game.name,
             existedNews.appnews.newsitems,
           );
@@ -139,5 +113,32 @@ export class AutoParserCommand extends Command {
         }
       }
     }
+
+    for (const news of existedNews.appnews.newsitems) {
+      await this.newsService.saveNewsGame(news.title, news.gid, game);
+    }
+  }
+
+  private getDiffData(
+    game: Game,
+    steamGameData: IGameSteamData,
+  ): Partial<IGameSteamData> {
+    const changes: Partial<IGameSteamData> = {};
+    const meta: Partial<IGameSteamData> = game.meta ?? {};
+
+    const deniedKeys = ["name", "href", "oldPrice"];
+
+    for (const key of Object.keys(steamGameData) as (keyof IGameSteamData)[]) {
+      if (deniedKeys.includes(key)) continue;
+
+      const newValue = steamGameData[key] ?? undefined;
+      const metaNewValue = meta[key] ?? undefined;
+
+      if (metaNewValue !== newValue) {
+        changes[key] = newValue;
+      }
+    }
+
+    return changes;
   }
 }

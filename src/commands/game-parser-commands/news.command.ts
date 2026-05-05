@@ -46,39 +46,47 @@ export class GameNewsCommand extends Command {
     });
 
     this.bot.action("check__game_news", async (context) => {
-      const selectedGameName: string =
+      const gameNameFromMessage: string =
         context.callbackQuery?.message &&
         "text" in context.callbackQuery.message
           ? context.callbackQuery.message.text
           : "";
 
-      if (!selectedGameName)
+      if (!gameNameFromMessage)
         return notifyUserAboutError(context, "Ошибка при выборе игры.");
 
-      const selectedGame = await this.gameService.getUserGame(selectedGameName);
+      const gameEntity =
+        await this.gameService.getUserGame(gameNameFromMessage);
 
-      if (!selectedGame) {
-        console.log("Игра не найдена:", selectedGame);
+      if (!gameEntity) {
+        console.log("Игра не найдена:", gameNameFromMessage);
         return notifyUserAboutError(context, "Игра не найдена.");
       }
 
-      const news = await this.steamService.fetchGameNews(selectedGame.steamId);
+      const fetchedNews = await this.steamService.fetchGameNews(
+        gameEntity.steamId,
+      );
 
-      if (!news)
+      if (!fetchedNews)
         return notifyUserAboutError(
           context,
           "Не удалось получить ни одной новости.",
         );
 
-      const filteredNews = filterRelevantNews(news);
+      const filteredNews = filterRelevantNews(fetchedNews);
 
-      const newNews = await compareNewNews(filteredNews, selectedGame.steamId);
+      const existingNews = await this.newsService.getNewsGame(
+        gameEntity.steamId,
+      );
 
-      if (!news) return notifyUserAboutError(context, "Новости не найдены.");
+      const newsToSave = await compareNewNews(filteredNews, existingNews);
 
-      await this.saveNewsToDB(newNews, selectedGame);
+      if (!fetchedNews)
+        return notifyUserAboutError(context, "Новости не найдены.");
 
-      await this.sendNewsToUser(context, news, selectedGame.name);
+      await this.saveNewsToDB(newsToSave, gameEntity);
+
+      await this.sendNewsToUser(context, fetchedNews, gameEntity.name);
     });
   }
 

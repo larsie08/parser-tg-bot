@@ -21,7 +21,7 @@ export type MessagesIdKey = keyof MessagesId;
 export interface SessionData {
   state: string | null;
   parserSelectedGame: string | null;
-  pendingGame: PendingGame[] | null;
+  pendingGame: PendingGame[]
   messagesId: MessagesId;
   lastAskNextGameMessageId: number | null;
 }

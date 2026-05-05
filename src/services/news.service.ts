@@ -4,9 +4,8 @@ import { Game, News } from "../entities";
 import { AppDataSource } from "../config/typeOrm.config";
 
 export class NewsService {
-  async getNewsGame(ids: string[], gameId: string): Promise<News[]> {
+  async getNewsGame(gameId: string): Promise<News[]> {
     return await AppDataSource.getRepository(News).findBy({
-      newsId: In(ids),
       game: { steamId: gameId },
     });
   }

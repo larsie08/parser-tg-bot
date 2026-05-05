@@ -66,7 +66,7 @@ export class GameDeleteCommand extends Command {
       if (!selectedGameName)
         return notifyUserAboutError(context, "Ошибка при выборе игры.");
 
-      const game = await new GameService().getUserGame(selectedGameName);
+      const game = await this.gameService.getUserGame(selectedGameName);
 
       if (!game)
         return notifyUserAboutError(

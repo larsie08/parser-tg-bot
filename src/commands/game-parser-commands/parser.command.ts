@@ -107,7 +107,7 @@ export class ParserCommand extends Command {
 
     if (!game) throw new Error("Не удалось найти игру в базе данных.");
 
-    const gameData = await this.steamService.fetchGameInfoSteam(game.steamId);
+    const gameData = await this.steamService.fetchGameMetaInfoSteam(game.steamId);
 
     if (!gameData)
       return notifyUserAboutError(

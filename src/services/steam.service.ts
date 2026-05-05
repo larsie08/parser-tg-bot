@@ -18,6 +18,30 @@ export class SteamService {
     }
   }
 
+  async fetchGameNews(gameId: string): Promise<GameNewsInfo | null> {
+    try {
+      const { data } = await axios.get(
+        `http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=${gameId}&count=3&maxlength=300&format=json`,
+      );
+      return data;
+    } catch (error) {
+      console.error("Ошибка при запросе новостей Steam:", error);
+      return null;
+    }
+  }
+
+  async fetchGameMetaInfoSteam(gameId: string): Promise<IGameSteamData | null> {
+    try {
+      const { data } = await axios.get(
+        `https://store.steampowered.com/app/${gameId}`,
+      );
+      return this.parseSteamData(data);
+    } catch (error) {
+      console.error("Ошибка при получении данных с Steam:", error);
+      return null;
+    }
+  }
+
   private parseSteamIdData(
     data: string,
   ): { href: string; name: string } | null {
@@ -39,30 +63,6 @@ export class SteamService {
       return { href: gameBlock.href, name: gameName };
     } catch (error) {
       console.error("Ошибка при разборе данных Steam:", error);
-      return null;
-    }
-  }
-
-  async fetchGameNews(gameId: string): Promise<GameNewsInfo | null> {
-    try {
-      const { data } = await axios.get(
-        `http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=${gameId}&count=3&maxlength=300&format=json`,
-      );
-      return data;
-    } catch (error) {
-      console.error("Ошибка при запросе новостей Steam:", error);
-      return null;
-    }
-  }
-
-  async fetchGameInfoSteam(gameId: string): Promise<IGameSteamData | null> {
-    try {
-      const { data } = await axios.get(
-        `https://store.steampowered.com/app/${gameId}`,
-      );
-      return this.parseSteamData(data);
-    } catch (error) {
-      console.error("Ошибка при получении данных с Steam:", error);
       return null;
     }
   }
