@@ -44,8 +44,7 @@ export class AutoParserCommand extends Command {
           }
         }
       },
-      // 30 * 60 * 1000,
-      30000,
+      30 * 60 * 1000,
     );
   }
 
