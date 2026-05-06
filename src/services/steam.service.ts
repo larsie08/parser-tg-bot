@@ -34,6 +34,9 @@ export class SteamService {
     try {
       const { data } = await axios.get(
         `https://store.steampowered.com/app/${gameId}`,
+        {
+          headers: { Cookie: "birthtime=568022401; lastagecheckage=1-0-1990;" },
+        },
       );
       return this.parseSteamData(data);
     } catch (error) {

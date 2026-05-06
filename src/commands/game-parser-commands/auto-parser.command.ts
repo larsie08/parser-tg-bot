@@ -13,8 +13,13 @@ import {
   filterRelevantNews,
 } from "../../utils";
 
-import { Game, GameMeta } from "../../entities";
-import { Command, IBotContext, IGameSteamData } from "../../context";
+import { Game, GameMeta, User } from "../../entities";
+import {
+  Command,
+  GameNewsInfo,
+  IBotContext,
+  IGameSteamData,
+} from "../../context";
 
 export class AutoParserCommand extends Command {
   constructor(
@@ -36,10 +41,11 @@ export class AutoParserCommand extends Command {
 
         for (const game of games) {
           try {
-            await this.handleAutoParser(game);
+            await this.processSteamGame(game);
+            await this.processGameNews(game);
           } catch (error) {
-            throw new Error(
-              `Ошибка обработки игр для пользователей. ${game.users}:`,
+            console.error(
+              `Ошибка обработки игр для пользователей. ${game.name}:`,
             );
           }
         }
@@ -48,39 +54,25 @@ export class AutoParserCommand extends Command {
     );
   }
 
-  private async handleAutoParser(game: Game): Promise<void> {
-    try {
-      const steamGameData = await this.steamService.fetchGameMetaInfoSteam(
-        game.steamId,
-      );
+  private async processSteamGame(game: Game): Promise<void> {
+    const steamGameData = await this.steamService.fetchGameMetaInfoSteam(
+      game.steamId,
+    );
 
-      if (!steamGameData)
-        throw new Error(`Ошибка при обработке игры ${game.name}:`);
+    if (!steamGameData)
+      return console.log(`Ошибка при обработке игры ${game.name}`);
 
-      this.processSteamGame(steamGameData, game);
-      this.processGameNews(game);
-    } catch (error) {
-      throw new Error(`Ошибка при обработке игры ${game.name}:`);
-    }
-  }
-
-  private async processSteamGame(
-    steamGameData: IGameSteamData,
-    game: Game,
-  ): Promise<void> {
     const changesDetected = this.getDiffData(game, steamGameData);
-    const hasAnyChange = Object.values(changesDetected).length;
+    const hasAnyChange = Object.values(changesDetected).length > 0;
 
-    const hasMetaData =
-      game.meta != null && Object.values(game.meta).some((v) => v != null);
+    if (!hasAnyChange) return;
 
-    if (hasAnyChange === 0) return;
-
-    if (hasMetaData) {
-      const message = createGameMessage(steamGameData, changesDetected);
-
-      for (const user of game.users)
-        await this.bot.telegram.sendMessage(user.userId, message);
+    if (this.hasMetaData(game.meta)) {
+      for (const user of game.users) {
+        await this.sendMessageUser(user, () =>
+          createGameMessage(steamGameData, changesDetected),
+        );
+      }
     }
 
     await this.gameMetaService.upsertMetaInfo(steamGameData, game);
@@ -100,17 +92,7 @@ export class AutoParserCommand extends Command {
     const existedNews = await compareNewNews(filteredNews, news);
 
     if (existedNews.appnews.newsitems.length > 0 && news.length !== 0) {
-      for (const user of game.users) {
-        for (const newsItem of existedNews.appnews.newsitems) {
-          const message = createNewsMessage(
-            newsItem,
-            game.name,
-            existedNews.appnews.newsitems,
-          );
-
-          await this.bot.telegram.sendMessage(user.userId, message);
-        }
-      }
+      await this.processSendMessageNews(game, existedNews);
     }
 
     for (const news of existedNews.appnews.newsitems) {
@@ -139,5 +121,37 @@ export class AutoParserCommand extends Command {
     }
 
     return changes;
+  }
+
+  private async processSendMessageNews(game: Game, existedNews: GameNewsInfo) {
+    for (const user of game.users) {
+      for (const newsItem of existedNews.appnews.newsitems) {
+        await this.sendMessageUser(user, () =>
+          createNewsMessage(newsItem, game.name, existedNews.appnews.newsitems),
+        );
+      }
+    }
+  }
+
+  private async sendMessageUser(user: User, createMessage: () => string) {
+    const message = createMessage();
+
+    await this.bot.telegram.sendMessage(user.userId, message);
+  }
+
+  private hasMetaData(meta: GameMeta | null): boolean {
+    if (!meta) return false;
+
+    const keys: (keyof GameMeta)[] = [
+      "price",
+      "discount",
+      "releaseDate",
+      "releaseTime",
+    ];
+
+    return keys.some((key) => {
+      const value = meta[key];
+      return value != null && value !== "";
+    });
   }
 }
