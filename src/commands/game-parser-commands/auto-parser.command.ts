@@ -67,7 +67,7 @@ export class AutoParserCommand extends Command {
 
     if (!hasAnyChange) return;
 
-    if (this.hasMetaData(game.meta)) {
+    if (this.hasMetaData(game.meta) && hasAnyChange) {
       for (const user of game.users) {
         await this.sendMessageUser(user, () =>
           createGameMessage(steamGameData, changesDetected),
