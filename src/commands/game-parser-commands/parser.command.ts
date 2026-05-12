@@ -149,6 +149,7 @@ export class ParserCommand extends Command {
       context.session.messagesId.gameParserMessageId,
     );
 
+    context.session.messagesId.gameParserMessageId = [];
     context.session.state = null;
 
     const message = await context.sendMessage("Отмена операции.");

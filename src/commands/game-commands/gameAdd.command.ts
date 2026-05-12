@@ -21,7 +21,7 @@ export class GameAddCommand extends Command {
   }
 
   handle(): void {
-    this.bot.action("game_add", async (context: IBotContext) => {
+    this.bot.action("game_add_command", async (context: IBotContext) => {
       await context
         .sendMessage(
           "Введите название игры\nПри добавлении нескольких игр, писать через запятую(,)",
@@ -48,9 +48,12 @@ export class GameAddCommand extends Command {
 
     this.bot.action("cancel", async (context: IBotContext) => {
       context.session.state = "CANCELED_GAME";
+
       await context.deleteMessages(
         context.session.messagesId.gameAddMessagesId,
       );
+
+      context.session.messagesId.gameAddMessagesId = [];
     });
 
     this.bot.action("confirm_add_game", async (context) => {
@@ -106,37 +109,45 @@ export class GameAddCommand extends Command {
 
     if (!user) return console.log("Пользователь не найден.", context.from);
 
-    const { newGames, alreadyAddedGames } = this.filterGames(games, user);
-
-    if (newGames.length === 0)
-      return notifyUserAboutError(
-        context,
-        "Все эти игры уже есть в вашем списке.",
-      );
-
-    if (alreadyAddedGames.length > 0) {
-      await sendAndTrackMessage(
-        context,
-        this.editMessageGames(alreadyAddedGames, true),
-        "gameAddMessagesId",
-      );
-    }
-
     try {
-      const { addedGames, pendingGames } = await this.processGames(
-        newGames,
+      const { addedGames, pendingGames } = await this.processGames(games, user);
+
+      const { newGames, alreadyAddedGames } = this.filterGames(
+        pendingGames,
         user,
+        context,
       );
 
-      if (pendingGames.length > 0) {
-        context.session.pendingGame = pendingGames;
+      if (newGames.length === 0)
+        return notifyUserAboutError(
+          context,
+          "Все эти игры уже есть в вашем списке.",
+        );
+
+      if (newGames.length > 0) {
+        context.session.pendingGame = newGames;
 
         await this.askNextGame(context);
       }
 
+      if (alreadyAddedGames.length > 0) {
+        await sendAndTrackMessage(
+          context,
+          this.editMessageGames(
+            alreadyAddedGames.map((game) => game.steamGameName),
+            true,
+          ),
+          "gameAddMessagesId",
+        );
+      }
+
       await sendAndTrackMessage(
         context,
-        this.editMessageGames(addedGames, false, pendingGames),
+        this.editMessageGames(
+          addedGames.map((game) => game.steamGameName),
+          false,
+          pendingGames,
+        ),
         "gameAddMessagesId",
       );
     } catch (error) {
@@ -158,24 +169,26 @@ export class GameAddCommand extends Command {
   }
 
   private filterGames(
-    games: string[],
+    games: PendingGame[],
     user: User,
-  ): { newGames: string[]; alreadyAddedGames: string[] } {
-    const existing = user.games.map((g) => g.name.toLowerCase());
+    context: IBotContext,
+  ): { newGames: PendingGame[]; alreadyAddedGames: PendingGame[] } {
+    const existingIds = user.games.map((g) => g.steamId);
 
     return {
-      newGames: games.filter((g) => !existing.includes(g.toLowerCase())),
-      alreadyAddedGames: games.filter((g) =>
-        existing.includes(g.toLowerCase()),
-      ),
+      newGames: games.filter((g) => !existingIds.includes(g.steamId)),
+      alreadyAddedGames: games.filter((g) => existingIds.includes(g.steamId)),
     };
   }
 
   private async processGames(
     games: string[],
     user: User,
-  ): Promise<{ addedGames: string[]; pendingGames: PendingGame[] }> {
-    const addedGames: string[] = [];
+  ): Promise<{
+    addedGames: { steamGameName: string; steamId: string }[];
+    pendingGames: PendingGame[];
+  }> {
+    const addedGames: { steamGameName: string; steamId: string }[] = [];
     const pendingGames: PendingGame[] = [];
 
     for (const gameName of games) {
@@ -183,7 +196,10 @@ export class GameAddCommand extends Command {
 
       if (steamInfo.name.toLowerCase() === gameName.toLowerCase()) {
         await this.saveGame(steamInfo.name, steamInfo.steamId, user);
-        addedGames.push(steamInfo.name);
+        addedGames.push({
+          steamGameName: steamInfo.name,
+          steamId: steamInfo.steamId,
+        });
         continue;
       }
 

@@ -40,6 +40,7 @@ class Bot {
             gameDeleteMessagesId: [],
             gameNewsMessagesId: [],
             gameParserMessageId: [],
+            gameMenuCommandMessageId: [],
           },
           lastAskNextGameMessageId: null,
         }),

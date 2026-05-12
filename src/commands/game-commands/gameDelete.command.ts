@@ -20,7 +20,7 @@ export class GameDeleteCommand extends Command {
   }
 
   handle(): void {
-    this.bot.action("game_delete", async (context: IBotContext) => {
+    this.bot.action("game_delete_command", async (context: IBotContext) => {
       const user = await this.userService.getUserWithGames(context.from!.id);
       const games = user?.games;
 
@@ -97,6 +97,8 @@ export class GameDeleteCommand extends Command {
       await context.deleteMessages(
         context.session.messagesId.gameDeleteMessagesId,
       );
+
+      context.session.messagesId.gameDeleteMessagesId = [];
 
       const message = await context.sendMessage("Удаление отменено.");
 
