@@ -33,30 +33,13 @@ export class ParserCommand extends Command {
     });
 
     this.bot.action("check__game_price", async (context: IBotContext) => {
-      context.session.parserSelectedGame =
+      const parserSelectedGame =
         context.callbackQuery?.message &&
         "text" in context.callbackQuery.message
           ? context.callbackQuery.message.text
           : "";
 
-      await context
-        .sendMessage("Выберите ресурс", Markup.keyboard(["Steam", "Отменить"]))
-        .then((message) =>
-          context.session.messagesId.gameParserMessageId.push(
-            message.message_id,
-          ),
-        );
-    });
-
-    this.bot.hears(
-      "Steam",
-      async (context: IBotContext) => await this.handleSteamPrice(context),
-    );
-
-    this.bot.hears("Отменить", (context: IBotContext) => {
-      const userMessageId = context.message?.message_id;
-
-      this.cancelOperation(context, userMessageId);
+      await this.handleSteamPrice(context, parserSelectedGame);
     });
   }
 
@@ -95,15 +78,11 @@ export class ParserCommand extends Command {
     }
   }
 
-  private async handleSteamPrice(context: IBotContext): Promise<void> {
-    if (!context.session.parserSelectedGame)
-      throw new Error(
-        `Произошла ошибка с контекстом бота ${context.session.parserSelectedGame}`,
-      );
-
-    const game = await this.gameService.getUserGame(
-      context.session.parserSelectedGame,
-    );
+  private async handleSteamPrice(
+    context: IBotContext,
+    parserSelectedGame: string,
+  ): Promise<void> {
+    const game = await this.gameService.getUserGame(parserSelectedGame);
 
     if (!game) throw new Error("Не удалось найти игру в базе данных.");
 

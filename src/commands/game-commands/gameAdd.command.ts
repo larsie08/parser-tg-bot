@@ -115,7 +115,6 @@ export class GameAddCommand extends Command {
       const { newGames, alreadyAddedGames } = this.filterGames(
         pendingGames,
         user,
-        context,
       );
 
       if (newGames.length === 0)
@@ -171,7 +170,6 @@ export class GameAddCommand extends Command {
   private filterGames(
     games: PendingGame[],
     user: User,
-    context: IBotContext,
   ): { newGames: PendingGame[]; alreadyAddedGames: PendingGame[] } {
     const existingIds = user.games.map((g) => g.steamId);
 
