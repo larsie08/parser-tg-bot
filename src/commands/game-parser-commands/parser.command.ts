@@ -41,6 +41,13 @@ export class ParserCommand extends Command {
 
       await this.handleSteamPrice(context, parserSelectedGame);
     });
+
+    this.bot.action(
+      "check__game_price_cancel",
+      async (context: IBotContext) => {
+        return await this.cancelOperation(context);
+      },
+    );
   }
 
   private async handleGameSelection(context: IBotContext): Promise<void> {
@@ -76,6 +83,17 @@ export class ParserCommand extends Command {
           ),
         );
     }
+
+    await context
+      .sendMessage(
+        "Отменить",
+        Markup.inlineKeyboard([
+          Markup.button.callback("Отменить", "check__game_price_cancel"),
+        ]),
+      )
+      .then((message) =>
+        context.session.messagesId.gameParserMessageId.push(message.message_id),
+      );
   }
 
   private async handleSteamPrice(
@@ -118,12 +136,7 @@ export class ParserCommand extends Command {
     return await this.gameMetaService.upsertMetaInfo(gameData, game);
   }
 
-  private async cancelOperation(
-    context: IBotContext,
-    userMessageId: number | undefined,
-  ): Promise<void> {
-    if (userMessageId) await context.deleteMessage(userMessageId);
-
+  private async cancelOperation(context: IBotContext): Promise<void> {
     await context.deleteMessages(
       context.session.messagesId.gameParserMessageId,
     );

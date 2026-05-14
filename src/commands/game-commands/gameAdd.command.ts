@@ -117,7 +117,7 @@ export class GameAddCommand extends Command {
         user,
       );
 
-      if (newGames.length === 0)
+      if (newGames.length === 0 && pendingGames.length !== 0)
         return notifyUserAboutError(
           context,
           "Все эти игры уже есть в вашем списке.",

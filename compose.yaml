@@ -1,0 +1,28 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: parser-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  bot:
+    build: .
+    container_name: parser-bot
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      TOKEN: ${TOKEN}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: root
+      DB_NAME: postgres
+
+volumes:
+  postgres_data:

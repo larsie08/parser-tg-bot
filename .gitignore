@@ -1,8 +1,6 @@
 /dist
 .env
 /node_modules
-Dockerfile
 tests
 /src/commands/steam-commands
 /src/migrations/
-compose.yaml
