@@ -35,3 +35,19 @@ export async function sendAndTrackMessage(
       context.session.messagesId[messageArrayId].push(message.message_id),
     );
 }
+
+export async function cancelOperationMessage(
+  context: IBotContext,
+  messageArrayId: MessagesIdKey,
+  stateType: string | null,
+  messageText: string = "Отмена операции.",
+): Promise<void> {
+  await context.deleteMessages(context.session.messagesId[messageArrayId]);
+
+  context.session.messagesId[messageArrayId] = [];
+  context.session.state = stateType;
+
+  const message = await context.sendMessage(messageText);
+
+  timeoutDeleteMessage(context, message.message_id);
+}

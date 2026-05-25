@@ -4,7 +4,7 @@ import { UserService } from "../services";
 
 import { User } from "../entities";
 import { Command, IBotContext } from "../context";
-import { timeoutDeleteMessage } from "../utils";
+import { cancelOperationMessage, timeoutDeleteMessage } from "../utils";
 
 export class StartCommand extends Command {
   constructor(
@@ -27,14 +27,13 @@ export class StartCommand extends Command {
       this.setupMenuHandlers();
     });
 
-    this.bot.action("cancel_command", async (context: IBotContext) => {
-      await context.deleteMessages(
-        context.session.messagesId.gameMenuCommandMessageId,
+    this.bot.action("start_command_cancel", async (context: IBotContext) => {
+      await cancelOperationMessage(
+        context,
+        "gameMenuCommandMessageId",
+        null,
+        "Отменено.",
       );
-
-      const messageId = (await context.sendMessage("Отменено.")).message_id;
-
-      timeoutDeleteMessage(context, messageId);
     });
   }
 
@@ -58,7 +57,7 @@ export class StartCommand extends Command {
               "check_news",
             ),
           ],
-          [Markup.button.callback("Отменить", "cancel_command")],
+          [Markup.button.callback("Отменить", "start_command_cancel")],
         ]),
       );
 
@@ -89,7 +88,7 @@ export class StartCommand extends Command {
               "game_delete_command",
             ),
           ],
-          [Markup.button.callback("Отменить", "cancel_command")],
+          [Markup.button.callback("Отменить", "start_command_cancel")],
         ]),
       );
 

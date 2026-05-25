@@ -7,6 +7,7 @@ import {
   UserService,
 } from "../../services";
 import {
+  cancelOperationMessage,
   createGameMessage,
   notifyUserAboutError,
   sendAndTrackMessage,
@@ -45,7 +46,7 @@ export class ParserCommand extends Command {
     this.bot.action(
       "check__game_price_cancel",
       async (context: IBotContext) => {
-        return await this.cancelOperation(context);
+        await cancelOperationMessage(context, "gameParserMessageId", null);
       },
     );
   }
@@ -134,18 +135,5 @@ export class ParserCommand extends Command {
       return;
 
     return await this.gameMetaService.upsertMetaInfo(gameData, game);
-  }
-
-  private async cancelOperation(context: IBotContext): Promise<void> {
-    await context.deleteMessages(
-      context.session.messagesId.gameParserMessageId,
-    );
-
-    context.session.messagesId.gameParserMessageId = [];
-    context.session.state = null;
-
-    const message = await context.sendMessage("Отмена операции.");
-
-    timeoutDeleteMessage(context, message.message_id);
   }
 }

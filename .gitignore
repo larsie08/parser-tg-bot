@@ -3,4 +3,3 @@
 /node_modules
 tests
 /src/commands/steam-commands
-/src/migrations/

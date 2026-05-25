@@ -7,6 +7,7 @@ import {
   UserService,
 } from "../../services";
 import {
+  cancelOperationMessage,
   compareNewNews,
   createNewsMessage,
   filterRelevantNews,
@@ -88,6 +89,10 @@ export class GameNewsCommand extends Command {
 
       await this.sendNewsToUser(context, fetchedNews, gameEntity.name);
     });
+
+    this.bot.action("check__game_news_cancel", async (context: IBotContext) => {
+      await cancelOperationMessage(context, "gameNewsMessagesId", null);
+    });
   }
 
   private async displayGames(
@@ -104,6 +109,15 @@ export class GameNewsCommand extends Command {
 
       context.session.messagesId.gameNewsMessagesId.push(message.message_id);
     }
+
+    const message = await context.sendMessage(
+      "Отменить проверку новостей.",
+      Markup.inlineKeyboard([
+        Markup.button.callback("Узнать новость", "check__game_news_cancel"),
+      ]),
+    );
+
+    context.session.messagesId.gameNewsMessagesId.push(message.message_id);
   }
 
   private async saveNewsToDB(news: GameNewsInfo, game: Game): Promise<void> {

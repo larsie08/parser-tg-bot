@@ -2,6 +2,7 @@ import { Markup, Telegraf } from "telegraf";
 
 import { GameService, UserService } from "../../services";
 import {
+  cancelOperationMessage,
   notifyUserAboutError,
   sendAndTrackMessage,
   timeoutDeleteMessage,
@@ -46,7 +47,7 @@ export class GameDeleteCommand extends Command {
         .sendMessage(
           "Вы можете отменить процесс удаления:",
           Markup.inlineKeyboard([
-            Markup.button.callback("Отменить", "cancel_delete"),
+            Markup.button.callback("Отменить", "game_delete_command_cancel"),
           ]),
         )
         .then((message) =>
@@ -93,17 +94,17 @@ export class GameDeleteCommand extends Command {
       }
     });
 
-    this.bot.action("cancel_delete", async (context: IBotContext) => {
-      await context.deleteMessages(
-        context.session.messagesId.gameDeleteMessagesId,
-      );
-
-      context.session.messagesId.gameDeleteMessagesId = [];
-
-      const message = await context.sendMessage("Удаление отменено.");
-
-      timeoutDeleteMessage(context, message.message_id);
-    });
+    this.bot.action(
+      "game_delete_command_cancel",
+      async (context: IBotContext) => {
+        await cancelOperationMessage(
+          context,
+          "gameDeleteMessagesId",
+          null,
+          "Отмена операции по удалению.",
+        );
+      },
+    );
   }
 
   private async handleDeleteGame(context: IBotContext, game: Game) {

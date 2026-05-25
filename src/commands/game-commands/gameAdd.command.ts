@@ -2,6 +2,7 @@ import { Markup, Telegraf } from "telegraf";
 
 import { GameService, SteamService, UserService } from "../../services";
 import {
+  cancelOperationMessage,
   handleFormatUrlSearch,
   notifyUserAboutError,
   sendAndTrackMessage,
@@ -25,7 +26,9 @@ export class GameAddCommand extends Command {
       await context
         .sendMessage(
           "Введите название игры\nПри добавлении нескольких игр, писать через запятую(,)",
-          Markup.inlineKeyboard([Markup.button.callback("Отменить", "cancel")]),
+          Markup.inlineKeyboard([
+            Markup.button.callback("Отменить", "game_add_command_cancel"),
+          ]),
         )
         .then((message) =>
           context.session.messagesId.gameAddMessagesId.push(message.message_id),
@@ -46,14 +49,13 @@ export class GameAddCommand extends Command {
       });
     });
 
-    this.bot.action("cancel", async (context: IBotContext) => {
-      context.session.state = "CANCELED_GAME";
-
-      await context.deleteMessages(
-        context.session.messagesId.gameAddMessagesId,
+    this.bot.action("game_add_command_cancel", async (context: IBotContext) => {
+      await cancelOperationMessage(
+        context,
+        "gameAddMessagesId",
+        "CANCEL_GAME",
+        "Отмена операции по добавлению.",
       );
-
-      context.session.messagesId.gameAddMessagesId = [];
     });
 
     this.bot.action("confirm_add_game", async (context) => {
