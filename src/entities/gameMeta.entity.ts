@@ -33,9 +33,6 @@ export class GameMeta {
   @Column({ nullable: true })
   releaseTime?: string;
 
-  @Column({ nullable: true })
-  href?: string;
-
   @CreateDateColumn()
   createdAt!: Date;
 

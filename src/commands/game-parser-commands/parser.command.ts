@@ -11,7 +11,6 @@ import {
   createGameMessage,
   notifyUserAboutError,
   sendAndTrackMessage,
-  timeoutDeleteMessage,
 } from "../../utils";
 
 import { Command, IBotContext, IGameSteamData } from "../../context";
@@ -105,7 +104,7 @@ export class ParserCommand extends Command {
 
     if (!game) throw new Error("Не удалось найти игру в базе данных.");
 
-    const gameData = await this.steamService.fetchGameMetaInfoSteam(
+    const gameData = await this.steamService.fetchGameMetaInfoRegionalSteam(
       game.steamId,
     );
 

@@ -24,6 +24,9 @@ export class Game {
   @Column()
   steamId!: string;
 
+  @Column()
+  href!: string;
+
   @ManyToMany(() => User, (user) => user.games)
   users!: User[];
 

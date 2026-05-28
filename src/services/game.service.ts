@@ -26,7 +26,7 @@ export class GameService {
     if (gameWithUsers?.users.length === 0) await repo.remove(game);
   }
 
-  async saveGame(name: string, steamId: string): Promise<Game> {
+  async saveGame(name: string, steamId: string, href: string): Promise<Game> {
     const repo = AppDataSource.getRepository(Game);
 
     const isExistingGame = await repo.findOneBy({
@@ -35,7 +35,7 @@ export class GameService {
 
     if (isExistingGame) return isExistingGame;
 
-    const game = repo.create({ name, steamId });
+    const game = repo.create({ name, steamId, href });
 
     return await repo.save(game);
   }

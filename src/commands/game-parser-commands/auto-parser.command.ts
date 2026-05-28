@@ -55,9 +55,8 @@ export class AutoParserCommand extends Command {
   }
 
   private async processSteamGame(game: Game): Promise<void> {
-    const steamGameData = await this.steamService.fetchGameMetaInfoSteam(
-      game.steamId,
-    );
+    const steamGameData =
+      await this.steamService.fetchGameMetaInfoRegionalSteam(game.steamId);
 
     if (!steamGameData)
       return console.log(`Ошибка при обработке игры ${game.name}`);
@@ -70,7 +69,7 @@ export class AutoParserCommand extends Command {
     if (this.hasMetaData(game.meta) && hasAnyChange) {
       for (const user of game.users) {
         await this.sendMessageUser(user, () =>
-          createGameMessage(steamGameData, changesDetected),
+          createGameMessage(steamGameData, game, changesDetected),
         );
       }
     }
@@ -105,18 +104,21 @@ export class AutoParserCommand extends Command {
     steamGameData: IGameSteamData,
   ): Partial<IGameSteamData> {
     const changes: Partial<IGameSteamData> = {};
-    const meta: Partial<IGameSteamData> = game.meta ?? {};
 
-    const deniedKeys = ["name", "href", "oldPrice"];
+    if (!game.meta) {
+      return changes;
+    }
+
+    const deniedKeys = ["name", "href", "oldPrice", "comingSoon"];
 
     for (const key of Object.keys(steamGameData) as (keyof IGameSteamData)[]) {
       if (deniedKeys.includes(key)) continue;
 
-      const newValue = steamGameData[key] ?? undefined;
-      const metaNewValue = meta[key] ?? undefined;
+      const newValue = steamGameData[key];
+      const oldValue = game.meta[key as keyof GameMeta];
 
-      if (metaNewValue !== newValue) {
-        changes[key] = newValue;
+      if (oldValue !== newValue) {
+        changes[key] = newValue as never;
       }
     }
 

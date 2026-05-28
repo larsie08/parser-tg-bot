@@ -70,7 +70,12 @@ export class GameAddCommand extends Command {
       if (context.session.lastAskNextGameMessageId)
         await context.deleteMessage(context.session.lastAskNextGameMessageId);
 
-      await this.saveGame(game.steamGameName, game.steamId, game.user);
+      await this.saveGame(
+        game.steamGameName,
+        game.steamId,
+        game.href,
+        game.user,
+      );
 
       await sendAndTrackMessage(
         context,
@@ -195,7 +200,12 @@ export class GameAddCommand extends Command {
       const steamInfo = await this.getSteamInfo(gameName);
 
       if (steamInfo.name.toLowerCase() === gameName.toLowerCase()) {
-        await this.saveGame(steamInfo.name, steamInfo.steamId, user);
+        await this.saveGame(
+          steamInfo.name,
+          steamInfo.steamId,
+          steamInfo.href,
+          user,
+        );
         addedGames.push({
           steamGameName: steamInfo.name,
           steamId: steamInfo.steamId,
@@ -234,10 +244,11 @@ export class GameAddCommand extends Command {
   private async saveGame(
     name: string,
     steamId: string,
+    href: string,
     user: User,
   ): Promise<void> {
     try {
-      const game = await this.gameService.saveGame(name, steamId);
+      const game = await this.gameService.saveGame(name, steamId, href);
       await this.userService.addUserGame(user, game);
     } catch (error) {
       console.error("Произошла ошибка при добавлениие игры.", error);

@@ -46,7 +46,6 @@ export class GameMetaService {
       discount: normalize(gameData.discount),
       releaseDate: normalize(gameData.releaseDate),
       releaseTime: normalize(gameData.releaseTime),
-      href: gameData.href,
     };
   }
 }

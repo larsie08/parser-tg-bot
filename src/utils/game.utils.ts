@@ -1,18 +1,18 @@
 import { IGameSteamData } from "../context";
+import { Game } from "../entities";
 
 export function createGameMessage(
   gameData: IGameSteamData,
+  game: Game,
   diff?: Partial<IGameSteamData>,
 ): string {
   const messageParts: string[] = [`🎮 *Название:* ${gameData.name}`];
 
-  if ("sales" in gameData && gameData.sales) {
-    messageParts.push(
-      `💰 *Цена:* ${gameData.price}`,
-      `📊 *Продаж:* ${gameData.sales}`,
-    );
-  } else if (gameData.releaseDate) {
-    messageParts.push(`📅 *Дата выхода:* ${gameData.releaseDate}`);
+  if (gameData.comingSoon) {
+    if (gameData.releaseDate) {
+      messageParts.push(`📅 *Дата выхода:* ${gameData.releaseDate}`);
+    }
+
     if (gameData.releaseTime) {
       messageParts.push(`⏰ *Время выхода:* ${gameData.releaseTime}`);
     }
@@ -22,22 +22,31 @@ export function createGameMessage(
       `💰 *Новая цена:* ${gameData.price}`,
       `🔥 *Скидка:* ${gameData.discount}`,
     );
-  } else {
+  } else if (gameData.price) {
     messageParts.push(`💰 *Цена:* ${gameData.price}`);
   }
 
-  messageParts.push(`🔗 [Ссылка](${gameData.href})`);
+  if (game.href) {
+    messageParts.push(`🔗 [Ссылка](${game.href})`);
+  }
 
   const changedFields = Object.keys(diff ?? {});
 
+  const hasPriceChanges =
+    changedFields.includes("price") ||
+    changedFields.includes("oldPrice") ||
+    changedFields.includes("discount");
+
+  const hasReleaseChanges =
+    changedFields.includes("releaseDate") ||
+    changedFields.includes("releaseTime");
+
   let prefix = "";
 
-  if (changedFields.includes("price") || changedFields.includes("oldPrice")) {
-    prefix = "🔔 *Изменение цены!*\n";
-  } else if (changedFields.includes("releaseDate")) {
-    prefix = "📅 *Изменение даты выхода!*\n";
-  } else if (changedFields.includes("releaseTime")) {
-    prefix = "⏰ *Изменение времени выхода!*\n";
+  if (hasPriceChanges) {
+    prefix = "🔔 *Изменение цены!*\n\n";
+  } else if (hasReleaseChanges) {
+    prefix = "📅 *Изменение даты выхода!*\n\n";
   }
 
   return prefix + messageParts.join("\n");

@@ -1,7 +1,11 @@
 import axios from "axios";
 import { JSDOM } from "jsdom";
 
-import { GameNewsInfo, IGameSteamData } from "../context";
+import {
+  GameNewsInfo,
+  IGameSteamData,
+  SteamAppDetailsResponse,
+} from "../context";
 
 export class SteamService {
   async fetchGameIdSteam(
@@ -30,15 +34,17 @@ export class SteamService {
     }
   }
 
-  async fetchGameMetaInfoSteam(gameId: string): Promise<IGameSteamData | null> {
+  async fetchGameMetaInfoRegionalSteam(
+    gameId: string,
+  ): Promise<IGameSteamData | null> {
     try {
-      const { data } = await axios.get(
-        `https://store.steampowered.com/app/${gameId}`,
+      const { data } = await axios.get<SteamAppDetailsResponse>(
+        `https://store.steampowered.com/api/appdetails?appids=${gameId}&cc=ru&l=en`,
         {
           headers: { Cookie: "birthtime=568022401; lastagecheckage=1-0-1990;" },
         },
       );
-      return this.parseSteamData(data);
+      return this.parseSteamPriceJsonData(data, gameId);
     } catch (error) {
       console.error("Ошибка при получении данных с Steam:", error);
       return null;
@@ -70,60 +76,22 @@ export class SteamService {
     }
   }
 
-  private parseSteamData(data: string): IGameSteamData | null {
-    try {
-      const dom = new JSDOM(data);
-      const gameArea = dom.window.document.getElementById("game_area_purchase");
-
-      if (!gameArea) return null;
-
-      const nameElement = dom.window.document.getElementById("appHubAppName");
-      const priceElement = gameArea?.getElementsByClassName(
-        "game_purchase_price",
-      )[0];
-      const discountPriceElement = gameArea.getElementsByClassName(
-        "discount_final_price",
-      )[0];
-      const oldPriceElement = gameArea.getElementsByClassName(
-        "discount_original_price",
-      )[0];
-      const discountElement =
-        gameArea.getElementsByClassName("discount_pct")[0];
-      const hrefElement = dom.window.document
-        .getElementsByClassName("blockbg")[0]
-        .querySelectorAll("a");
-      const releaseDateElement = dom.window.document
-        .getElementById("game_area_purchase")
-        ?.getElementsByClassName("game_area_comingsoon")[0];
-
-      const name = nameElement?.textContent || "Название недоступно";
-      const price =
-        priceElement?.textContent?.trim() ||
-        discountPriceElement?.textContent?.trim();
-
-      const oldPrice = oldPriceElement?.textContent;
-      const discount = discountElement?.textContent;
-      const href = hrefElement[hrefElement.length - 1].href;
-      const releaseDate = releaseDateElement
-        ?.querySelector("h1")
-        ?.querySelector("span")
-        ?.textContent?.trim();
-      const releaseTime = releaseDateElement
-        ?.querySelector("p")
-        ?.textContent?.trim();
-
-      return {
-        name,
-        price,
-        oldPrice,
-        discount,
-        href,
-        releaseDate,
-        releaseTime,
-      };
-    } catch (error) {
-      console.error("Ошибка при разборе данных Steam:", error);
-      return null;
-    }
+  private parseSteamPriceJsonData(
+    data: SteamAppDetailsResponse,
+    gameId: string,
+  ): IGameSteamData | null {
+    return {
+      name: data[gameId].data.name,
+      price: data[gameId].data.price_overview?.final_formatted,
+      oldPrice:
+        data[gameId].data.price_overview?.initial_formatted !==
+        data[gameId].data.price_overview?.final_formatted
+          ? data[gameId].data.price_overview?.initial_formatted
+          : undefined,
+      discount: data[gameId].data.price_overview?.discount_percent.toString(),
+      releaseDate: data[gameId].data.release_date.date,
+      releaseTime: undefined,
+      comingSoon: data[gameId].data.release_date.coming_soon,
+    };
   }
 }
