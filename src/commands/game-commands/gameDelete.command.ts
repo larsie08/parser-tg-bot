@@ -5,7 +5,6 @@ import {
   cancelOperationMessage,
   notifyUserAboutError,
   sendAndTrackMessage,
-  timeoutDeleteMessage,
 } from "../../utils";
 
 import { Game } from "../../entities";

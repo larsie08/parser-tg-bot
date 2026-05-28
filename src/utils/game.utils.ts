@@ -20,7 +20,7 @@ export function createGameMessage(
     messageParts.push(
       `💸 *Старая цена:* ${gameData.oldPrice}`,
       `💰 *Новая цена:* ${gameData.price}`,
-      `🔥 *Скидка:* ${gameData.discount}`,
+      `🔥 *Скидка:* ${gameData.discount}%`,
     );
   } else if (gameData.price) {
     messageParts.push(`💰 *Цена:* ${gameData.price}`);

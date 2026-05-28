@@ -33,25 +33,22 @@ export class AutoParserCommand extends Command {
   }
 
   async handle(): Promise<void> {
-    setInterval(
-      async () => {
-        const games = await this.gameService.getGamesOfUsers();
+    setInterval(async () => {
+      const games = await this.gameService.getGamesOfUsers();
 
-        if (!games) throw new Error("Не найдено ни одной игры.");
+      if (!games) throw new Error("Не найдено ни одной игры.");
 
-        for (const game of games) {
-          try {
-            await this.processSteamGame(game);
-            await this.processGameNews(game);
-          } catch (error) {
-            console.error(
-              `Ошибка обработки игр для пользователей. ${game.name}:`,
-            );
-          }
+      for (const game of games) {
+        try {
+          await this.processSteamGame(game);
+          await this.processGameNews(game);
+        } catch (error) {
+          console.error(
+            `Ошибка обработки игр для пользователей. ${game.name}:`,
+          );
         }
-      },
-      30 * 60 * 1000,
-    );
+      }
+    }, 30000);
   }
 
   private async processSteamGame(game: Game): Promise<void> {
@@ -63,6 +60,7 @@ export class AutoParserCommand extends Command {
 
     const changesDetected = this.getDiffData(game, steamGameData);
     const hasAnyChange = Object.values(changesDetected).length > 0;
+    console.log(hasAnyChange, changesDetected);
 
     if (!hasAnyChange) return;
 
@@ -109,7 +107,13 @@ export class AutoParserCommand extends Command {
       return changes;
     }
 
-    const deniedKeys = ["name", "href", "oldPrice", "comingSoon"];
+    const deniedKeys = [
+      "name",
+      "href",
+      "oldPrice",
+      "comingSoon",
+      "releaseTime",
+    ];
 
     for (const key of Object.keys(steamGameData) as (keyof IGameSteamData)[]) {
       if (deniedKeys.includes(key)) continue;
