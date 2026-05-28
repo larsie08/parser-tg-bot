@@ -33,22 +33,25 @@ export class AutoParserCommand extends Command {
   }
 
   async handle(): Promise<void> {
-    setInterval(async () => {
-      const games = await this.gameService.getGamesOfUsers();
+    setInterval(
+      async () => {
+        const games = await this.gameService.getGamesOfUsers();
 
-      if (!games) throw new Error("Не найдено ни одной игры.");
+        if (!games) throw new Error("Не найдено ни одной игры.");
 
-      for (const game of games) {
-        try {
-          await this.processSteamGame(game);
-          await this.processGameNews(game);
-        } catch (error) {
-          console.error(
-            `Ошибка обработки игр для пользователей. ${game.name}:`,
-          );
+        for (const game of games) {
+          try {
+            await this.processSteamGame(game);
+            await this.processGameNews(game);
+          } catch (error) {
+            console.error(
+              `Ошибка обработки игр для пользователей. ${game.name}:`,
+            );
+          }
         }
-      }
-    }, 30000);
+      },
+      30 * 60 * 1000,
+    );
   }
 
   private async processSteamGame(game: Game): Promise<void> {
