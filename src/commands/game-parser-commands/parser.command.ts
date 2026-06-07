@@ -9,6 +9,7 @@ import {
 import {
   cancelOperationMessage,
   createGameMessage,
+  getDiffData,
   notifyUserAboutError,
   sendAndTrackMessage,
 } from "../../utils";
@@ -28,11 +29,11 @@ export class ParserCommand extends Command {
   }
 
   handle(): void {
-    this.bot.action("check_price", async (context) => {
+    this.bot.action("price_check_start", async (context: IBotContext) => {
       await this.handleGameSelection(context);
     });
 
-    this.bot.action("check__game_price", async (context: IBotContext) => {
+    this.bot.action("price_check_game", async (context: IBotContext) => {
       const parserSelectedGame =
         context.callbackQuery?.message &&
         "text" in context.callbackQuery.message
@@ -42,12 +43,9 @@ export class ParserCommand extends Command {
       await this.handleSteamPrice(context, parserSelectedGame);
     });
 
-    this.bot.action(
-      "check__game_price_cancel",
-      async (context: IBotContext) => {
-        await cancelOperationMessage(context, "gameParserMessageId", null);
-      },
-    );
+    this.bot.action("price_check_cancel", async (context: IBotContext) => {
+      await cancelOperationMessage(context, "gameParserMessageId", null);
+    });
   }
 
   private async handleGameSelection(context: IBotContext): Promise<void> {
@@ -74,7 +72,7 @@ export class ParserCommand extends Command {
         .sendMessage(
           game.name,
           Markup.inlineKeyboard([
-            Markup.button.callback("Узнать цену", "check__game_price"),
+            Markup.button.callback("Узнать цену", "price_check_game"),
           ]),
         )
         .then((message) =>
@@ -88,7 +86,7 @@ export class ParserCommand extends Command {
       .sendMessage(
         "Отменить",
         Markup.inlineKeyboard([
-          Markup.button.callback("Отменить", "check__game_price_cancel"),
+          Markup.button.callback("Отменить", "price_check_cancel"),
         ]),
       )
       .then((message) =>
@@ -114,25 +112,15 @@ export class ParserCommand extends Command {
         "Не удалось получить данные о цене игры.",
       );
 
-    await this.updateGameInfo(gameData, game);
+    const changesDetected = getDiffData(game, gameData);
+    const hasAnyChange = Object.values(changesDetected).length > 0;
+
+    if (hasAnyChange) await this.gameMetaService.upsertMetaInfo(gameData, game);
 
     await sendAndTrackMessage(
       context,
-      createGameMessage(gameData, game),
+      createGameMessage(gameData, game, changesDetected),
       "gameParserMessageId",
     );
-  }
-
-  private async updateGameInfo(
-    gameData: IGameSteamData,
-    game: Game,
-  ): Promise<void> {
-    if (
-      (!gameData.releaseDate || !gameData.releaseTime) &&
-      gameData.price === game.meta?.price
-    )
-      return;
-
-    return await this.gameMetaService.upsertMetaInfo(gameData, game);
   }
 }

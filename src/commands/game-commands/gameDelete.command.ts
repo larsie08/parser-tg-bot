@@ -20,7 +20,7 @@ export class GameDeleteCommand extends Command {
   }
 
   handle(): void {
-    this.bot.action("game_delete_command", async (context: IBotContext) => {
+    this.bot.action("game_delete_start", async (context: IBotContext) => {
       const user = await this.userService.getUserWithGames(context.from!.id);
       const games = user?.games;
 
@@ -46,7 +46,7 @@ export class GameDeleteCommand extends Command {
         .sendMessage(
           "Вы можете отменить процесс удаления:",
           Markup.inlineKeyboard([
-            Markup.button.callback("Отменить", "game_delete_command_cancel"),
+            Markup.button.callback("Отменить", "game_delete_cancel"),
           ]),
         )
         .then((message) =>
@@ -93,17 +93,14 @@ export class GameDeleteCommand extends Command {
       }
     });
 
-    this.bot.action(
-      "game_delete_command_cancel",
-      async (context: IBotContext) => {
-        await cancelOperationMessage(
-          context,
-          "gameDeleteMessagesId",
-          null,
-          "Отмена операции по удалению.",
-        );
-      },
-    );
+    this.bot.action("game_delete_cancel", async (context: IBotContext) => {
+      await cancelOperationMessage(
+        context,
+        "gameDeleteMessagesId",
+        null,
+        "Отмена операции по удалению.",
+      );
+    });
   }
 
   private async handleDeleteGame(context: IBotContext, game: Game) {

@@ -51,10 +51,10 @@ export class StartCommand extends Command {
         "Выберите команду",
         Markup.inlineKeyboard([
           [
-            Markup.button.callback("Проверить цену игры", "check_price"),
+            Markup.button.callback("Проверить цену игры", "price_check_start"),
             Markup.button.callback(
               "Узнать последние новости игры",
-              "check_news",
+              "news_check_start",
             ),
           ],
           [Markup.button.callback("Отменить", "start_command_cancel")],
@@ -81,11 +81,11 @@ export class StartCommand extends Command {
           [
             Markup.button.callback(
               "Добавить игру в список отслеживания",
-              "game_add_command",
+              "game_add_start",
             ),
             Markup.button.callback(
               "Удалить игру из списка отслеживания",
-              "game_delete_command",
+              "game_delete_start",
             ),
           ],
           [Markup.button.callback("Отменить", "start_command_cancel")],

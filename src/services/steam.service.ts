@@ -9,11 +9,11 @@ import {
 
 export class SteamService {
   async fetchGameIdSteam(
-    gameUrl: string,
+    gameName: string,
   ): Promise<{ href: string; name: string } | null> {
     try {
       const { data } = await axios.get(
-        `https://store.steampowered.com/search/?term=${gameUrl}&ignore_preferences=1`,
+        `https://store.steampowered.com/search/?term=${gameName}&ignore_preferences=1`,
       );
       return this.parseSteamIdData(data);
     } catch (error) {

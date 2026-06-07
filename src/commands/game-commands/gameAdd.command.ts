@@ -3,6 +3,7 @@ import { Markup, Telegraf } from "telegraf";
 import { GameService, SteamService, UserService } from "../../services";
 import {
   cancelOperationMessage,
+  editAddMessageGames,
   handleFormatUrlSearch,
   notifyUserAboutError,
   sendAndTrackMessage,
@@ -22,12 +23,12 @@ export class GameAddCommand extends Command {
   }
 
   handle(): void {
-    this.bot.action("game_add_command", async (context: IBotContext) => {
+    this.bot.action("game_add_start", async (context: IBotContext) => {
       await context
         .sendMessage(
           "Введите название игры\nПри добавлении нескольких игр, писать через запятую(,)",
           Markup.inlineKeyboard([
-            Markup.button.callback("Отменить", "game_add_command_cancel"),
+            Markup.button.callback("Отменить", "game_add_cancel"),
           ]),
         )
         .then((message) =>
@@ -49,7 +50,7 @@ export class GameAddCommand extends Command {
       });
     });
 
-    this.bot.action("game_add_command_cancel", async (context: IBotContext) => {
+    this.bot.action("game_add_cancel", async (context: IBotContext) => {
       await cancelOperationMessage(
         context,
         "gameAddMessagesId",
@@ -58,7 +59,7 @@ export class GameAddCommand extends Command {
       );
     });
 
-    this.bot.action("confirm_add_game", async (context) => {
+    this.bot.action("game_add_confirm", async (context) => {
       const game = context.session.pendingGame?.shift();
 
       if (!game)
@@ -86,7 +87,7 @@ export class GameAddCommand extends Command {
       return await this.askNextGame(context);
     });
 
-    this.bot.action("confirm_cancel_game", async (context) => {
+    this.bot.action("game_add_skip", async (context) => {
       const game = context.session.pendingGame?.shift();
       context.session.state = null;
 
@@ -139,7 +140,7 @@ export class GameAddCommand extends Command {
       if (alreadyAddedGames.length > 0) {
         await sendAndTrackMessage(
           context,
-          this.editMessageGames(
+          editAddMessageGames(
             alreadyAddedGames.map((game) => game.steamGameName),
             true,
           ),
@@ -149,7 +150,7 @@ export class GameAddCommand extends Command {
 
       await sendAndTrackMessage(
         context,
-        this.editMessageGames(
+        editAddMessageGames(
           addedGames.map((game) => game.steamGameName),
           false,
           pendingGames,
@@ -163,15 +164,6 @@ export class GameAddCommand extends Command {
         "Произошла ошибка при добавлении игры.",
       );
     }
-  }
-
-  private parseGameNamesFromMessage(text: string): string[] {
-    if (!text?.trim()) return [];
-
-    return text
-      .split(",")
-      .map((game) => game.trim())
-      .filter((game) => game.length > 0);
   }
 
   private filterGames(
@@ -268,8 +260,8 @@ export class GameAddCommand extends Command {
       .sendMessage(
         `Добавить игру?\nНазвание: ${game.steamGameName}\nСсылка: ${game.href}`,
         Markup.inlineKeyboard([
-          Markup.button.callback("Добавить", "confirm_add_game"),
-          Markup.button.callback("Отменить", "confirm_cancel_game"),
+          Markup.button.callback("Добавить", "game_add_confirm"),
+          Markup.button.callback("Пропустить", "game_add_skip"),
         ]),
       )
       .then(
@@ -278,29 +270,12 @@ export class GameAddCommand extends Command {
       );
   }
 
-  private editMessageGames(
-    games: string[],
-    isAlreadyAddedGames: boolean,
-    pendingGames?: PendingGame[],
-  ): string {
-    if (isAlreadyAddedGames)
-      return games.length === 1
-        ? `Игра уже находится в вашем списке: ${games[0]}`
-        : `Игры уже есть в вашем списке: ${games.join(", ")}`;
+  private parseGameNamesFromMessage(text: string): string[] {
+    if (!text?.trim()) return [];
 
-    if (pendingGames && pendingGames?.length > 0) {
-      const gameNames = pendingGames.map((game) => game.steamGameName);
-      return games.length === 0
-        ? `Следующие игры ожидают подтверждения: ${gameNames.join(", ")}`
-        : games.length === 1
-          ? `Следующие игры ожидают подтверждения: ${gameNames.join(", ")}\nИгра успешно добавлена: ${games[0]}`
-          : `Следующие игры ожидают подтверждения: ${gameNames.join(", ")}\nИгры успешно добавлены: ${games.join(", ")}`;
-    }
-
-    return games.length === 0
-      ? "Игра не была добавлена"
-      : games.length === 1
-        ? `Игра успешно добавлена: ${games[0]}`
-        : `Игры успешно добавлены: ${games.join(", ")}`;
+    return text
+      .split(",")
+      .map((game) => game.trim())
+      .filter((game) => game.length > 0);
   }
 }

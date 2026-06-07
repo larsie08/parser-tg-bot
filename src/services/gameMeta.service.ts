@@ -5,7 +5,6 @@ import { Game, GameMeta } from "../entities";
 export class GameMetaService {
   async upsertMetaInfo(gameData: IGameSteamData, game: Game): Promise<void> {
     const gameMetaRepo = AppDataSource.getRepository(GameMeta);
-    const gameRepo = AppDataSource.getRepository(Game);
 
     let meta = await gameMetaRepo.findOne({
       where: {
@@ -21,9 +20,7 @@ export class GameMetaService {
 
     Object.assign(meta, this.buildMetaUpdate(gameData, meta));
 
-    game.meta = meta;
-
-    await gameRepo.save(game);
+    await gameMetaRepo.save(meta);
   }
 
   async getMetaInfo(game: Game): Promise<GameMeta | null> {

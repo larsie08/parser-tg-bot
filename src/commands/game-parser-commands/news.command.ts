@@ -30,7 +30,7 @@ export class GameNewsCommand extends Command {
   }
 
   handle(): void {
-    this.bot.action("check_news", async (context: IBotContext) => {
+    this.bot.action("news_check_start", async (context: IBotContext) => {
       if (!context.from?.id) throw new Error("Не определен пользователь");
 
       const user = await this.userService.getUserWithGames(context.from.id);
@@ -46,7 +46,7 @@ export class GameNewsCommand extends Command {
       await this.displayGames(context, games);
     });
 
-    this.bot.action("check__game_news", async (context) => {
+    this.bot.action("news_check_game", async (context) => {
       const gameNameFromMessage: string =
         context.callbackQuery?.message &&
         "text" in context.callbackQuery.message
@@ -90,7 +90,7 @@ export class GameNewsCommand extends Command {
       await this.sendNewsToUser(context, fetchedNews, gameEntity.name);
     });
 
-    this.bot.action("check__game_news_cancel", async (context: IBotContext) => {
+    this.bot.action("news_check_cancel", async (context: IBotContext) => {
       await cancelOperationMessage(context, "gameNewsMessagesId", null);
     });
   }
@@ -103,7 +103,7 @@ export class GameNewsCommand extends Command {
       const message = await context.sendMessage(
         game.name,
         Markup.inlineKeyboard([
-          Markup.button.callback("Узнать новость", "check__game_news"),
+          Markup.button.callback("Узнать новость", "news_check_game"),
         ]),
       );
 
@@ -113,7 +113,7 @@ export class GameNewsCommand extends Command {
     const message = await context.sendMessage(
       "Отменить проверку новостей.",
       Markup.inlineKeyboard([
-        Markup.button.callback("Узнать новость", "check__game_news_cancel"),
+        Markup.button.callback("Узнать новость", "news_check_cancel"),
       ]),
     );
 

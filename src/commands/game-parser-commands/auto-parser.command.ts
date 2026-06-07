@@ -11,6 +11,8 @@ import {
   createGameMessage,
   createNewsMessage,
   filterRelevantNews,
+  getDiffData,
+  hasMetaData,
 } from "../../utils";
 
 import { Game, GameMeta, User } from "../../entities";
@@ -61,13 +63,12 @@ export class AutoParserCommand extends Command {
     if (!steamGameData)
       return console.log(`Ошибка при обработке игры ${game.name}`);
 
-    const changesDetected = this.getDiffData(game, steamGameData);
+    const changesDetected = getDiffData(game, steamGameData);
     const hasAnyChange = Object.values(changesDetected).length > 0;
-    console.log(hasAnyChange, changesDetected);
 
     if (!hasAnyChange) return;
 
-    if (this.hasMetaData(game.meta) && hasAnyChange) {
+    if (hasMetaData(game.meta) && hasAnyChange) {
       for (const user of game.users) {
         await this.sendMessageUser(user, () =>
           createGameMessage(steamGameData, game, changesDetected),
@@ -100,38 +101,6 @@ export class AutoParserCommand extends Command {
     }
   }
 
-  private getDiffData(
-    game: Game,
-    steamGameData: IGameSteamData,
-  ): Partial<IGameSteamData> {
-    const changes: Partial<IGameSteamData> = {};
-
-    if (!game.meta) {
-      return changes;
-    }
-
-    const deniedKeys = [
-      "name",
-      "href",
-      "oldPrice",
-      "comingSoon",
-      "releaseTime",
-    ];
-
-    for (const key of Object.keys(steamGameData) as (keyof IGameSteamData)[]) {
-      if (deniedKeys.includes(key)) continue;
-
-      const newValue = steamGameData[key];
-      const oldValue = game.meta[key as keyof GameMeta];
-
-      if (oldValue !== newValue) {
-        changes[key] = newValue as never;
-      }
-    }
-
-    return changes;
-  }
-
   private async processSendMessageNews(game: Game, existedNews: GameNewsInfo) {
     for (const user of game.users) {
       for (const newsItem of existedNews.appnews.newsitems) {
@@ -146,21 +115,5 @@ export class AutoParserCommand extends Command {
     const message = createMessage();
 
     await this.bot.telegram.sendMessage(user.userId, message);
-  }
-
-  private hasMetaData(meta: GameMeta | null): boolean {
-    if (!meta) return false;
-
-    const keys: (keyof GameMeta)[] = [
-      "price",
-      "discount",
-      "releaseDate",
-      "releaseTime",
-    ];
-
-    return keys.some((key) => {
-      const value = meta[key];
-      return value != null && value !== "";
-    });
   }
 }
