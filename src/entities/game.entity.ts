@@ -9,9 +9,7 @@ import {
   UpdateDateColumn,
 } from "typeorm";
 
-import { User } from "./user.entity";
-import { News } from "./news.entity";
-import { GameMeta } from "./gameMeta.entity";
+import { GameMeta, News, User } from ".";
 
 @Entity()
 export class Game {

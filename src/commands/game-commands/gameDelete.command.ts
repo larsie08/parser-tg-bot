@@ -28,32 +28,24 @@ export class GameDeleteCommand extends Command {
         return notifyUserAboutError(context, "У вас нет игр для удаления.");
 
       for (const game of games) {
-        await context
-          .sendMessage(
-            game.name,
-            Markup.inlineKeyboard([
-              Markup.button.callback("Удалить", `delete_${game.id}`),
-            ]),
-          )
-          .then((message) =>
-            context.session.messagesId.gameDeleteMessagesId.push(
-              message.message_id,
-            ),
-          );
+        await sendAndTrackMessage(
+          context,
+          game.name,
+          "gameDeleteMessagesId",
+          Markup.inlineKeyboard([
+            Markup.button.callback("Удалить", `delete_${game.id}`),
+          ]),
+        );
       }
 
-      await context
-        .sendMessage(
-          "Вы можете отменить процесс удаления:",
-          Markup.inlineKeyboard([
-            Markup.button.callback("Отменить", "game_delete_cancel"),
-          ]),
-        )
-        .then((message) =>
-          context.session.messagesId.gameDeleteMessagesId.push(
-            message.message_id,
-          ),
-        );
+      await sendAndTrackMessage(
+        context,
+        "Вы можете отменить процесс удаления:",
+        "gameDeleteMessagesId",
+        Markup.inlineKeyboard([
+          Markup.button.callback("Отменить", "game_delete_cancel"),
+        ]),
+      );
     });
 
     this.bot.action(/delete_(\d+)/, async (context: IBotContext) => {

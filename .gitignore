@@ -1,5 +1,6 @@
-/dist
+dist
 .env
-/node_modules
+node_modules
 tests
-/src/commands/steam-commands
+src/commands/user-commands
+src/entities/gameSubscription.entity.ts

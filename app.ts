@@ -10,7 +10,7 @@ import {
   GameNewsCommand,
 } from "./src/commands";
 
-import { Command, IBotContext, IConfigService } from "./src/context";
+import { Command, IBotContext } from "./src/context";
 import { AppDataSource } from "./src/config/typeOrm.config";
 
 import {
@@ -20,7 +20,8 @@ import {
   SteamService,
   UserService,
 } from "./src/services";
-import { ConfigService } from "./src/config";
+
+import { ConfigService, IConfigService } from "./src/config";
 
 class Bot {
   bot: Telegraf<IBotContext>;

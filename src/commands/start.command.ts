@@ -4,7 +4,7 @@ import { UserService } from "../services";
 
 import { User } from "../entities";
 import { Command, IBotContext } from "../context";
-import { cancelOperationMessage, timeoutDeleteMessage } from "../utils";
+import { cancelOperationMessage, sendAndTrackMessage } from "../utils";
 
 export class StartCommand extends Command {
   constructor(
@@ -19,7 +19,7 @@ export class StartCommand extends Command {
       const user = await this.handleUser(context);
       const userName = user?.userName || context.from?.first_name;
 
-      context.reply(
+      await context.sendMessage(
         `Привет! ${userName}, чем могу помочь?`,
         Markup.keyboard([["Меню парсера", "Управление играми"]]).oneTime(),
       );
@@ -47,8 +47,10 @@ export class StartCommand extends Command {
         );
       }
 
-      const message = await context.reply(
+      await sendAndTrackMessage(
+        context,
         "Выберите команду",
+        "gameMenuCommandMessageId",
         Markup.inlineKeyboard([
           [
             Markup.button.callback("Проверить цену игры", "price_check_start"),
@@ -59,10 +61,6 @@ export class StartCommand extends Command {
           ],
           [Markup.button.callback("Отменить", "start_command_cancel")],
         ]),
-      );
-
-      context.session.messagesId.gameMenuCommandMessageId.push(
-        message.message_id,
       );
     });
 
@@ -75,8 +73,10 @@ export class StartCommand extends Command {
         );
       }
 
-      const message = await context.reply(
+      await sendAndTrackMessage(
+        context,
         "Выберите команду",
+        "gameMenuCommandMessageId",
         Markup.inlineKeyboard([
           [
             Markup.button.callback(
@@ -90,10 +90,6 @@ export class StartCommand extends Command {
           ],
           [Markup.button.callback("Отменить", "start_command_cancel")],
         ]),
-      );
-
-      context.session.messagesId.gameMenuCommandMessageId.push(
-        message.message_id,
       );
     });
   }

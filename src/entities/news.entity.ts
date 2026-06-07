@@ -6,8 +6,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
-
-import { Game } from "./game.entity";
+import { Game } from ".";
 
 @Entity()
 export class News {

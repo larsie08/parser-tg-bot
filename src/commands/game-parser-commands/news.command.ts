@@ -100,24 +100,24 @@ export class GameNewsCommand extends Command {
     games: Game[],
   ): Promise<void> {
     for (const game of games) {
-      const message = await context.sendMessage(
+      await sendAndTrackMessage(
+        context,
         game.name,
+        "gameNewsMessagesId",
         Markup.inlineKeyboard([
           Markup.button.callback("Узнать новость", "news_check_game"),
         ]),
       );
-
-      context.session.messagesId.gameNewsMessagesId.push(message.message_id);
     }
 
-    const message = await context.sendMessage(
+    await sendAndTrackMessage(
+      context,
       "Отменить проверку новостей.",
+      "gameNewsMessagesId",
       Markup.inlineKeyboard([
         Markup.button.callback("Узнать новость", "news_check_cancel"),
       ]),
     );
-
-    context.session.messagesId.gameNewsMessagesId.push(message.message_id);
   }
 
   private async saveNewsToDB(news: GameNewsInfo, game: Game): Promise<void> {

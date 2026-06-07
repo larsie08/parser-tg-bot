@@ -68,30 +68,24 @@ export class ParserCommand extends Command {
     context.session.state = "WAITING_GAME";
 
     for (const game of games) {
-      await context
-        .sendMessage(
-          game.name,
-          Markup.inlineKeyboard([
-            Markup.button.callback("Узнать цену", "price_check_game"),
-          ]),
-        )
-        .then((message) =>
-          context.session.messagesId.gameParserMessageId.push(
-            message.message_id,
-          ),
-        );
+      await sendAndTrackMessage(
+        context,
+        game.name,
+        "gameParserMessageId",
+        Markup.inlineKeyboard([
+          Markup.button.callback("Узнать цену", "price_check_game"),
+        ]),
+      );
     }
 
-    await context
-      .sendMessage(
-        "Отменить",
-        Markup.inlineKeyboard([
-          Markup.button.callback("Отменить", "price_check_cancel"),
-        ]),
-      )
-      .then((message) =>
-        context.session.messagesId.gameParserMessageId.push(message.message_id),
-      );
+    await sendAndTrackMessage(
+      context,
+      "Отменить",
+      "gameParserMessageId",
+      Markup.inlineKeyboard([
+        Markup.button.callback("Отменить", "price_check_cancel"),
+      ]),
+    );
   }
 
   private async handleSteamPrice(

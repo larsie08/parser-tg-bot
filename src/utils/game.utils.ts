@@ -46,3 +46,12 @@ export function hasMetaData(meta: GameMeta | null): boolean {
     return value != null && value !== "";
   });
 }
+
+export function parseGameNamesFromMessage(text: string): string[] {
+  if (!text?.trim()) return [];
+
+  return text
+    .split(",")
+    .map((game) => game.trim())
+    .filter((game) => game.length > 0);
+}

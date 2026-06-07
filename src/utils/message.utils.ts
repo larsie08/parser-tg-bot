@@ -1,3 +1,4 @@
+import { InlineKeyboardMarkup } from "telegraf/types";
 import {
   IBotContext,
   IGameSteamData,
@@ -5,6 +6,7 @@ import {
   PendingGame,
 } from "../context";
 import { Game } from "../entities";
+import { Markup } from "telegraf/markup";
 
 export function timeoutDeleteMessage(
   context: IBotContext,
@@ -34,9 +36,10 @@ export async function sendAndTrackMessage(
   context: IBotContext,
   text: string,
   messageArrayId: MessagesIdKey,
+  markUp?: Markup<InlineKeyboardMarkup>,
 ): Promise<void> {
   await context
-    .sendMessage(text)
+    .sendMessage(text, markUp)
     .then((message) =>
       context.session.messagesId[messageArrayId].push(message.message_id),
     );

@@ -6,6 +6,7 @@ import {
   editAddMessageGames,
   handleFormatUrlSearch,
   notifyUserAboutError,
+  parseGameNamesFromMessage,
   sendAndTrackMessage,
 } from "../../utils";
 
@@ -24,16 +25,14 @@ export class GameAddCommand extends Command {
 
   handle(): void {
     this.bot.action("game_add_start", async (context: IBotContext) => {
-      await context
-        .sendMessage(
-          "Введите название игры\nПри добавлении нескольких игр, писать через запятую(,)",
-          Markup.inlineKeyboard([
-            Markup.button.callback("Отменить", "game_add_cancel"),
-          ]),
-        )
-        .then((message) =>
-          context.session.messagesId.gameAddMessagesId.push(message.message_id),
-        );
+      await sendAndTrackMessage(
+        context,
+        "Введите название игры\nПри добавлении нескольких игр, писать через запятую(,)",
+        "gameAddMessagesId",
+        Markup.inlineKeyboard([
+          Markup.button.callback("Отменить", "game_add_cancel"),
+        ]),
+      );
 
       context.session.state = null;
 
@@ -105,7 +104,7 @@ export class GameAddCommand extends Command {
   }
 
   private async handleAddGame(context: IBotContext, text: string) {
-    const games = this.parseGameNamesFromMessage(text);
+    const games = parseGameNamesFromMessage(text);
 
     if (games.length === 0)
       return notifyUserAboutError(
@@ -256,26 +255,14 @@ export class GameAddCommand extends Command {
       return notifyUserAboutError(context, "Произошла ошибка при выборе игры.");
     }
 
-    await context
-      .sendMessage(
-        `Добавить игру?\nНазвание: ${game.steamGameName}\nСсылка: ${game.href}`,
-        Markup.inlineKeyboard([
-          Markup.button.callback("Добавить", "game_add_confirm"),
-          Markup.button.callback("Пропустить", "game_add_skip"),
-        ]),
-      )
-      .then(
-        (message) =>
-          (context.session.lastAskNextGameMessageId = message.message_id),
-      );
-  }
-
-  private parseGameNamesFromMessage(text: string): string[] {
-    if (!text?.trim()) return [];
-
-    return text
-      .split(",")
-      .map((game) => game.trim())
-      .filter((game) => game.length > 0);
+    await sendAndTrackMessage(
+      context,
+      `Добавить игру?\nНазвание: ${game.steamGameName}\nСсылка: ${game.href}`,
+      "gameAddMessagesId",
+      Markup.inlineKeyboard([
+        Markup.button.callback("Добавить", "game_add_confirm"),
+        Markup.button.callback("Пропустить", "game_add_skip"),
+      ]),
+    );
   }
 }
