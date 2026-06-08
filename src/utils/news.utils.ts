@@ -24,20 +24,6 @@ export function filterRelevantNews(news: GameNewsInfo): GameNewsInfo {
   };
 }
 
-export function createNewsMessage(
-  currentNews: NewsItem,
-  gameName: string,
-  news?: NewsItem[],
-): string {
-  let message: string = `Название Игры: ${gameName}\nНовость: ${currentNews.title}\nТекст: ${currentNews.contents}\nСсылка: ${currentNews.url}`;
-
-  if (news && !news.some((item) => item.gid === currentNews.gid)) {
-    message = `Новая новость!\nНазвание Игры: ${gameName}\nНовость: ${currentNews.title}\nТекст: ${currentNews.contents}\nСсылка: ${currentNews.url}`;
-  }
-
-  return message;
-}
-
 export async function compareNewNews(
   filteredCurrentNews: GameNewsInfo,
   news: News[],

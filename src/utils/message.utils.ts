@@ -1,12 +1,14 @@
 import { InlineKeyboardMarkup } from "telegraf/types";
+import { Markup } from "telegraf/markup";
+
 import {
   IBotContext,
   IGameSteamData,
   MessagesIdKey,
+  NewsItem,
   PendingGame,
 } from "../context";
 import { Game } from "../entities";
-import { Markup } from "telegraf/markup";
 
 export function timeoutDeleteMessage(
   context: IBotContext,
@@ -164,4 +166,35 @@ export function editAddMessageGames(
     : games.length === 1
       ? `Игра успешно добавлена: ${games[0]}`
       : `Игры успешно добавлены: ${games.join(", ")}`;
+}
+
+export function createNewsMessage(
+  currentNews: NewsItem,
+  gameName: string,
+  news?: NewsItem[],
+): string {
+  let message: string = `Название Игры: ${gameName}\nНовость: ${currentNews.title}\nТекст: ${currentNews.contents}\nСсылка: ${currentNews.url}`;
+
+  if (news && !news.some((item) => item.gid === currentNews.gid)) {
+    message = `Новая новость!\nНазвание Игры: ${gameName}\nНовость: ${currentNews.title}\nТекст: ${currentNews.contents}\nСсылка: ${currentNews.url}`;
+  }
+
+  return message;
+}
+
+export function trackUserMessage(
+  context: IBotContext,
+  messageArrayId: MessagesIdKey,
+): void {
+  const userMessageId = context.message?.message_id;
+
+  if (userMessageId)
+    context.session.messagesId[messageArrayId].push(context.message.message_id);
+}
+
+export function getGameNameFromMessageCallback(context: IBotContext): string {
+  return context.callbackQuery?.message &&
+    "text" in context.callbackQuery.message
+    ? context.callbackQuery.message.text
+    : "";
 }

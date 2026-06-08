@@ -11,6 +11,7 @@ import {
   compareNewNews,
   createNewsMessage,
   filterRelevantNews,
+  getGameNameFromMessageCallback,
   notifyUserAboutError,
   sendAndTrackMessage,
 } from "../../utils";
@@ -47,11 +48,7 @@ export class GameNewsCommand extends Command {
     });
 
     this.bot.action("news_check_game", async (context) => {
-      const gameNameFromMessage: string =
-        context.callbackQuery?.message &&
-        "text" in context.callbackQuery.message
-          ? context.callbackQuery.message.text
-          : "";
+      const gameNameFromMessage = getGameNameFromMessageCallback(context);
 
       if (!gameNameFromMessage)
         return notifyUserAboutError(context, "Ошибка при выборе игры.");

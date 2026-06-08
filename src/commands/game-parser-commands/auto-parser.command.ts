@@ -15,13 +15,8 @@ import {
   hasMetaData,
 } from "../../utils";
 
-import { Game, GameMeta, User } from "../../entities";
-import {
-  Command,
-  GameNewsInfo,
-  IBotContext,
-  IGameSteamData,
-} from "../../context";
+import { Game, User } from "../../entities";
+import { Command, GameNewsInfo, IBotContext } from "../../context";
 
 export class AutoParserCommand extends Command {
   constructor(

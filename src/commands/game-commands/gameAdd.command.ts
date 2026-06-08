@@ -8,6 +8,7 @@ import {
   notifyUserAboutError,
   parseGameNamesFromMessage,
   sendAndTrackMessage,
+  trackUserMessage,
 } from "../../utils";
 
 import { User } from "../../entities";
@@ -39,9 +40,7 @@ export class GameAddCommand extends Command {
       this.bot.hears(/.+/, async (context) => {
         if (typeof context.session.state === "string") return;
 
-        context.session.messagesId.gameAddMessagesId.push(
-          context.message?.message_id,
-        );
+        trackUserMessage(context, "gameAddMessagesId");
 
         await this.handleAddGame(context, context.message?.text);
 

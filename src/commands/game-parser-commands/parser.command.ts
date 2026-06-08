@@ -10,12 +10,12 @@ import {
   cancelOperationMessage,
   createGameMessage,
   getDiffData,
+  getGameNameFromMessageCallback,
   notifyUserAboutError,
   sendAndTrackMessage,
 } from "../../utils";
 
-import { Command, IBotContext, IGameSteamData } from "../../context";
-import { Game } from "../../entities";
+import { Command, IBotContext } from "../../context";
 
 export class ParserCommand extends Command {
   constructor(
@@ -34,11 +34,7 @@ export class ParserCommand extends Command {
     });
 
     this.bot.action("price_check_game", async (context: IBotContext) => {
-      const parserSelectedGame =
-        context.callbackQuery?.message &&
-        "text" in context.callbackQuery.message
-          ? context.callbackQuery.message.text
-          : "";
+      const parserSelectedGame = getGameNameFromMessageCallback(context);
 
       await this.handleSteamPrice(context, parserSelectedGame);
     });

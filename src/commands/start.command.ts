@@ -1,10 +1,14 @@
-import { Markup, Telegraf } from "telegraf";
+import { Telegraf, Markup } from "telegraf";
 
 import { UserService } from "../services";
 
 import { User } from "../entities";
 import { Command, IBotContext } from "../context";
-import { cancelOperationMessage, sendAndTrackMessage } from "../utils";
+import {
+  cancelOperationMessage,
+  sendAndTrackMessage,
+  trackUserMessage,
+} from "../utils";
 
 export class StartCommand extends Command {
   constructor(
@@ -21,7 +25,9 @@ export class StartCommand extends Command {
 
       await context.sendMessage(
         `Привет! ${userName}, чем могу помочь?`,
-        Markup.keyboard([["Меню парсера", "Управление играми"]]).oneTime(),
+        Markup.keyboard([
+          ["Меню парсера", "Управление играми", "Управление подписками"],
+        ]).oneTime(),
       );
 
       this.setupMenuHandlers();
@@ -39,13 +45,7 @@ export class StartCommand extends Command {
 
   private setupMenuHandlers(): void {
     this.bot.hears("Меню парсера", async (context: IBotContext) => {
-      const userMessageId = context.message?.message_id;
-
-      if (userMessageId) {
-        context.session.messagesId.gameMenuCommandMessageId.push(
-          context.message.message_id,
-        );
-      }
+      trackUserMessage(context, "gameMenuCommandMessageId");
 
       await sendAndTrackMessage(
         context,
@@ -65,13 +65,7 @@ export class StartCommand extends Command {
     });
 
     this.bot.hears("Управление играми", async (context: IBotContext) => {
-      const userMessageId = context.message?.message_id;
-
-      if (userMessageId) {
-        context.session.messagesId.gameMenuCommandMessageId.push(
-          context.message.message_id,
-        );
-      }
+      trackUserMessage(context, "gameMenuCommandMessageId");
 
       await sendAndTrackMessage(
         context,
