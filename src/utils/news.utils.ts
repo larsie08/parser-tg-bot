@@ -1,27 +1,41 @@
-import { GameNewsInfo, NewsItem } from "../context";
-import { News } from "../entities";
-import { NewsService } from "../services";
+import { GameNewsInfo, NEWS_RULES, NewsItem, NewsType } from "../context";
+import { News, UserNewsSubscription } from "../entities";
 
-export function filterRelevantNews(news: GameNewsInfo): GameNewsInfo {
-  const allowedTags = ["patchnotes", "vo_marketing_message"];
-  const allowedFeedName = ["steam_community_announcements"];
-  const allowedFeedLabel = ["Community Announcements"];
-
+export function filterRelevantNews(
+  news: GameNewsInfo,
+  subscriptions: UserNewsSubscription,
+): GameNewsInfo {
   return {
     appnews: {
       ...news.appnews,
-      newsitems: news.appnews.newsitems.filter((item) => {
-        const hasAllowedTag =
-          item.tags?.some((tag) => allowedTags.includes(tag)) ?? false;
-
-        const hasAllowedFeed =
-          allowedFeedName.includes(item.feedname) ||
-          allowedFeedLabel.includes(item.feedlabel);
-
-        return hasAllowedTag || hasAllowedFeed || item.feed_type;
-      }),
+      newsitems: news.appnews.newsitems.filter((item) =>
+        Object.entries({
+          [NewsType.PATCHES]: subscriptions.patches,
+          [NewsType.DEV_DIARY]: subscriptions.devDiary,
+          [NewsType.DISCOUNTS]: subscriptions.discounts,
+          [NewsType.ANNOUNCEMENTS]: subscriptions.announcements,
+        }).some(
+          ([category, enabled]) =>
+            enabled && hasCategory(item, category as NewsType),
+        ),
+      ),
     },
   };
+}
+
+function hasCategory(item: NewsItem, category: NewsType): boolean {
+  console.log(category);
+  const rule = NEWS_RULES[category];
+
+  const title = item.title.toLowerCase();
+  const tags = item.tags ?? [];
+
+  return Boolean(
+    rule.tags?.some((tag) => tags.includes(tag)) ||
+    rule.titles?.some((keyword) => title.includes(keyword)) ||
+    rule.feedNames?.includes(item.feedname) ||
+    rule.feedLabels?.includes(item.feedlabel),
+  );
 }
 
 export async function compareNewNews(

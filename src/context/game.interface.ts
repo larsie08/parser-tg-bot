@@ -15,24 +15,6 @@ export interface IGameSteamInfo extends IGameSteamData {
   userId: number;
 }
 
-export type GameNewsInfo = {
-  appnews: {
-    appid: number;
-    newsitems: NewsItem[];
-  };
-};
-
-export type NewsItem = {
-  gid: string;
-  contents: string;
-  title: string;
-  url: string;
-  feed_type: number;
-  feedname: string;
-  feedlabel: string;
-  tags: string[];
-};
-
 export interface SteamAppDetailsResponse {
   [appId: string]: {
     success: boolean;

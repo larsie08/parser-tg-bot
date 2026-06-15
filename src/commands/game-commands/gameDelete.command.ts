@@ -3,6 +3,7 @@ import { Markup, Telegraf } from "telegraf";
 import { GameService, UserService } from "../../services";
 import {
   cancelOperationMessage,
+  getGameNameFromMessageCallback,
   notifyUserAboutError,
   sendAndTrackMessage,
 } from "../../utils";
@@ -49,11 +50,7 @@ export class GameDeleteCommand extends Command {
     });
 
     this.bot.action(/delete_(\d+)/, async (context: IBotContext) => {
-      const selectedGameName: string =
-        context.callbackQuery?.message &&
-        "text" in context.callbackQuery.message
-          ? context.callbackQuery.message.text
-          : "";
+      const selectedGameName = getGameNameFromMessageCallback(context);
 
       if (!selectedGameName)
         return notifyUserAboutError(context, "Ошибка при выборе игры.");

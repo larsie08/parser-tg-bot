@@ -26,7 +26,7 @@ export class StartCommand extends Command {
       await context.sendMessage(
         `Привет! ${userName}, чем могу помочь?`,
         Markup.keyboard([
-          ["Меню парсера", "Управление играми", "Управление подписками"],
+          ["Меню парсера", "Управление играми", "Управление уведомлениями"],
         ]).oneTime(),
       );
 
@@ -80,6 +80,25 @@ export class StartCommand extends Command {
             Markup.button.callback(
               "Удалить игру из списка отслеживания",
               "game_delete_start",
+            ),
+          ],
+          [Markup.button.callback("Отменить", "start_command_cancel")],
+        ]),
+      );
+    });
+
+    this.bot.hears("Управление уведомлениями", async (context: IBotContext) => {
+      trackUserMessage(context, "gameMenuCommandMessageId");
+
+      await sendAndTrackMessage(
+        context,
+        "Выберите команду",
+        "gameMenuCommandMessageId",
+        Markup.inlineKeyboard([
+          [
+            Markup.button.callback(
+              "Изменить настройки по умолчанию",
+              "global_subscription_start",
             ),
           ],
           [Markup.button.callback("Отменить", "start_command_cancel")],

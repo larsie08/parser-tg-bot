@@ -1,6 +1,7 @@
 import { Context } from "telegraf";
 
 import { User } from "../entities";
+import { NewsSubscriptionsSettings } from "./news.interface";
 
 export type PendingGame = {
   steamGameName: string;
@@ -15,6 +16,7 @@ type MessagesId = {
   gameNewsMessagesId: number[];
   gameParserMessageId: number[];
   gameMenuCommandMessageId: number[];
+  userSubscriptionsMessageId: number[];
 };
 
 export type MessagesIdKey = keyof MessagesId;
@@ -25,8 +27,10 @@ export interface SessionData {
   pendingGame: PendingGame[];
   messagesId: MessagesId;
   lastAskNextGameMessageId: number | null;
+  subscriptionDraft: NewsSubscriptionsSettings;
 }
 
 export interface IBotContext extends Context {
   session: SessionData;
+  match?: RegExpExecArray;
 }

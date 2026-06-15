@@ -1,5 +1,6 @@
+import { subscribe } from "node:diagnostics_channel";
 import { AppDataSource } from "../config/typeOrm.config";
-import { Game, User } from "../entities";
+import { Game, User, UserNewsSubscription } from "../entities";
 
 export class UserService {
   async getUserWithGames(userId: number): Promise<User | null> {
@@ -20,12 +21,19 @@ export class UserService {
   }
 
   async saveUser(userId: number, userName: string): Promise<User> {
-    const user = AppDataSource.getRepository(User).create({
+    const userRepo = AppDataSource.getRepository(User);
+    const subscriptionRepo = AppDataSource.getRepository(UserNewsSubscription);
+
+    const user = userRepo.create({
       userId,
       userName,
     });
 
-    return await AppDataSource.getRepository(User).save(user);
+    const subscription = subscriptionRepo.create({ user });
+
+    await subscriptionRepo.save(subscription);
+
+    return await userRepo.save(user);
   }
 
   async addUserGame(user: User, game: Game): Promise<void> {

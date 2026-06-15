@@ -5,6 +5,7 @@ import {
   GameService,
   NewsService,
   SteamService,
+  UserNewsSubscriptionService,
 } from "../../services";
 import {
   compareNewNews,
@@ -13,10 +14,16 @@ import {
   filterRelevantNews,
   getDiffData,
   hasMetaData,
+  notifyUserAboutError,
 } from "../../utils";
 
 import { Game, User } from "../../entities";
-import { Command, GameNewsInfo, IBotContext } from "../../context";
+import {
+  Command,
+  FilteredUsersNewsPreference,
+  GameNewsInfo,
+  IBotContext,
+} from "../../context";
 
 export class AutoParserCommand extends Command {
   constructor(
@@ -25,6 +32,7 @@ export class AutoParserCommand extends Command {
     private gameMetaService: GameMetaService,
     private newsService: NewsService,
     private steamService: SteamService,
+    private userNewsSubscriptionService: UserNewsSubscriptionService,
   ) {
     super(bot);
   }
@@ -65,7 +73,7 @@ export class AutoParserCommand extends Command {
 
     if (hasMetaData(game.meta) && hasAnyChange) {
       for (const user of game.users) {
-        await this.sendMessageUser(user, () =>
+        await this.sendMessageUser(user.userId, () =>
           createGameMessage(steamGameData, game, changesDetected),
         );
       }
@@ -81,14 +89,24 @@ export class AutoParserCommand extends Command {
       return console.log(`Не удалось получить новости для игры: ${game.name}`);
     }
 
-    const filteredNews = filterRelevantNews(fetchedNews);
+    const usersNews = await this.filterUsersSubscriptionsNews(
+      game,
+      fetchedNews,
+    );
+
+    if (!usersNews)
+      return console.log(
+        "Произошла ошибка с фильтрацией новостей пользователя.",
+      );
+
+    console.log(usersNews[0].news.appnews);
 
     const news = await this.newsService.getNewsGame(game.steamId);
 
-    const existedNews = await compareNewNews(filteredNews, news);
+    const existedNews = await compareNewNews(fetchedNews, news);
 
     if (existedNews.appnews.newsitems.length > 0 && news.length !== 0) {
-      await this.processSendMessageNews(game, existedNews);
+      await this.processSendMessageNews(game.name, usersNews, existedNews);
     }
 
     for (const news of existedNews.appnews.newsitems) {
@@ -96,19 +114,46 @@ export class AutoParserCommand extends Command {
     }
   }
 
-  private async processSendMessageNews(game: Game, existedNews: GameNewsInfo) {
+  private async filterUsersSubscriptionsNews(
+    game: Game,
+    news: GameNewsInfo,
+  ): Promise<FilteredUsersNewsPreference[] | null> {
+    const usersNews: FilteredUsersNewsPreference[] = [];
+
     for (const user of game.users) {
-      for (const newsItem of existedNews.appnews.newsitems) {
-        await this.sendMessageUser(user, () =>
-          createNewsMessage(newsItem, game.name, existedNews.appnews.newsitems),
+      const userSubscriptions =
+        await this.userNewsSubscriptionService.getUserSubscriptions(
+          user.userId,
+        );
+
+      if (!userSubscriptions) return null;
+
+      usersNews.push({
+        userId: user.userId,
+        news: filterRelevantNews(news, userSubscriptions),
+      });
+    }
+
+    return usersNews;
+  }
+
+  private async processSendMessageNews(
+    gameName: string,
+    usersNews: FilteredUsersNewsPreference[],
+    existedNews: GameNewsInfo,
+  ): Promise<void> {
+    for (const user of usersNews) {
+      for (const newsItem of user.news.appnews.newsitems) {
+        await this.sendMessageUser(user.userId, () =>
+          createNewsMessage(newsItem, gameName, existedNews.appnews.newsitems),
         );
       }
     }
   }
 
-  private async sendMessageUser(user: User, createMessage: () => string) {
+  private async sendMessageUser(userId: number, createMessage: () => string) {
     const message = createMessage();
 
-    await this.bot.telegram.sendMessage(user.userId, message);
+    await this.bot.telegram.sendMessage(userId, message);
   }
 }

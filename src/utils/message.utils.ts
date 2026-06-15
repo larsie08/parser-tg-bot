@@ -1,6 +1,6 @@
-import { InlineKeyboardMarkup } from "telegraf/types";
 import { Markup } from "telegraf/markup";
 
+import { InlineKeyboardMarkup } from "telegraf/types";
 import {
   IBotContext,
   IGameSteamData,
@@ -47,6 +47,15 @@ export async function sendAndTrackMessage(
     );
 }
 
+export async function sendAndDeleteWithTimeout(
+  context: IBotContext,
+  text: string,
+) {
+  const message = await context.sendMessage(text);
+
+  timeoutDeleteMessage(context, message.message_id);
+}
+
 export async function cancelOperationMessage(
   context: IBotContext,
   messageArrayId: MessagesIdKey,
@@ -61,6 +70,16 @@ export async function cancelOperationMessage(
   const message = await context.sendMessage(messageText);
 
   timeoutDeleteMessage(context, message.message_id);
+}
+
+export function trackUserMessage(
+  context: IBotContext,
+  messageArrayId: MessagesIdKey,
+): void {
+  const userMessageId = context.message?.message_id;
+
+  if (userMessageId)
+    context.session.messagesId[messageArrayId].push(context.message.message_id);
 }
 
 export function createGameMessage(
@@ -182,19 +201,15 @@ export function createNewsMessage(
   return message;
 }
 
-export function trackUserMessage(
-  context: IBotContext,
-  messageArrayId: MessagesIdKey,
-): void {
-  const userMessageId = context.message?.message_id;
-
-  if (userMessageId)
-    context.session.messagesId[messageArrayId].push(context.message.message_id);
-}
-
 export function getGameNameFromMessageCallback(context: IBotContext): string {
   return context.callbackQuery?.message &&
     "text" in context.callbackQuery.message
     ? context.callbackQuery.message.text
     : "";
+}
+
+export function getKeySubscriptionFromKeyboardCallback(
+  context: IBotContext,
+): string | null {
+  return context.match?.[1] ?? null;
 }

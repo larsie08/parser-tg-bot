@@ -4,6 +4,7 @@ import {
   GameService,
   NewsService,
   SteamService,
+  UserNewsSubscriptionService,
   UserService,
 } from "../../services";
 import {
@@ -26,6 +27,7 @@ export class GameNewsCommand extends Command {
     private userService: UserService,
     private gameService: GameService,
     private steamService: SteamService,
+    private userNewsSubscriptionService: UserNewsSubscriptionService,
   ) {
     super(bot);
   }
@@ -57,7 +59,6 @@ export class GameNewsCommand extends Command {
         await this.gameService.getUserGame(gameNameFromMessage);
 
       if (!gameEntity) {
-        console.log("Игра не найдена:", gameNameFromMessage);
         return notifyUserAboutError(context, "Игра не найдена.");
       }
 
@@ -71,20 +72,31 @@ export class GameNewsCommand extends Command {
           "Не удалось получить ни одной новости.",
         );
 
-      const filteredNews = filterRelevantNews(fetchedNews);
+      const userSubscriptions =
+        await this.userNewsSubscriptionService.getUserSubscriptions(
+          context.from.id,
+        );
+
+      if (!userSubscriptions)
+        return notifyUserAboutError(
+          context,
+          "Произошла ошибка с определением подписок",
+        );
+
+      const filteredNews = filterRelevantNews(fetchedNews, userSubscriptions);
 
       const existingNews = await this.newsService.getNewsGame(
         gameEntity.steamId,
       );
 
-      const newsToSave = await compareNewNews(filteredNews, existingNews);
+      const newsToSave = await compareNewNews(fetchedNews, existingNews);
 
       if (!fetchedNews)
         return notifyUserAboutError(context, "Новости не найдены.");
 
       await this.saveNewsToDB(newsToSave, gameEntity);
 
-      await this.sendNewsToUser(context, fetchedNews, gameEntity.name);
+      await this.sendNewsToUser(context, filteredNews, gameEntity.name);
     });
 
     this.bot.action("news_check_cancel", async (context: IBotContext) => {

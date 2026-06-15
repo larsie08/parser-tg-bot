@@ -8,9 +8,10 @@ import {
   GameDeleteCommand,
   AutoParserCommand,
   GameNewsCommand,
+  GlobalSubscriptionCommand,
 } from "./src/commands";
 
-import { Command, IBotContext } from "./src/context";
+import { Command, IBotContext, NewsType } from "./src/context";
 import { AppDataSource } from "./src/config/typeOrm.config";
 
 import {
@@ -18,6 +19,7 @@ import {
   GameService,
   NewsService,
   SteamService,
+  UserNewsSubscriptionService,
   UserService,
 } from "./src/services";
 
@@ -42,8 +44,15 @@ class Bot {
             gameNewsMessagesId: [],
             gameParserMessageId: [],
             gameMenuCommandMessageId: [],
+            userSubscriptionsMessageId: [],
           },
           lastAskNextGameMessageId: null,
+          subscriptionDraft: {
+            [NewsType.PATCHES]: true,
+            [NewsType.DISCOUNTS]: true,
+            [NewsType.ANNOUNCEMENTS]: true,
+            [NewsType.DEV_DIARY]: true,
+          },
         }),
       }),
     );
@@ -55,6 +64,7 @@ class Bot {
     const newsService = new NewsService();
     const userService = new UserService();
     const steamService = new SteamService();
+    const userNewsSubscriptionService = new UserNewsSubscriptionService();
 
     this.commands = [
       new StartCommand(this.bot, userService),
@@ -73,6 +83,7 @@ class Bot {
         gameMetaService,
         newsService,
         steamService,
+        userNewsSubscriptionService,
       ),
       new GameNewsCommand(
         this.bot,
@@ -80,7 +91,9 @@ class Bot {
         userService,
         gameService,
         steamService,
+        userNewsSubscriptionService,
       ),
+      new GlobalSubscriptionCommand(this.bot, userNewsSubscriptionService),
     ];
 
     for (const command of this.commands) {
