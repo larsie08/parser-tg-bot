@@ -1,4 +1,3 @@
-import { subscribe } from "node:diagnostics_channel";
 import { AppDataSource } from "../config/typeOrm.config";
 import { Game, User, UserNewsSubscription } from "../entities";
 
@@ -6,12 +5,6 @@ export class UserService {
   async getUserWithGames(userId: number): Promise<User | null> {
     return await AppDataSource.getRepository(User).findOne({
       where: { userId },
-      relations: { games: true },
-    });
-  }
-
-  async getAllUsersWithGames(): Promise<User[] | null> {
-    return await AppDataSource.getRepository(User).find({
       relations: { games: true },
     });
   }
@@ -24,25 +17,35 @@ export class UserService {
     const userRepo = AppDataSource.getRepository(User);
     const subscriptionRepo = AppDataSource.getRepository(UserNewsSubscription);
 
-    const user = userRepo.create({
-      userId,
-      userName,
-    });
+    const user = await userRepo.save(
+      userRepo.create({
+        userId,
+        userName,
+      }),
+    );
 
-    const subscription = subscriptionRepo.create({ user });
+    await subscriptionRepo.save(subscriptionRepo.create({ user }));
 
-    await subscriptionRepo.save(subscription);
-
-    return await userRepo.save(user);
+    return user;
   }
 
-  async addUserGame(user: User, game: Game): Promise<void> {
+  async addUserGame(userId: number, game: Game): Promise<void> {
+    const userRepo = AppDataSource.getRepository(User);
+
+    const user = await userRepo.findOne({
+      where: { userId },
+      relations: { games: true },
+    });
+
+    if (!user) return;
+
     const alreadyAdded = user.games.some((g) => g.id === game.id);
 
     if (alreadyAdded) return;
 
     user.games.push(game);
-    await AppDataSource.getRepository(User).save(user);
+
+    await userRepo.save(user);
   }
 
   async deleteUserGame(userId: number, game: Game): Promise<void> {

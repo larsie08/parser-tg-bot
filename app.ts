@@ -53,6 +53,7 @@ class Bot {
             [NewsType.ANNOUNCEMENTS]: true,
             [NewsType.DEV_DIARY]: true,
           },
+          user: null,
         }),
       }),
     );

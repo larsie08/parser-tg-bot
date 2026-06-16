@@ -34,11 +34,9 @@ export class GameNewsCommand extends Command {
 
   handle(): void {
     this.bot.action("news_check_start", async (context: IBotContext) => {
-      if (!context.from?.id) throw new Error("Не определен пользователь");
-
-      const user = await this.userService.getUserWithGames(context.from.id);
-
-      const games = user?.games;
+      const games = await this.gameService.getUserAllGames(
+        context.session.user!.userId,
+      );
 
       if (!games || games.length === 0)
         return notifyUserAboutError(
@@ -74,7 +72,7 @@ export class GameNewsCommand extends Command {
 
       const userSubscriptions =
         await this.userNewsSubscriptionService.getUserSubscriptions(
-          context.from.id,
+          context.session.user!.userId,
         );
 
       if (!userSubscriptions)

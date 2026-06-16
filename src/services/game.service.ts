@@ -15,6 +15,12 @@ export class GameService {
     });
   }
 
+  async getUserAllGames(userId: number): Promise<Game[]> {
+    return AppDataSource.getRepository(Game).find({
+      where: { users: { userId } },
+    });
+  }
+
   async deleteGame(game: Game): Promise<void> {
     const repo = AppDataSource.getRepository(Game);
 

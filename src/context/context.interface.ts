@@ -28,6 +28,7 @@ export interface SessionData {
   messagesId: MessagesId;
   lastAskNextGameMessageId: number | null;
   subscriptionDraft: NewsSubscriptionsSettings;
+  user: User | null;
 }
 
 export interface IBotContext extends Context {

@@ -71,16 +71,16 @@ export class GlobalSubscriptionCommand extends Command {
     this.bot.action(
       "global_subscription_save",
       async (context: IBotContext) => {
-        const userId = context.from?.id;
+        const user = context.session.user
 
-        if (!userId)
+        if (!user)
           return notifyUserAboutError(
             context,
             "Произошла ошибка с опеределение id пользователя",
           );
 
         await this.userNewsSubscriptionService.saveUserSubscriptions(
-          userId,
+          user.userId,
           context.session.subscriptionDraft,
         );
 

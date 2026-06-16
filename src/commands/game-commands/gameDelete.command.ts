@@ -22,8 +22,9 @@ export class GameDeleteCommand extends Command {
 
   handle(): void {
     this.bot.action("game_delete_start", async (context: IBotContext) => {
-      const user = await this.userService.getUserWithGames(context.from!.id);
-      const games = user?.games;
+      const games = await this.gameService.getUserAllGames(
+        context.session.user!.userId,
+      );
 
       if (!games || games.length === 0)
         return notifyUserAboutError(context, "У вас нет игр для удаления.");

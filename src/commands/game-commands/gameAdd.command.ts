@@ -11,7 +11,7 @@ import {
   trackUserMessage,
 } from "../../utils";
 
-import { User } from "../../entities";
+import { Game, User } from "../../entities";
 import { Command, IBotContext, PendingGame } from "../../context";
 
 export class GameAddCommand extends Command {
@@ -73,7 +73,7 @@ export class GameAddCommand extends Command {
         game.steamGameName,
         game.steamId,
         game.href,
-        game.user,
+        game.user.userId,
       );
 
       await sendAndTrackMessage(
@@ -111,16 +111,19 @@ export class GameAddCommand extends Command {
         "Не удалось распознать ни одной игры.",
       );
 
-    const user = await this.userService.getUserWithGames(context.from!.id);
-
-    if (!user) return console.log("Пользователь не найден.", context.from);
+    const userGames = await this.gameService.getUserAllGames(
+      context.session.user!.userId,
+    );
 
     try {
-      const { addedGames, pendingGames } = await this.processGames(games, user);
+      const { addedGames, pendingGames } = await this.processGames(
+        games,
+        context.session.user!,
+      );
 
       const { newGames, alreadyAddedGames } = this.filterGames(
         pendingGames,
-        user,
+        userGames,
       );
 
       if (newGames.length === 0 && pendingGames.length !== 0)
@@ -166,9 +169,9 @@ export class GameAddCommand extends Command {
 
   private filterGames(
     games: PendingGame[],
-    user: User,
+    userGames: Game[],
   ): { newGames: PendingGame[]; alreadyAddedGames: PendingGame[] } {
-    const existingIds = user.games.map((g) => g.steamId);
+    const existingIds = userGames.map((g) => g.steamId);
 
     return {
       newGames: games.filter((g) => !existingIds.includes(g.steamId)),
@@ -194,7 +197,7 @@ export class GameAddCommand extends Command {
           steamInfo.name,
           steamInfo.steamId,
           steamInfo.href,
-          user,
+          user.userId,
         );
         addedGames.push({
           steamGameName: steamInfo.name,
@@ -235,13 +238,13 @@ export class GameAddCommand extends Command {
     name: string,
     steamId: string,
     href: string,
-    user: User,
+    userId: number,
   ): Promise<void> {
     try {
       const game = await this.gameService.saveGame(name, steamId, href);
-      await this.userService.addUserGame(user, game);
+      await this.userService.addUserGame(userId, game);
     } catch (error) {
-      console.error("Произошла ошибка при добавлениие игры.", error);
+      return console.error("Произошла ошибка при добавлениие игры.", error);
     }
   }
 

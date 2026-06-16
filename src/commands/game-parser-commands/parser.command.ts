@@ -45,15 +45,9 @@ export class ParserCommand extends Command {
   }
 
   private async handleGameSelection(context: IBotContext): Promise<void> {
-    if (!context.from) {
-      return notifyUserAboutError(
-        context,
-        "Ошибка: не удалось определить пользователя.",
-      );
-    }
-
-    const user = await this.userService.getUserWithGames(context.from.id);
-    const games = user?.games;
+    const games = await this.gameService.getUserAllGames(
+      context.session.user!.userId,
+    );
 
     if (!games?.length)
       return notifyUserAboutError(

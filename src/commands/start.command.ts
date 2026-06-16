@@ -113,6 +113,8 @@ export class StartCommand extends Command {
 
     const currentUser = await this.userService.getUser(context.from?.id);
 
+    context.session.user = currentUser;
+
     if (!currentUser) {
       console.log("Пользователь не найден, добавляем в базу...");
 
@@ -123,6 +125,8 @@ export class StartCommand extends Command {
         );
 
         console.log("Пользователь успешно сохранён в базу данных!");
+
+        context.session.user = user;
 
         return user;
       } catch (error) {
