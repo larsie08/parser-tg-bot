@@ -89,21 +89,19 @@ export class AutoParserCommand extends Command {
       return console.log(`Не удалось получить новости для игры: ${game.name}`);
     }
 
+    const news = await this.newsService.getNewsGame(game.steamId);
+
+    const existedNews = await compareNewNews(fetchedNews, news);
+
     const usersNews = await this.filterUsersSubscriptionsNews(
       game,
-      fetchedNews,
+      existedNews,
     );
 
     if (!usersNews)
       return console.log(
         "Произошла ошибка с фильтрацией новостей пользователя.",
       );
-
-    console.log(usersNews[0].news.appnews);
-
-    const news = await this.newsService.getNewsGame(game.steamId);
-
-    const existedNews = await compareNewNews(fetchedNews, news);
 
     if (existedNews.appnews.newsitems.length > 0 && news.length !== 0) {
       await this.processSendMessageNews(game.name, usersNews, existedNews);
