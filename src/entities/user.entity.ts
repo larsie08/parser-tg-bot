@@ -4,10 +4,11 @@ import {
   Entity,
   JoinTable,
   ManyToMany,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { Game, UserNewsSubscription } from ".";
+import { Game, GameNewsSubscription, UserNewsSubscription } from ".";
 
 @Entity()
 export class User {
@@ -42,6 +43,9 @@ export class User {
     { cascade: true },
   )
   UserNewsSubscription!: UserNewsSubscription;
+
+  @OneToMany(() => GameNewsSubscription, (subscription) => subscription.user)
+  gameSubscriptions!: GameNewsSubscription[];
 
   @CreateDateColumn()
   createdAt!: Date;

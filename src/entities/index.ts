@@ -3,3 +3,4 @@ export * from "./user.entity";
 export * from "./news.entity";
 export * from "./gameMeta.entity";
 export * from "./userNewsSubscription.entity";
+export * from "./gameNewsSubscription.entity";

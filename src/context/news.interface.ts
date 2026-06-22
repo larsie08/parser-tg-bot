@@ -18,7 +18,6 @@ export const NEWS_RULES: Record<
 > = {
   [NewsType.PATCHES]: {
     tags: ["patchnotes", "mod_reviewed"],
-    titles: ["patch", "hotfix", "update"],
   },
   [NewsType.DEV_DIARY]: {
     titles: ["developer diary", "dev diary", "devlog"],
@@ -35,6 +34,8 @@ export const NEWS_RULES: Record<
     feedLabels: ["Community Announcements"],
   },
 };
+
+export type NewsCommandSettingsName = "global" | "game";
 
 export type NewsItem = {
   gid: string;

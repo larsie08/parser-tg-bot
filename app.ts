@@ -9,6 +9,7 @@ import {
   AutoParserCommand,
   GameNewsCommand,
   GlobalSubscriptionCommand,
+  GameSubscriptionCommand,
 } from "./src/commands";
 
 import { Command, IBotContext, NewsType } from "./src/context";
@@ -16,6 +17,7 @@ import { AppDataSource } from "./src/config/typeOrm.config";
 
 import {
   GameMetaService,
+  GameNewsSubscriptionService,
   GameService,
   NewsService,
   SteamService,
@@ -45,15 +47,25 @@ class Bot {
             gameParserMessageId: [],
             gameMenuCommandMessageId: [],
             userSubscriptionsMessageId: [],
+            gameSubscriptionsMessageId: [],
           },
           lastAskNextGameMessageId: null,
           subscriptionDraft: {
-            [NewsType.PATCHES]: true,
-            [NewsType.DISCOUNTS]: true,
-            [NewsType.ANNOUNCEMENTS]: true,
-            [NewsType.DEV_DIARY]: true,
+            global: {
+              [NewsType.PATCHES]: true,
+              [NewsType.DISCOUNTS]: true,
+              [NewsType.ANNOUNCEMENTS]: true,
+              [NewsType.DEV_DIARY]: true,
+            },
+            game: {
+              [NewsType.PATCHES]: true,
+              [NewsType.DISCOUNTS]: true,
+              [NewsType.ANNOUNCEMENTS]: true,
+              [NewsType.DEV_DIARY]: true,
+            },
           },
           user: null,
+          selectedGame: null,
         }),
       }),
     );
@@ -66,6 +78,7 @@ class Bot {
     const userService = new UserService();
     const steamService = new SteamService();
     const userNewsSubscriptionService = new UserNewsSubscriptionService();
+    const gameNewsSubscriptionService = new GameNewsSubscriptionService();
 
     this.commands = [
       new StartCommand(this.bot, userService),
@@ -85,16 +98,22 @@ class Bot {
         newsService,
         steamService,
         userNewsSubscriptionService,
+        gameNewsSubscriptionService,
       ),
       new GameNewsCommand(
         this.bot,
         newsService,
-        userService,
         gameService,
         steamService,
         userNewsSubscriptionService,
+        gameNewsSubscriptionService,
       ),
       new GlobalSubscriptionCommand(this.bot, userNewsSubscriptionService),
+      new GameSubscriptionCommand(
+        this.bot,
+        gameService,
+        gameNewsSubscriptionService,
+      ),
     ];
 
     for (const command of this.commands) {

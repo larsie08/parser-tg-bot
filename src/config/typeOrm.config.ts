@@ -2,7 +2,14 @@ import { DataSource } from "typeorm";
 
 import { ConfigService } from "./config.service";
 
-import { Game, GameMeta, News, User, UserNewsSubscription } from "../entities";
+import {
+  Game,
+  GameMeta,
+  GameNewsSubscription,
+  News,
+  User,
+  UserNewsSubscription,
+} from "../entities";
 
 const configService = new ConfigService();
 
@@ -13,7 +20,14 @@ export const AppDataSource = new DataSource({
   username: configService.get("DB_USERNAME"),
   password: configService.get("DB_PASSWORD"),
   database: configService.get("DB_NAME"),
-  entities: [Game, User, News, GameMeta, UserNewsSubscription],
+  entities: [
+    Game,
+    User,
+    News,
+    GameMeta,
+    UserNewsSubscription,
+    GameNewsSubscription,
+  ],
   migrations: ["src/migrations/*.ts"],
   synchronize: false,
   logging: true,

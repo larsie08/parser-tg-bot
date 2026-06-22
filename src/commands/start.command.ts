@@ -101,6 +101,12 @@ export class StartCommand extends Command {
               "global_subscription_start",
             ),
           ],
+          [
+            Markup.button.callback(
+              "Изменить настройки отдельной игры",
+              "game_subscription_start",
+            ),
+          ],
           [Markup.button.callback("Отменить", "start_command_cancel")],
         ]),
       );

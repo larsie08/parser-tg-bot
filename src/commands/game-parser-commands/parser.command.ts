@@ -13,6 +13,7 @@ import {
   getGameNameFromMessageCallback,
   notifyUserAboutError,
   sendAndTrackMessage,
+  showGameSelectionMenu,
 } from "../../utils";
 
 import { Command, IBotContext } from "../../context";
@@ -57,21 +58,14 @@ export class ParserCommand extends Command {
 
     context.session.state = "WAITING_GAME";
 
-    for (const game of games) {
-      await sendAndTrackMessage(
-        context,
-        game.name,
-        "gameParserMessageId",
-        Markup.inlineKeyboard([
-          Markup.button.callback("Узнать цену", "price_check_game"),
-        ]),
-      );
-    }
-
-    await sendAndTrackMessage(
+    await showGameSelectionMenu(
       context,
-      "Отменить",
+      games,
       "gameParserMessageId",
+      "Отменить",
+      Markup.inlineKeyboard([
+        Markup.button.callback("Узнать цену", "price_check_game"),
+      ]),
       Markup.inlineKeyboard([
         Markup.button.callback("Отменить", "price_check_cancel"),
       ]),

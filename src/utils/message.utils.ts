@@ -1,4 +1,4 @@
-import { Markup } from "telegraf/markup";
+import { Markup } from "telegraf";
 
 import { InlineKeyboardMarkup } from "telegraf/types";
 import {
@@ -38,7 +38,7 @@ export async function sendAndTrackMessage(
   context: IBotContext,
   text: string,
   messageArrayId: MessagesIdKey,
-  markUp?: Markup<InlineKeyboardMarkup>,
+  markUp?: Markup.Markup<InlineKeyboardMarkup>,
 ): Promise<void> {
   await context
     .sendMessage(text, markUp)
@@ -199,6 +199,26 @@ export function createNewsMessage(
   }
 
   return message;
+}
+
+export async function showGameSelectionMenu(
+  context: IBotContext,
+  games: Game[],
+  messageArrayId: MessagesIdKey,
+  textMessageCancel: string,
+  markUpGames: Markup.Markup<InlineKeyboardMarkup>,
+  markUpCancel: Markup.Markup<InlineKeyboardMarkup>,
+) {
+  for (const game of games) {
+    await sendAndTrackMessage(context, game.name, messageArrayId, markUpGames);
+  }
+
+  await sendAndTrackMessage(
+    context,
+    textMessageCancel,
+    messageArrayId,
+    markUpCancel,
+  );
 }
 
 export function getGameNameFromMessageCallback(context: IBotContext): string {

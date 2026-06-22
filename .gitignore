@@ -2,4 +2,3 @@ dist
 .env
 node_modules
 tests
-src/commands/subscription-commands/game-subscription.command.ts

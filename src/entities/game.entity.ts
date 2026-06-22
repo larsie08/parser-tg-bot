@@ -9,7 +9,7 @@ import {
   UpdateDateColumn,
 } from "typeorm";
 
-import { GameMeta, News, User } from ".";
+import { GameMeta, GameNewsSubscription, News, User } from ".";
 
 @Entity()
 export class Game {
@@ -33,6 +33,9 @@ export class Game {
 
   @OneToMany(() => News, (news) => news.game)
   news!: News[];
+
+  @OneToMany(() => GameNewsSubscription, (subscription) => subscription.game)
+  subscriptions!: GameNewsSubscription[];
 
   @CreateDateColumn()
   createdAt!: Date;

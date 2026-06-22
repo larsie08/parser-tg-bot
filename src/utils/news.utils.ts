@@ -1,9 +1,9 @@
 import { GameNewsInfo, NEWS_RULES, NewsItem, NewsType } from "../context";
-import { News, UserNewsSubscription } from "../entities";
+import { GameNewsSubscription, News, UserNewsSubscription } from "../entities";
 
 export function filterRelevantNews(
   news: GameNewsInfo,
-  subscriptions: UserNewsSubscription,
+  subscriptions: GameNewsSubscription | UserNewsSubscription,
 ): GameNewsInfo {
   return {
     appnews: {
@@ -24,7 +24,6 @@ export function filterRelevantNews(
 }
 
 function hasCategory(item: NewsItem, category: NewsType): boolean {
-  console.log(category);
   const rule = NEWS_RULES[category];
 
   const title = item.title.toLowerCase();

@@ -6,6 +6,7 @@ import {
   getGameNameFromMessageCallback,
   notifyUserAboutError,
   sendAndTrackMessage,
+  showGameSelectionMenu,
 } from "../../utils";
 
 import { Game } from "../../entities";
@@ -29,28 +30,21 @@ export class GameDeleteCommand extends Command {
       if (!games || games.length === 0)
         return notifyUserAboutError(context, "У вас нет игр для удаления.");
 
-      for (const game of games) {
-        await sendAndTrackMessage(
-          context,
-          game.name,
-          "gameDeleteMessagesId",
-          Markup.inlineKeyboard([
-            Markup.button.callback("Удалить", `delete_${game.id}`),
-          ]),
-        );
-      }
-
-      await sendAndTrackMessage(
+      await showGameSelectionMenu(
         context,
-        "Вы можете отменить процесс удаления:",
+        games,
         "gameDeleteMessagesId",
+        "Вы можете отменить процесс удаления:",
+        Markup.inlineKeyboard([
+          Markup.button.callback("Удалить", `game_delete_select`),
+        ]),
         Markup.inlineKeyboard([
           Markup.button.callback("Отменить", "game_delete_cancel"),
         ]),
       );
     });
 
-    this.bot.action(/delete_(\d+)/, async (context: IBotContext) => {
+    this.bot.action("game_delete_select", async (context: IBotContext) => {
       const selectedGameName = getGameNameFromMessageCallback(context);
 
       if (!selectedGameName)

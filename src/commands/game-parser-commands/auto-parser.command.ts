@@ -2,6 +2,7 @@ import { Telegraf } from "telegraf";
 
 import {
   GameMetaService,
+  GameNewsSubscriptionService,
   GameService,
   NewsService,
   SteamService,
@@ -14,10 +15,9 @@ import {
   filterRelevantNews,
   getDiffData,
   hasMetaData,
-  notifyUserAboutError,
 } from "../../utils";
 
-import { Game, User } from "../../entities";
+import { Game } from "../../entities";
 import {
   Command,
   FilteredUsersNewsPreference,
@@ -33,6 +33,7 @@ export class AutoParserCommand extends Command {
     private newsService: NewsService,
     private steamService: SteamService,
     private userNewsSubscriptionService: UserNewsSubscriptionService,
+    private gameNewsSubscriptionService: GameNewsSubscriptionService,
   ) {
     super(bot);
   }
@@ -119,6 +120,12 @@ export class AutoParserCommand extends Command {
     const usersNews: FilteredUsersNewsPreference[] = [];
 
     for (const user of game.users) {
+      const gameSubscription =
+        await this.gameNewsSubscriptionService.getGameSubscriptions(
+          user.id,
+          game.id,
+        );
+
       const userSubscriptions =
         await this.userNewsSubscriptionService.getUserSubscriptions(
           user.userId,
@@ -128,7 +135,10 @@ export class AutoParserCommand extends Command {
 
       usersNews.push({
         userId: user.userId,
-        news: filterRelevantNews(news, userSubscriptions),
+        news: filterRelevantNews(
+          news,
+          gameSubscription ? gameSubscription : userSubscriptions,
+        ),
       });
     }
 

@@ -1,6 +1,7 @@
 import { Markup, Telegraf } from "telegraf";
 
 import {
+  GameNewsSubscriptionService,
   GameService,
   NewsService,
   SteamService,
@@ -15,6 +16,7 @@ import {
   getGameNameFromMessageCallback,
   notifyUserAboutError,
   sendAndTrackMessage,
+  showGameSelectionMenu,
 } from "../../utils";
 
 import { Command, GameNewsInfo, IBotContext } from "../../context";
@@ -24,10 +26,10 @@ export class GameNewsCommand extends Command {
   constructor(
     bot: Telegraf<IBotContext>,
     private newsService: NewsService,
-    private userService: UserService,
     private gameService: GameService,
     private steamService: SteamService,
     private userNewsSubscriptionService: UserNewsSubscriptionService,
+    private gameNewsSubscriptionService: GameNewsSubscriptionService,
   ) {
     super(bot);
   }
@@ -44,7 +46,18 @@ export class GameNewsCommand extends Command {
           "В списке отслеживаемого ничего не найдено.",
         );
 
-      await this.displayGames(context, games);
+      await showGameSelectionMenu(
+        context,
+        games,
+        "gameNewsMessagesId",
+        "Отменить проверку новостей.",
+        Markup.inlineKeyboard([
+          Markup.button.callback("Узнать новость", "news_check_game"),
+        ]),
+        Markup.inlineKeyboard([
+          Markup.button.callback("Отменить", "news_check_cancel"),
+        ]),
+      );
     });
 
     this.bot.action("news_check_game", async (context) => {
@@ -70,6 +83,12 @@ export class GameNewsCommand extends Command {
           "Не удалось получить ни одной новости.",
         );
 
+      const gameSubscription =
+        await this.gameNewsSubscriptionService.getGameSubscriptions(
+          context.session.user!.userId,
+          gameEntity.id,
+        );
+
       const userSubscriptions =
         await this.userNewsSubscriptionService.getUserSubscriptions(
           context.session.user!.userId,
@@ -81,7 +100,10 @@ export class GameNewsCommand extends Command {
           "Произошла ошибка с определением подписок",
         );
 
-      const filteredNews = filterRelevantNews(fetchedNews, userSubscriptions);
+      const filteredNews = filterRelevantNews(
+        fetchedNews,
+        gameSubscription ? gameSubscription : userSubscriptions,
+      );
 
       const existingNews = await this.newsService.getNewsGame(
         gameEntity.steamId,
@@ -100,31 +122,6 @@ export class GameNewsCommand extends Command {
     this.bot.action("news_check_cancel", async (context: IBotContext) => {
       await cancelOperationMessage(context, "gameNewsMessagesId", null);
     });
-  }
-
-  private async displayGames(
-    context: IBotContext,
-    games: Game[],
-  ): Promise<void> {
-    for (const game of games) {
-      await sendAndTrackMessage(
-        context,
-        game.name,
-        "gameNewsMessagesId",
-        Markup.inlineKeyboard([
-          Markup.button.callback("Узнать новость", "news_check_game"),
-        ]),
-      );
-    }
-
-    await sendAndTrackMessage(
-      context,
-      "Отменить проверку новостей.",
-      "gameNewsMessagesId",
-      Markup.inlineKeyboard([
-        Markup.button.callback("Узнать новость", "news_check_cancel"),
-      ]),
-    );
   }
 
   private async saveNewsToDB(news: GameNewsInfo, game: Game): Promise<void> {

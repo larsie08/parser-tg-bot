@@ -1,6 +1,7 @@
 import { AppDataSource } from "../config";
+
 import { NewsSubscriptionsSettings } from "../context";
-import { User, UserNewsSubscription } from "../entities";
+import { UserNewsSubscription } from "../entities";
 
 export class UserNewsSubscriptionService {
   async getUserSubscriptions(

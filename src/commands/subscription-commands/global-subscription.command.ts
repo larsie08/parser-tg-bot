@@ -1,12 +1,16 @@
-import { Markup, Telegraf } from "telegraf";
+import { Telegraf } from "telegraf";
+
+import { UserNewsSubscriptionService } from "../../services";
 import {
+  buildSubscriptionMarkupKeyboard,
   cancelOperationMessage,
   getKeySubscriptionFromKeyboardCallback,
   notifyUserAboutError,
   sendAndDeleteWithTimeout,
   sendAndTrackMessage,
+  setSubscriptionContextStateDefault,
+  setSubscriptionsSessionState,
 } from "../../utils";
-import { UserNewsSubscriptionService } from "../../services";
 
 import { Command, IBotContext, NewsSubscriptionsSettings } from "../../context";
 import { UserNewsSubscription } from "../../entities";
@@ -23,25 +27,21 @@ export class GlobalSubscriptionCommand extends Command {
     this.bot.action(
       "global_subscription_start",
       async (context: IBotContext) => {
-        const userId = context.from?.id;
-
-        if (!userId)
-          return notifyUserAboutError(
-            context,
-            "Произошла ошибка с определением пользователя.",
-          );
+        setSubscriptionContextStateDefault(context, "global");
 
         const userSubscriptions =
-          await this.userNewsSubscriptionService.getUserSubscriptions(userId);
+          await this.userNewsSubscriptionService.getUserSubscriptions(
+            context.session.user!.userId,
+          );
 
         if (userSubscriptions)
-          this.setSubscriptionsSessionState(context, userSubscriptions);
+          setSubscriptionsSessionState(context, "global", userSubscriptions);
 
         await sendAndTrackMessage(
           context,
-          "Выберите новости, которые будете получать.",
+          "Выберите категории новостей, которые будете получать.",
           "userSubscriptionsMessageId",
-          this.buildSubscriptionKeyboard(context),
+          buildSubscriptionMarkupKeyboard(context, "global"),
         );
       },
     );
@@ -59,11 +59,11 @@ export class GlobalSubscriptionCommand extends Command {
             "Произошла ошибка при получении id кнопки",
           );
 
-        context.session.subscriptionDraft[key] =
-          !context.session.subscriptionDraft[key];
+        context.session.subscriptionDraft.global[key] =
+          !context.session.subscriptionDraft.global[key];
 
         await context.editMessageReplyMarkup(
-          this.buildSubscriptionKeyboard(context).reply_markup,
+          buildSubscriptionMarkupKeyboard(context, "global").reply_markup,
         );
       },
     );
@@ -71,17 +71,9 @@ export class GlobalSubscriptionCommand extends Command {
     this.bot.action(
       "global_subscription_save",
       async (context: IBotContext) => {
-        const user = context.session.user
-
-        if (!user)
-          return notifyUserAboutError(
-            context,
-            "Произошла ошибка с опеределение id пользователя",
-          );
-
         await this.userNewsSubscriptionService.saveUserSubscriptions(
-          user.userId,
-          context.session.subscriptionDraft,
+          context.session.user!.userId,
+          context.session.subscriptionDraft.global,
         );
 
         await context.deleteMessages(
@@ -109,39 +101,5 @@ export class GlobalSubscriptionCommand extends Command {
     userSubscriptions: UserNewsSubscription,
   ): void {
     Object.assign(context.session.subscriptionDraft, userSubscriptions);
-  }
-
-  private buildSubscriptionKeyboard(context: IBotContext) {
-    const state = context.session.subscriptionDraft;
-    return Markup.inlineKeyboard([
-      [
-        Markup.button.callback(
-          `${state.patches ? "✅" : "❌"} Патчи и обновления`,
-          "global_subscription_toggle_patches",
-        ),
-      ],
-      [
-        Markup.button.callback(
-          `${state.devDiary ? "✅" : "❌"} Дневники`,
-          "global_subscription_toggle_devDiary",
-        ),
-      ],
-      [
-        Markup.button.callback(
-          `${state.discounts ? "✅" : "❌"} Скидки`,
-          "global_subscription_toggle_discounts",
-        ),
-      ],
-      [
-        Markup.button.callback(
-          `${state.announcements ? "✅" : "❌"} Анонсы`,
-          "global_subscription_toggle_announcements",
-        ),
-      ],
-      [
-        Markup.button.callback("💾 Сохранить", "global_subscription_save"),
-        Markup.button.callback("❌ Отмена", "global_subscription_cancel"),
-      ],
-    ]);
   }
 }
