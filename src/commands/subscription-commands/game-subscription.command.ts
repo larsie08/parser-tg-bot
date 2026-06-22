@@ -48,7 +48,7 @@ export class GameSubscriptionCommand extends Command {
           Markup.button.callback("Выбрать игру", "game_subscription_select"),
         ]),
         Markup.inlineKeyboard([
-          Markup.button.callback("Отменить", "global_subscription_cancel"),
+          Markup.button.callback("Отменить", "game_subscription_cancel"),
         ]),
       );
     });
