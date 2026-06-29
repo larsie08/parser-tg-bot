@@ -2,11 +2,9 @@ import { Telegraf } from "telegraf";
 
 import {
   GameMetaService,
-  GameNewsSubscriptionService,
   GameService,
   NewsService,
   SteamService,
-  UserNewsSubscriptionService,
 } from "../../services";
 import {
   compareNewNews,
@@ -32,8 +30,6 @@ export class AutoParserCommand extends Command {
     private gameMetaService: GameMetaService,
     private newsService: NewsService,
     private steamService: SteamService,
-    private userNewsSubscriptionService: UserNewsSubscriptionService,
-    private gameNewsSubscriptionService: GameNewsSubscriptionService,
   ) {
     super(bot);
   }
@@ -41,7 +37,7 @@ export class AutoParserCommand extends Command {
   async handle(): Promise<void> {
     setInterval(
       async () => {
-        const games = await this.gameService.getGamesOfUsers();
+        const games = await this.gameService.getGamesOfUsersWithSubscriptions();
 
         if (!games) throw new Error("Не найдено ни одной игры.");
 
@@ -120,25 +116,11 @@ export class AutoParserCommand extends Command {
     const usersNews: FilteredUsersNewsPreference[] = [];
 
     for (const user of game.users) {
-      const gameSubscription =
-        await this.gameNewsSubscriptionService.getGameSubscriptions(
-          user.id,
-          game.id,
-        );
-
-      const userSubscriptions =
-        await this.userNewsSubscriptionService.getUserSubscriptions(
-          user.userId,
-        );
-
-      if (!userSubscriptions) return null;
+      const gameSub = user.gameSubscriptions.find((s) => s.game.id === game.id);
 
       usersNews.push({
         userId: user.userId,
-        news: filterRelevantNews(
-          news,
-          gameSubscription ? gameSubscription : userSubscriptions,
-        ),
+        news: filterRelevantNews(news, gameSub ?? user.UserNewsSubscription),
       });
     }
 

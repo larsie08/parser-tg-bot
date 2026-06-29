@@ -31,7 +31,7 @@ export class GameNewsSubscriptionService {
     gameId: number,
   ): Promise<GameNewsSubscription | null> {
     return await AppDataSource.getRepository(GameNewsSubscription).findOne({
-      where: { user: { userId }, game: { id: gameId } },
+      where: { user: { id: userId }, game: { id: gameId } },
     });
   }
 

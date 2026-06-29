@@ -6,7 +6,6 @@ import {
   NewsService,
   SteamService,
   UserNewsSubscriptionService,
-  UserService,
 } from "../../services";
 import {
   cancelOperationMessage,
@@ -85,7 +84,7 @@ export class GameNewsCommand extends Command {
 
       const gameSubscription =
         await this.gameNewsSubscriptionService.getGameSubscriptions(
-          context.session.user!.userId,
+          context.session.user!.id,
           gameEntity.id,
         );
 
@@ -137,6 +136,12 @@ export class GameNewsCommand extends Command {
     news: GameNewsInfo,
     gameName: string,
   ): Promise<void> {
+    if (news.appnews.newsitems.length === 0)
+      return await notifyUserAboutError(
+        context,
+        "Не найдено ни одной новости\nСкорее всего новостей нет, согласно вашим настройкам.",
+      );
+
     for (const item of news.appnews.newsitems) {
       await sendAndTrackMessage(
         context,

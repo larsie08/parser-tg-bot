@@ -97,8 +97,6 @@ class Bot {
         gameMetaService,
         newsService,
         steamService,
-        userNewsSubscriptionService,
-        gameNewsSubscriptionService,
       ),
       new GameNewsCommand(
         this.bot,

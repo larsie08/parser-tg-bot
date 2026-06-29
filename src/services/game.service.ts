@@ -9,9 +9,15 @@ export class GameService {
     });
   }
 
-  async getGamesOfUsers(): Promise<Game[] | null> {
+  async getGamesOfUsersWithSubscriptions(): Promise<Game[] | null> {
     return await AppDataSource.getRepository(Game).find({
-      relations: { meta: true, users: true },
+      relations: {
+        meta: true,
+        users: {
+          UserNewsSubscription: true,
+          gameSubscriptions: { game: true },
+        },
+      },
     });
   }
 
