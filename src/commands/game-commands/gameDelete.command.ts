@@ -87,7 +87,10 @@ export class GameDeleteCommand extends Command {
     });
   }
 
-  private async handleDeleteGame(context: IBotContext, game: Game) {
+  private async handleDeleteGame(
+    context: IBotContext,
+    game: Game,
+  ): Promise<void> {
     try {
       await this.userService.deleteUserGame(context.from!.id, game);
       await this.gameService.deleteGame(game);

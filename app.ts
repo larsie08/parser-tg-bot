@@ -82,13 +82,7 @@ class Bot {
 
     this.commands = [
       new StartCommand(this.bot, userService),
-      new ParserCommand(
-        this.bot,
-        gameMetaService,
-        userService,
-        gameService,
-        steamService,
-      ),
+      new ParserCommand(this.bot, gameMetaService, gameService, steamService),
       new GameAddCommand(this.bot, userService, gameService, steamService),
       new GameDeleteCommand(this.bot, userService, gameService),
       new AutoParserCommand(
@@ -98,14 +92,7 @@ class Bot {
         newsService,
         steamService,
       ),
-      new GameNewsCommand(
-        this.bot,
-        newsService,
-        gameService,
-        steamService,
-        userNewsSubscriptionService,
-        gameNewsSubscriptionService,
-      ),
+      new GameNewsCommand(this.bot, newsService, gameService, steamService),
       new GlobalSubscriptionCommand(this.bot, userNewsSubscriptionService),
       new GameSubscriptionCommand(
         this.bot,

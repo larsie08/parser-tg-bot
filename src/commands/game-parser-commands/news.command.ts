@@ -1,12 +1,6 @@
 import { Markup, Telegraf } from "telegraf";
 
-import {
-  GameNewsSubscriptionService,
-  GameService,
-  NewsService,
-  SteamService,
-  UserNewsSubscriptionService,
-} from "../../services";
+import { GameService, NewsService, SteamService } from "../../services";
 import {
   cancelOperationMessage,
   compareNewNews,
@@ -27,8 +21,6 @@ export class GameNewsCommand extends Command {
     private newsService: NewsService,
     private gameService: GameService,
     private steamService: SteamService,
-    private userNewsSubscriptionService: UserNewsSubscriptionService,
-    private gameNewsSubscriptionService: GameNewsSubscriptionService,
   ) {
     super(bot);
   }
@@ -66,7 +58,9 @@ export class GameNewsCommand extends Command {
         return notifyUserAboutError(context, "Ошибка при выборе игры.");
 
       const gameEntity =
-        await this.gameService.getUserGame(gameNameFromMessage);
+        await this.gameService.getUserGameWithSubscriptions(
+          gameNameFromMessage,
+        );
 
       if (!gameEntity) {
         return notifyUserAboutError(context, "Игра не найдена.");
@@ -82,26 +76,15 @@ export class GameNewsCommand extends Command {
           "Не удалось получить ни одной новости.",
         );
 
-      const gameSubscription =
-        await this.gameNewsSubscriptionService.getGameSubscriptions(
-          context.session.user!.id,
-          gameEntity.id,
-        );
-
-      const userSubscriptions =
-        await this.userNewsSubscriptionService.getUserSubscriptions(
-          context.session.user!.userId,
-        );
-
-      if (!userSubscriptions)
-        return notifyUserAboutError(
-          context,
-          "Произошла ошибка с определением подписок",
-        );
+      const gameSubscription = gameEntity.subscriptions.find(
+        (sub) => sub.user.id === context.session.user!.id,
+      );
 
       const filteredNews = filterRelevantNews(
         fetchedNews,
-        gameSubscription ? gameSubscription : userSubscriptions,
+        gameSubscription
+          ? gameSubscription
+          : context.session.user!.UserNewsSubscription,
       );
 
       const existingNews = await this.newsService.getNewsGame(

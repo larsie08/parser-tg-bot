@@ -15,7 +15,7 @@ export class GameMetaService {
     });
 
     if (!meta) {
-      meta = gameMetaRepo.create();
+      meta = gameMetaRepo.create({ game: { id: game.id } });
     }
 
     Object.assign(meta, this.buildMetaUpdate(gameData, meta));

@@ -5,12 +5,15 @@ export class UserService {
   async getUserWithGames(userId: number): Promise<User | null> {
     return await AppDataSource.getRepository(User).findOne({
       where: { userId },
-      relations: { games: true },
+      relations: { games: true, UserNewsSubscription: true },
     });
   }
 
   async getUser(userId: number): Promise<User | null> {
-    return await AppDataSource.getRepository(User).findOneBy({ userId });
+    return await AppDataSource.getRepository(User).findOne({
+      where: { userId },
+      relations: { UserNewsSubscription: true },
+    });
   }
 
   async saveUser(userId: number, userName: string): Promise<User> {

@@ -1,16 +1,12 @@
 import { Markup, Telegraf } from "telegraf";
 
-import {
-  GameMetaService,
-  GameService,
-  SteamService,
-  UserService,
-} from "../../services";
+import { GameMetaService, GameService, SteamService } from "../../services";
 import {
   cancelOperationMessage,
   createGameMessage,
   getDiffData,
   getGameNameFromMessageCallback,
+  hasMetaData,
   notifyUserAboutError,
   sendAndTrackMessage,
   showGameSelectionMenu,
@@ -22,7 +18,6 @@ export class ParserCommand extends Command {
   constructor(
     bot: Telegraf<IBotContext>,
     private gameMetaService: GameMetaService,
-    private userService: UserService,
     private gameService: GameService,
     private steamService: SteamService,
   ) {
@@ -91,9 +86,11 @@ export class ParserCommand extends Command {
       );
 
     const changesDetected = getDiffData(game, gameData);
-    const hasAnyChange = Object.values(changesDetected).length > 0;
 
-    if (hasAnyChange) await this.gameMetaService.upsertMetaInfo(gameData, game);
+    const hasAnyChange = Object.keys(changesDetected).length > 0;
+
+    if (!hasMetaData(game.meta) || hasAnyChange)
+      await this.gameMetaService.upsertMetaInfo(gameData, game);
 
     await sendAndTrackMessage(
       context,

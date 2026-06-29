@@ -9,6 +9,17 @@ export class GameService {
     });
   }
 
+  async getUserGameWithSubscriptions(
+    gameName: string,
+  ): Promise<Game | null> {
+    return await AppDataSource.getRepository(Game).findOne({
+      where: { name: gameName },
+      relations: {
+        subscriptions: { user: true },
+      },
+    });
+  }
+
   async getGamesOfUsersWithSubscriptions(): Promise<Game[] | null> {
     return await AppDataSource.getRepository(Game).find({
       relations: {

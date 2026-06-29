@@ -68,7 +68,7 @@ export class GameSubscriptionCommand extends Command {
 
         const gameSubscriptionSettings =
           await this.gameNewsSubscriptionService.getGameSubscriptions(
-            context.session.user!.userId,
+            context.session.user!.id,
             game.id,
           );
 

@@ -16,7 +16,7 @@ export class UserNewsSubscriptionService {
     });
   }
 
-  async saveUserSubscriptions(
+  async upsertUserSubscriptions(
     userId: number,
     state: NewsSubscriptionsSettings,
   ): Promise<void | null> {

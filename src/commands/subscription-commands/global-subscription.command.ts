@@ -13,7 +13,6 @@ import {
 } from "../../utils";
 
 import { Command, IBotContext, NewsSubscriptionsSettings } from "../../context";
-import { UserNewsSubscription } from "../../entities";
 
 export class GlobalSubscriptionCommand extends Command {
   constructor(
@@ -71,7 +70,7 @@ export class GlobalSubscriptionCommand extends Command {
     this.bot.action(
       "global_subscription_save",
       async (context: IBotContext) => {
-        await this.userNewsSubscriptionService.saveUserSubscriptions(
+        await this.userNewsSubscriptionService.upsertUserSubscriptions(
           context.session.user!.userId,
           context.session.subscriptionDraft.global,
         );
@@ -94,12 +93,5 @@ export class GlobalSubscriptionCommand extends Command {
         );
       },
     );
-  }
-
-  private setSubscriptionsSessionState(
-    context: IBotContext,
-    userSubscriptions: UserNewsSubscription,
-  ): void {
-    Object.assign(context.session.subscriptionDraft, userSubscriptions);
   }
 }
