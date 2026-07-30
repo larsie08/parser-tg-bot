@@ -34,6 +34,15 @@ export class GameMeta {
   @Column({ nullable: true })
   releaseTime?: string;
 
+  @Column({ nullable: true })
+  comingSoon?: boolean;
+
+  @Column({ nullable: true })
+  isEarlyAccess?: boolean;
+
+  @Column({ nullable: true })
+  lastSteamPageCheck?: Date;
+
   @CreateDateColumn()
   createdAt!: Date;
 

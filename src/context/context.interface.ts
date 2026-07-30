@@ -13,9 +13,12 @@ export type PendingGame = {
 type MessagesId = {
   gameAddMessagesId: number[];
   gameDeleteMessagesId: number[];
+
   gameNewsMessagesId: number[];
   gameParserMessageId: number[];
+  
   gameMenuCommandMessageId: number[];
+
   userSubscriptionsMessageId: number[];
   gameSubscriptionsMessageId: number[];
 };

@@ -22,6 +22,18 @@ export class SteamService {
     }
   }
 
+  async fetchEarlyAccessReleaseDate(gameId: string): Promise<string | null> {
+    try {
+      const { data } = await axios.get(
+        `https://store.steampowered.com/app/${gameId}`,
+      );
+      return this.parseSteamReleaseDateData(data);
+    } catch (error) {
+      console.error("Ошибка при получении данных с Steam:", error);
+      return null;
+    }
+  }
+
   async fetchGameNews(gameId: string): Promise<GameNewsInfo | null> {
     try {
       const { data } = await axios.get(
@@ -52,28 +64,23 @@ export class SteamService {
   }
 
   private parseSteamIdData(
-    data: string,
+    data: Buffer<ArrayBufferLike>,
   ): { href: string; name: string } | null {
-    try {
-      const dom = new JSDOM(data);
-      const gameBlock = dom.window.document
-        .getElementById("search_resultsRows")
-        ?.querySelector("a");
+    const dom = new JSDOM(data);
+    const gameBlock = dom.window.document
+      .getElementById("search_resultsRows")
+      ?.querySelector("a");
 
-      const gameName = gameBlock
-        ?.getElementsByClassName("search_name")[0]
-        .querySelector("span")?.textContent;
+    const gameName = gameBlock
+      ?.getElementsByClassName("search_name")[0]
+      .querySelector("span")?.textContent;
 
-      if (!gameName || !gameBlock.href) {
-        console.log("Ошибка при разборе данных Steam:", gameName, gameBlock);
-        return null;
-      }
-
-      return { href: gameBlock.href, name: gameName };
-    } catch (error) {
-      console.error("Ошибка при разборе данных Steam:", error);
+    if (!gameName || !gameBlock.href) {
+      console.log("Ошибка при разборе данных Steam:", gameName, gameBlock);
       return null;
     }
+
+    return { href: gameBlock.href, name: gameName };
   }
 
   private parseSteamPriceJsonData(
@@ -92,6 +99,25 @@ export class SteamService {
       releaseDate: data[gameId].data.release_date.date,
       releaseTime: undefined,
       comingSoon: data[gameId].data.release_date.coming_soon,
+      isEarlyAccess: data[gameId].data.genres.some(
+        (obj) => obj.description === "Early Access",
+      ),
     };
+  }
+
+  private parseSteamReleaseDateData(
+    data: Buffer<ArrayBufferLike>,
+  ): string | null {
+    const dom = new JSDOM(data);
+
+    const infoBlock = dom.window.document.getElementsByClassName(
+      "early_access_header",
+    )[0];
+
+    const releaseDate = infoBlock
+      .getElementsByClassName("leaving_early_access")[0]
+      .querySelector("h2")?.textContent;
+
+    return releaseDate || null;
   }
 }

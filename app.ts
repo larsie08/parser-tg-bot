@@ -10,6 +10,7 @@ import {
   GameNewsCommand,
   GlobalSubscriptionCommand,
   GameSubscriptionCommand,
+  NotificationCommand,
 } from "./src/commands";
 
 import { Command, IBotContext, NewsType } from "./src/context";
@@ -82,9 +83,7 @@ class Bot {
 
     this.commands = [
       new StartCommand(this.bot, userService),
-      new ParserCommand(this.bot, gameMetaService, gameService, steamService),
-      new GameAddCommand(this.bot, userService, gameService, steamService),
-      new GameDeleteCommand(this.bot, userService, gameService),
+
       new AutoParserCommand(
         this.bot,
         gameService,
@@ -92,7 +91,14 @@ class Bot {
         newsService,
         steamService,
       ),
+      new NotificationCommand(this.bot, gameMetaService),
+
+      new GameAddCommand(this.bot, userService, gameService, steamService),
+      new GameDeleteCommand(this.bot, userService, gameService),
+
+      new ParserCommand(this.bot, gameMetaService, gameService, steamService),
       new GameNewsCommand(this.bot, newsService, gameService, steamService),
+
       new GlobalSubscriptionCommand(this.bot, userNewsSubscriptionService),
       new GameSubscriptionCommand(
         this.bot,

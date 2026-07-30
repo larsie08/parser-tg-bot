@@ -9,6 +9,7 @@ export interface IGameSteamData extends IGameBaseData {
   releaseTime: string | undefined;
   releaseDate: string | undefined;
   comingSoon: boolean;
+  isEarlyAccess: boolean;
 }
 
 export interface IGameSteamInfo extends IGameSteamData {

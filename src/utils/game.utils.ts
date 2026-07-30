@@ -15,13 +15,22 @@ export function getDiffData(
     return changes;
   }
 
-  const deniedKeys = ["name", "href", "oldPrice", "comingSoon", "releaseTime"];
+  const deniedKeys = [
+    "name",
+    "href",
+    "oldPrice",
+    "releaseTime",
+    "lastSteamPageCheck",
+    !needsReleaseTracking(game.meta, steamGameData) && "releaseDate",
+  ];
+
+  const normalize = <T>(value: T | null | undefined): T | null => value ?? null;
 
   for (const key of Object.keys(steamGameData) as (keyof IGameSteamData)[]) {
     if (deniedKeys.includes(key)) continue;
 
-    const newValue = steamGameData[key];
-    const oldValue = game.meta[key as keyof GameMeta];
+    const newValue = normalize(steamGameData[key]);
+    const oldValue = normalize(game.meta[key as keyof GameMeta]);
 
     if (oldValue !== newValue) {
       changes[key] = newValue as never;
@@ -54,4 +63,14 @@ export function parseGameNamesFromMessage(text: string): string[] {
     .split(",")
     .map((game) => game.trim())
     .filter((game) => game.length > 0);
+}
+
+export function needsReleaseTracking(
+  gameMeta: GameMeta,
+  gameData: IGameSteamData,
+): boolean {
+  if (gameMeta.comingSoon === undefined || gameMeta.isEarlyAccess === undefined)
+    return gameData.comingSoon || gameData.isEarlyAccess;
+
+  return gameMeta.comingSoon! || gameMeta.isEarlyAccess!;
 }

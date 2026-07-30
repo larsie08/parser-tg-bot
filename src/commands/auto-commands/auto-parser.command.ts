@@ -8,11 +8,14 @@ import {
 } from "../../services";
 import {
   compareNewNews,
+  createEarlyAccessReleaseMessage,
   createGameMessage,
   createNewsMessage,
   filterRelevantNews,
   getDiffData,
   hasMetaData,
+  sendAutoMessageToUser,
+  shouldCheckSteamPage,
 } from "../../utils";
 
 import { Game } from "../../entities";
@@ -39,12 +42,13 @@ export class AutoParserCommand extends Command {
       async () => {
         const games = await this.gameService.getGamesOfUsersWithSubscriptions();
 
-        if (!games) throw new Error("Не найдено ни одной игры.");
+        if (!games) return console.log("Не найдено ни одной игры.");
 
         for (const game of games) {
           try {
             await this.processSteamGame(game);
             await this.processGameNews(game);
+            await this.processReleaseDate(game);
           } catch (error) {
             console.error(
               `Ошибка обработки игр для пользователей. ${game.name}:`,
@@ -66,14 +70,25 @@ export class AutoParserCommand extends Command {
     const changesDetected = getDiffData(game, steamGameData);
     const hasAnyChange = Object.values(changesDetected).length > 0;
 
-    if (!hasAnyChange) return;
+    if (hasMetaData(game.meta) && !hasAnyChange) return;
 
     if (hasMetaData(game.meta) && hasAnyChange) {
-      for (const user of game.users) {
-        await this.sendMessageUser(user.userId, () =>
-          createGameMessage(steamGameData, game, changesDetected),
-        );
-      }
+      await Promise.all(
+        game.users.map((user) => {
+          try {
+            sendAutoMessageToUser(
+              user.userId,
+              this.bot,
+              createGameMessage(steamGameData, game, changesDetected),
+            );
+          } catch (error) {
+            console.error(
+              "Произошла ошибка с асинхронным отправлением сообщений.",
+              error,
+            );
+          }
+        }),
+      );
     }
 
     await this.gameMetaService.upsertMetaInfo(steamGameData, game);
@@ -101,11 +116,52 @@ export class AutoParserCommand extends Command {
       );
 
     if (existedNews.appnews.newsitems.length > 0 && news.length !== 0) {
-      await this.processSendMessageNews(game.name, usersNews, existedNews);
+      await this.sendMessageNews(game.name, usersNews, existedNews);
     }
 
     for (const news of existedNews.appnews.newsitems) {
       await this.newsService.saveNewsGame(news.title, news.gid, game);
+    }
+  }
+
+  private async processReleaseDate(game: Game): Promise<void> {
+    if (game.meta.comingSoon) return;
+
+    if (
+      game.meta.isEarlyAccess &&
+      shouldCheckSteamPage(game.meta.lastSteamPageCheck)
+    ) {
+      const releaseDate = await this.steamService.fetchEarlyAccessReleaseDate(
+        game.steamId,
+      );
+
+      if (!releaseDate) return;
+
+      const formatedReleaseDate = this.formatReleaseDate(releaseDate);
+
+      if (!formatedReleaseDate) return;
+
+      await Promise.all(
+        game.users.map((user) => {
+          try {
+            sendAutoMessageToUser(
+              user.userId,
+              this.bot,
+              createEarlyAccessReleaseMessage(game, formatedReleaseDate),
+            );
+          } catch (error) {
+            console.error(
+              "Произошла ошибка с асинхронным отправкой сообщений",
+              error,
+            );
+          }
+        }),
+      );
+
+      await this.gameMetaService.upsertReleaseInfo(
+        game.meta,
+        formatedReleaseDate,
+      );
     }
   }
 
@@ -127,23 +183,36 @@ export class AutoParserCommand extends Command {
     return usersNews;
   }
 
-  private async processSendMessageNews(
+  private async sendMessageNews(
     gameName: string,
     usersNews: FilteredUsersNewsPreference[],
     existedNews: GameNewsInfo,
   ): Promise<void> {
     for (const user of usersNews) {
-      for (const newsItem of user.news.appnews.newsitems) {
-        await this.sendMessageUser(user.userId, () =>
-          createNewsMessage(newsItem, gameName, existedNews.appnews.newsitems),
-        );
-      }
+      await Promise.all(
+        user.news.appnews.newsitems.map((news) => {
+          try {
+            sendAutoMessageToUser(
+              user.userId,
+              this.bot,
+              createNewsMessage(news, gameName, existedNews.appnews.newsitems),
+            );
+          } catch (error) {
+            console.error(
+              "Произошла ошибка с асинхронным отправлением сообщений.",
+              error,
+            );
+          }
+        }),
+      );
     }
   }
 
-  private async sendMessageUser(userId: number, createMessage: () => string) {
-    const message = createMessage();
+  private formatReleaseDate(releaseDate: string): string | null {
+    const match = releaseDate.match(
+      /Leaving Early Access:\s*([0-9]{1,2}\s+[A-Za-z]{3},\s+\d{4})/,
+    );
 
-    await this.bot.telegram.sendMessage(userId, message);
+    return match?.[1] ?? null;
   }
 }

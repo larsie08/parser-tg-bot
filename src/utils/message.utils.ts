@@ -1,4 +1,4 @@
-import { Markup } from "telegraf";
+import { Markup, Telegraf } from "telegraf";
 
 import { InlineKeyboardMarkup } from "telegraf/types";
 import {
@@ -8,7 +8,7 @@ import {
   NewsItem,
   PendingGame,
 } from "../context";
-import { Game } from "../entities";
+import { Game, GameMeta } from "../entities";
 
 export function timeoutDeleteMessage(
   context: IBotContext,
@@ -56,6 +56,14 @@ export async function sendAndDeleteWithTimeout(
   timeoutDeleteMessage(context, message.message_id);
 }
 
+export async function sendAutoMessageToUser(
+  userId: number,
+  bot: Telegraf<IBotContext>,
+  message: string,
+) {
+  await bot.telegram.sendMessage(userId, message);
+}
+
 export async function cancelOperationMessage(
   context: IBotContext,
   messageArrayId: MessagesIdKey,
@@ -83,11 +91,11 @@ export function trackUserMessage(
 }
 
 export function createGameMessage(
-  gameData: IGameSteamData,
+  gameData: IGameSteamData | GameMeta,
   game: Game,
   diff: Partial<IGameSteamData>,
 ): string {
-  const messageParts: string[] = [`🎮 *Название:* ${gameData.name}`];
+  const messageParts: string[] = [`🎮 *Название:* ${game.name}`];
 
   const changedFields = Object.keys(diff ?? {}) as (keyof IGameSteamData)[];
 
@@ -159,6 +167,20 @@ export function createGameMessage(
   }
 
   return prefix + messageParts.join("\n");
+}
+
+export function createEarlyAccessReleaseMessage(
+  game: Game,
+  releaseDate: string,
+): string {
+  return [
+    "🎉 *Найдена дата выхода из раннего доступа!*",
+    "",
+    `🎮 *Игра:* ${game.name}`,
+    `📅 *Дата выхода версии 1.0:* ${releaseDate}`,
+    "",
+    `🔗 ${game.href}`,
+  ].join("\n");
 }
 
 export function editAddMessageGames(
