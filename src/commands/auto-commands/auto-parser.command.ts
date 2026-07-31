@@ -48,7 +48,7 @@ export class AutoParserCommand extends Command {
           try {
             await this.processSteamGame(game);
             await this.processGameNews(game);
-            await this.processReleaseDate(game);
+            await this.processEarlyReleaseDate(game);
           } catch (error) {
             console.error(
               `Ошибка обработки игр для пользователей. ${game.name}:`,
@@ -124,7 +124,7 @@ export class AutoParserCommand extends Command {
     }
   }
 
-  private async processReleaseDate(game: Game): Promise<void> {
+  private async processEarlyReleaseDate(game: Game): Promise<void> {
     if (game.meta.comingSoon) return;
 
     if (

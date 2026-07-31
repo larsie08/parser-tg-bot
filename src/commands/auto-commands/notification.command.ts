@@ -1,7 +1,11 @@
 import { Telegraf } from "telegraf";
 
 import { GameMetaService } from "../../services";
-import { getDaysUntilRelease, sendAutoMessageToUser } from "../../utils";
+import {
+  getDaysUntilRelease,
+  needsReleaseTracking,
+  sendAutoMessageToUser,
+} from "../../utils";
 
 import { Command, IBotContext } from "../../context";
 import { Game } from "../../entities";
@@ -54,7 +58,7 @@ export class NotificationCommand extends Command {
       return `🎮 *${game.name}*\n\n❌ Не удалось определить дату выхода.`;
     }
 
-    if (daysUntilRelease === 0) {
+    if (daysUntilRelease === 0 && needsReleaseTracking(game.meta)) {
       return `🎮 *${game.name}*\n\n🎉 Игра уже вышла!`;
     }
 

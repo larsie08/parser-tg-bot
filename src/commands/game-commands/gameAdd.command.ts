@@ -28,7 +28,7 @@ export class GameAddCommand extends Command {
     this.bot.action("game_add_start", async (context: IBotContext) => {
       await sendAndTrackMessage(
         context,
-        "Введите название игры\nПри добавлении нескольких игр, писать через запятую(,)",
+        "Введите название игры\nПри добавлении нескольких игр, писать через точку с запятой(;)",
         "gameAddMessagesId",
         Markup.inlineKeyboard([
           Markup.button.callback("Отменить", "game_add_cancel"),

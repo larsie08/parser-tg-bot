@@ -21,7 +21,7 @@ export function getDiffData(
     "oldPrice",
     "releaseTime",
     "lastSteamPageCheck",
-    !needsReleaseTracking(game.meta, steamGameData) && "releaseDate",
+    !needsReleaseTracking(game.meta) && "releaseDate",
   ];
 
   const normalize = <T>(value: T | null | undefined): T | null => value ?? null;
@@ -48,6 +48,8 @@ export function hasMetaData(meta: GameMeta | null): boolean {
     "discount",
     "releaseDate",
     "releaseTime",
+    "comingSoon",
+    "isEarlyAccess",
   ];
 
   return keys.some((key) => {
@@ -60,17 +62,20 @@ export function parseGameNamesFromMessage(text: string): string[] {
   if (!text?.trim()) return [];
 
   return text
-    .split(",")
+    .split(";")
     .map((game) => game.trim())
     .filter((game) => game.length > 0);
 }
 
 export function needsReleaseTracking(
   gameMeta: GameMeta,
-  gameData: IGameSteamData,
+  gameData?: IGameSteamData,
 ): boolean {
-  if (gameMeta.comingSoon === undefined || gameMeta.isEarlyAccess === undefined)
-    return gameData.comingSoon || gameData.isEarlyAccess;
+  if (
+    gameData &&
+    (gameMeta.comingSoon === undefined || gameMeta.isEarlyAccess === undefined)
+  )
+    if (!hasMetaData(gameMeta)) return false;
 
   return gameMeta.comingSoon! || gameMeta.isEarlyAccess!;
 }

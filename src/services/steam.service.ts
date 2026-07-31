@@ -50,17 +50,37 @@ export class SteamService {
     gameId: string,
   ): Promise<IGameSteamData | null> {
     try {
-      const { data } = await axios.get<SteamAppDetailsResponse>(
-        `https://store.steampowered.com/api/appdetails?appids=${gameId}&cc=ru&l=en`,
-        {
-          headers: { Cookie: "birthtime=568022401; lastagecheckage=1-0-1990;" },
-        },
-      );
+      let data = await this.fetchAppDetails(gameId, "ru");
+
+      if (!data[gameId]?.success) {
+        data = await this.fetchAppDetails(gameId, "us");
+      }
+
+      if (!data[gameId]?.success) {
+        return null;
+      }
+
       return this.parseSteamPriceJsonData(data, gameId);
     } catch (error) {
       console.error("Ошибка при получении данных с Steam:", error);
       return null;
     }
+  }
+
+  private async fetchAppDetails(
+    gameId: string,
+    countryCode: string,
+  ): Promise<SteamAppDetailsResponse> {
+    const { data } = await axios.get<SteamAppDetailsResponse>(
+      `https://store.steampowered.com/api/appdetails?appids=${gameId}&cc=${countryCode}&l=en`,
+      {
+        headers: {
+          Cookie: "birthtime=568022401; lastagecheckage=1-0-1990;",
+        },
+      },
+    );
+
+    return data;
   }
 
   private parseSteamIdData(
@@ -96,7 +116,7 @@ export class SteamService {
           ? data[gameId].data.price_overview?.initial_formatted
           : undefined,
       discount: data[gameId].data.price_overview?.discount_percent.toString(),
-      releaseDate: data[gameId].data.release_date.date,
+      releaseDate: undefined,
       releaseTime: undefined,
       comingSoon: data[gameId].data.release_date.coming_soon,
       isEarlyAccess: data[gameId].data.genres.some(
