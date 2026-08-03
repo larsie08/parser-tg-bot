@@ -21,7 +21,7 @@ export function getDiffData(
     "oldPrice",
     "releaseTime",
     "lastSteamPageCheck",
-    !needsReleaseTracking(game.meta) && "releaseDate",
+    game.meta.isEarlyAccess && "releaseDate",
   ];
 
   const normalize = <T>(value: T | null | undefined): T | null => value ?? null;

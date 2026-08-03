@@ -104,9 +104,7 @@ export function createGameMessage(
     changedFields.includes("oldPrice") ||
     changedFields.includes("discount");
 
-  const hasReleaseChanges =
-    changedFields.includes("releaseDate") ||
-    changedFields.includes("releaseTime");
+  const hasReleaseChanges = changedFields.includes("releaseDate");
 
   let prefix = "";
 
@@ -132,20 +130,12 @@ export function createGameMessage(
     if (gameData.releaseDate) {
       messageParts.push(`📅 *Дата выхода:* ${gameData.releaseDate}`);
     }
-
-    if (gameData.releaseTime) {
-      messageParts.push(`⏰ *Время выхода:* ${gameData.releaseTime}`);
-    }
   }
 
   if (!hasPriceChanges && !hasReleaseChanges) {
     if (gameData.comingSoon) {
       if (gameData.releaseDate) {
         messageParts.push(`📅 *Дата выхода:* ${gameData.releaseDate}`);
-      }
-
-      if (gameData.releaseTime) {
-        messageParts.push(`⏰ *Время выхода:* ${gameData.releaseTime}`);
       }
     } else {
       if (gameData.oldPrice) {

@@ -2,3 +2,4 @@ dist
 .env
 node_modules
 tests
+src/commands/game-parser-commands/gameReleases.command.ts

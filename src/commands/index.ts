@@ -1,8 +1,5 @@
 export * from "./start.command";
 
-export * from "./auto-commands/auto-parser.command";
-export * from "./auto-commands/notification.command";
-
 export * from "./game-parser-commands/parser.command";
 export * from "./game-parser-commands/news.command";
 

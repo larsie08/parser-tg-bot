@@ -6,15 +6,11 @@ import {
   StartCommand,
   GameAddCommand,
   GameDeleteCommand,
-  AutoParserCommand,
   GameNewsCommand,
   GlobalSubscriptionCommand,
   GameSubscriptionCommand,
-  NotificationCommand,
 } from "./src/commands";
-
-import { Command, IBotContext, NewsType } from "./src/context";
-import { AppDataSource } from "./src/config/typeOrm.config";
+import { AutoParserModule, NotificationModule } from "./src/modules";
 
 import {
   GameMetaService,
@@ -26,6 +22,8 @@ import {
   UserService,
 } from "./src/services";
 
+import { Command, IBotContext, NewsType } from "./src/context";
+import { AppDataSource } from "./src/config/typeOrm.config";
 import { ConfigService, IConfigService } from "./src/config";
 
 class Bot {
@@ -84,14 +82,14 @@ class Bot {
     this.commands = [
       new StartCommand(this.bot, userService),
 
-      new AutoParserCommand(
+      new AutoParserModule(
         this.bot,
         gameService,
         gameMetaService,
         newsService,
         steamService,
       ),
-      new NotificationCommand(this.bot, gameMetaService),
+      new NotificationModule(this.bot, gameMetaService),
 
       new GameAddCommand(this.bot, userService, gameService, steamService),
       new GameDeleteCommand(this.bot, userService, gameService),

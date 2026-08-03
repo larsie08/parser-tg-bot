@@ -26,6 +26,11 @@ export class SteamService {
     try {
       const { data } = await axios.get(
         `https://store.steampowered.com/app/${gameId}`,
+        {
+          headers: {
+            Cookie: "birthtime=568022401; lastagecheckage=1-0-1990;",
+          },
+        },
       );
       return this.parseSteamReleaseDateData(data);
     } catch (error) {
@@ -116,8 +121,11 @@ export class SteamService {
           ? data[gameId].data.price_overview?.initial_formatted
           : undefined,
       discount: data[gameId].data.price_overview?.discount_percent.toString(),
-      releaseDate: undefined,
-      releaseTime: undefined,
+      releaseDate: data[gameId].data.genres.some(
+        (obj) => obj.description === "Early Access",
+      )
+        ? data[gameId].data.release_date.date
+        : undefined,
       comingSoon: data[gameId].data.release_date.coming_soon,
       isEarlyAccess: data[gameId].data.genres.some(
         (obj) => obj.description === "Early Access",

@@ -6,7 +6,6 @@ export interface IGameBaseData {
 export interface IGameSteamData extends IGameBaseData {
   oldPrice: string | undefined;
   discount: string | undefined;
-  releaseTime: string | undefined;
   releaseDate: string | undefined;
   comingSoon: boolean;
   isEarlyAccess: boolean;

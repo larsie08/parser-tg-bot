@@ -1,7 +1,5 @@
 import { AppDataSource } from "../config/typeOrm.config";
 
-import { needsReleaseTracking } from "../utils";
-
 import { IGameSteamData } from "../context";
 import { Game, GameMeta } from "../entities";
 
@@ -26,9 +24,9 @@ export class GameMetaService {
     await gameMetaRepo.save(meta);
   }
 
-  async getMetaInfo(game: Game): Promise<GameMeta | null> {
-    return await AppDataSource.getRepository(GameMeta).findOneBy({
-      game,
+  async getMetaInfo(gameId: number): Promise<GameMeta | null> {
+    return await AppDataSource.getRepository(GameMeta).findOne({
+      where: { game: { id: gameId } },
     });
   }
 
@@ -63,14 +61,6 @@ export class GameMetaService {
           : meta.oldPrice,
       ),
       discount: normalize(gameData.discount),
-
-      releaseDate: needsReleaseTracking(meta, gameData)
-        ? normalize(gameData.releaseDate)
-        : null,
-      releaseTime: needsReleaseTracking(meta, gameData)
-        ? normalize(gameData.releaseTime)
-        : null,
-
       comingSoon: gameData.comingSoon,
       isEarlyAccess: gameData.isEarlyAccess,
     };

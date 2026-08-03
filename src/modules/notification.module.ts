@@ -1,16 +1,16 @@
 import { Telegraf } from "telegraf";
 
-import { GameMetaService } from "../../services";
+import { GameMetaService } from "../services";
 import {
   getDaysUntilRelease,
   needsReleaseTracking,
   sendAutoMessageToUser,
-} from "../../utils";
+} from "../utils";
 
-import { Command, IBotContext } from "../../context";
-import { Game } from "../../entities";
+import { Command, IBotContext } from "../context";
+import { Game } from "../entities";
 
-export class NotificationCommand extends Command {
+export class NotificationModule extends Command {
   constructor(
     bot: Telegraf<IBotContext>,
     private gameMetaService: GameMetaService,

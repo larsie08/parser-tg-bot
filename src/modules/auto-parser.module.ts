@@ -5,7 +5,7 @@ import {
   GameService,
   NewsService,
   SteamService,
-} from "../../services";
+} from "../services";
 import {
   compareNewNews,
   createEarlyAccessReleaseMessage,
@@ -16,17 +16,17 @@ import {
   hasMetaData,
   sendAutoMessageToUser,
   shouldCheckSteamPage,
-} from "../../utils";
+} from "../utils";
 
-import { Game } from "../../entities";
+import { Game, GameMeta } from "../entities";
 import {
   Command,
   FilteredUsersNewsPreference,
   GameNewsInfo,
   IBotContext,
-} from "../../context";
+} from "../context";
 
-export class AutoParserCommand extends Command {
+export class AutoParserModule extends Command {
   constructor(
     bot: Telegraf<IBotContext>,
     private gameService: GameService,
@@ -141,27 +141,33 @@ export class AutoParserCommand extends Command {
 
       if (!formatedReleaseDate) return;
 
-      await Promise.all(
-        game.users.map((user) => {
-          try {
-            sendAutoMessageToUser(
-              user.userId,
-              this.bot,
-              createEarlyAccessReleaseMessage(game, formatedReleaseDate),
-            );
-          } catch (error) {
-            console.error(
-              "Произошла ошибка с асинхронным отправкой сообщений",
-              error,
-            );
-          }
-        }),
-      );
+      const gameMeta = await this.gameMetaService.getMetaInfo(game.id);
 
-      await this.gameMetaService.upsertReleaseInfo(
-        game.meta,
-        formatedReleaseDate,
-      );
+      if (!gameMeta) return;
+
+      if (releaseDate !== gameMeta.releaseDate) {
+        await Promise.all(
+          game.users.map((user) => {
+            try {
+              sendAutoMessageToUser(
+                user.userId,
+                this.bot,
+                createEarlyAccessReleaseMessage(game, formatedReleaseDate),
+              );
+            } catch (error) {
+              console.error(
+                "Произошла ошибка с асинхронным отправкой сообщений",
+                error,
+              );
+            }
+          }),
+        );
+
+        await this.gameMetaService.upsertReleaseInfo(
+          game.meta,
+          formatedReleaseDate,
+        );
+      }
     }
   }
 
