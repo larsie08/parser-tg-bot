@@ -121,9 +121,7 @@ export class SteamService {
           ? data[gameId].data.price_overview?.initial_formatted
           : undefined,
       discount: data[gameId].data.price_overview?.discount_percent.toString(),
-      releaseDate: data[gameId].data.genres.some(
-        (obj) => obj.description === "Early Access",
-      )
+      releaseDate: this.shouldSaveReleaseDate(data, gameId)
         ? data[gameId].data.release_date.date
         : undefined,
       comingSoon: data[gameId].data.release_date.coming_soon,
@@ -146,6 +144,30 @@ export class SteamService {
       .getElementsByClassName("leaving_early_access")[0]
       .querySelector("h2")?.textContent;
 
-    return releaseDate || null;
+    if (!releaseDate) return null;
+
+    const match = releaseDate.match(
+      /Leaving Early Access:\s*([0-9]{1,2}\s+[A-Za-z]{3},\s+\d{4})/,
+    );
+
+    return match?.[1] ?? null;
+  }
+
+  private shouldSaveReleaseDate(
+    data: SteamAppDetailsResponse,
+    gameId: string,
+  ): boolean {
+    const { genres, release_date } = data[gameId].data;
+
+    const isEarlyAccess = genres.some(
+      (genre) => genre.description === "Early Access",
+    );
+
+    if (isEarlyAccess) return false;
+    if (!release_date.coming_soon) return false;
+
+    const deniedDates = new Set(["coming soon"]); // по мере нахождения - увеличить
+
+    return !deniedDates.has(release_date.date.toLowerCase());
   }
 }

@@ -3,10 +3,12 @@ import { Markup, Telegraf } from "telegraf";
 import { GameService, SteamService, UserService } from "../../services";
 import {
   cancelOperationMessage,
+  deleteMessagesForCommand,
   editAddMessageGames,
   handleFormatUrlSearch,
   notifyUserAboutError,
   parseGameNamesFromMessage,
+  sendAndDeleteWithTimeout,
   sendAndTrackMessage,
   trackUserMessage,
 } from "../../utils";
@@ -132,6 +134,8 @@ export class GameAddCommand extends Command {
           "Все эти игры уже есть в вашем списке.",
         );
 
+      await deleteMessagesForCommand(context, "gameAddMessagesId");
+
       if (newGames.length > 0) {
         context.session.pendingGame = newGames;
 
@@ -139,24 +143,22 @@ export class GameAddCommand extends Command {
       }
 
       if (alreadyAddedGames.length > 0) {
-        await sendAndTrackMessage(
+        await sendAndDeleteWithTimeout(
           context,
           editAddMessageGames(
             alreadyAddedGames.map((game) => game.steamGameName),
             true,
           ),
-          "gameAddMessagesId",
         );
       }
 
-      await sendAndTrackMessage(
+      await sendAndDeleteWithTimeout(
         context,
         editAddMessageGames(
           addedGames.map((game) => game.steamGameName),
           false,
           pendingGames,
         ),
-        "gameAddMessagesId",
       );
     } catch (error) {
       console.error("Ошибка при сохранении игр:", error);
@@ -257,14 +259,14 @@ export class GameAddCommand extends Command {
       return notifyUserAboutError(context, "Произошла ошибка при выборе игры.");
     }
 
-    await sendAndTrackMessage(
-      context,
-      `Добавить игру?\nНазвание: ${game.steamGameName}\nСсылка: ${game.href}`,
-      "gameAddMessagesId",
-      Markup.inlineKeyboard([
-        Markup.button.callback("Добавить", "game_add_confirm"),
-        Markup.button.callback("Пропустить", "game_add_skip"),
-      ]),
-    );
+    context.session.lastAskNextGameMessageId = await context
+      .sendMessage(
+        `Добавить игру?\nНазвание: ${game.steamGameName}\nСсылка: ${game.href}`,
+        Markup.inlineKeyboard([
+          Markup.button.callback("Добавить", "game_add_confirm"),
+          Markup.button.callback("Пропустить", "game_add_skip"),
+        ]),
+      )
+      .then((message) => message.message_id);
   }
 }

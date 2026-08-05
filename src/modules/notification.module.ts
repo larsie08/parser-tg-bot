@@ -30,7 +30,10 @@ export class NotificationModule extends Command {
 
           const game = gameMeta.game;
           const releaseDays = getDaysUntilRelease(gameMeta.releaseDate);
-          const message = this.createReleaseCountdownMessage(game, releaseDays);
+          const message = this.createReleaseCountdownMessage(
+            game,
+            releaseDays!,
+          );
 
           await Promise.all(
             game.users.map((user) => {
@@ -52,12 +55,8 @@ export class NotificationModule extends Command {
 
   private createReleaseCountdownMessage(
     game: Game,
-    daysUntilRelease: number | null,
+    daysUntilRelease: number,
   ): string {
-    if (daysUntilRelease === null) {
-      return `🎮 *${game.name}*\n\n❌ Не удалось определить дату выхода.`;
-    }
-
     if (daysUntilRelease === 0 && needsReleaseTracking(game.meta)) {
       return `🎮 *${game.name}*\n\n🎉 Игра уже вышла!`;
     }

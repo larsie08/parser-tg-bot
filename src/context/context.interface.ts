@@ -16,7 +16,8 @@ type MessagesId = {
 
   gameNewsMessagesId: number[];
   gameParserMessageId: number[];
-  
+  gameReleasesMessageId: number[];
+
   gameMenuCommandMessageId: number[];
 
   userSubscriptionsMessageId: number[];

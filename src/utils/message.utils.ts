@@ -50,10 +50,11 @@ export async function sendAndTrackMessage(
 export async function sendAndDeleteWithTimeout(
   context: IBotContext,
   text: string,
+  delay?: number,
 ) {
   const message = await context.sendMessage(text);
 
-  timeoutDeleteMessage(context, message.message_id);
+  timeoutDeleteMessage(context, message.message_id, delay);
 }
 
 export async function sendAutoMessageToUser(
@@ -78,6 +79,13 @@ export async function cancelOperationMessage(
   const message = await context.sendMessage(messageText);
 
   timeoutDeleteMessage(context, message.message_id);
+}
+
+export async function deleteMessagesForCommand(
+  context: IBotContext,
+  messageArrayId: MessagesIdKey,
+): Promise<void> {
+  await context.deleteMessages(context.session.messagesId[messageArrayId]);
 }
 
 export function trackUserMessage(

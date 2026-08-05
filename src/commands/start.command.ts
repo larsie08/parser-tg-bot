@@ -53,13 +53,19 @@ export class StartCommand extends Command {
         "gameMenuCommandMessageId",
         Markup.inlineKeyboard([
           [
-            Markup.button.callback("Проверить цену игры", "price_check_start"),
+            Markup.button.callback("Проверить цену игры.", "price_check_start"),
             Markup.button.callback(
-              "Узнать последние новости игры",
+              "Узнать последние новости игры.",
               "news_check_start",
             ),
           ],
-          [Markup.button.callback("Отменить", "start_command_cancel")],
+          [
+            Markup.button.callback(
+              "Узнать ближайшие отслеживаемые релизы.",
+              "game_releases_start",
+            ),
+          ],
+          [Markup.button.callback("Отменить.", "start_command_cancel")],
         ]),
       );
     });

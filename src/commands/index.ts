@@ -2,6 +2,7 @@ export * from "./start.command";
 
 export * from "./game-parser-commands/parser.command";
 export * from "./game-parser-commands/news.command";
+export * from "./game-parser-commands/gameReleases.command";
 
 export * from "./game-commands/gameAdd.command";
 export * from "./game-commands/gameDelete.command";

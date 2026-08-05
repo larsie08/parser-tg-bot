@@ -1,7 +1,9 @@
+import { IsNull, Not } from "typeorm";
 import { AppDataSource } from "../config/typeOrm.config";
 
 import { IGameSteamData } from "../context";
 import { Game, GameMeta } from "../entities";
+import { needsReleaseTracking } from "../utils";
 
 export class GameMetaService {
   async upsertMetaInfo(gameData: IGameSteamData, game: Game): Promise<void> {
@@ -24,6 +26,23 @@ export class GameMetaService {
     await gameMetaRepo.save(meta);
   }
 
+  async upsertEarlyReleaseInfo(
+    meta: GameMeta,
+    releaseDate: string,
+  ): Promise<void> {
+    meta.releaseDate = releaseDate;
+    meta.isEarlyAccess = true;
+    meta.lastSteamPageCheck = new Date();
+
+    await AppDataSource.getRepository(GameMeta).save(meta);
+  }
+
+  async upsertReleaseDate(meta: GameMeta, releaseDate: string): Promise<void> {
+    meta.releaseDate = releaseDate;
+
+    await AppDataSource.getRepository(GameMeta).save(meta);
+  }
+
   async getMetaInfo(gameId: number): Promise<GameMeta | null> {
     return await AppDataSource.getRepository(GameMeta).findOne({
       where: { game: { id: gameId } },
@@ -41,12 +60,22 @@ export class GameMetaService {
     });
   }
 
-  async upsertReleaseInfo(meta: GameMeta, releaseDate: string): Promise<void> {
-    meta.releaseDate = releaseDate;
-    meta.isEarlyAccess = true;
-    meta.lastSteamPageCheck = new Date();
-
-    await AppDataSource.getRepository(GameMeta).save(meta);
+  async getGamesWithUpcomingRelease(userId: number): Promise<GameMeta[]> {
+    return AppDataSource.getRepository(GameMeta).find({
+      where: [
+        {
+          game: { users: { id: userId } },
+          comingSoon: true,
+        },
+        {
+          game: { users: { id: userId } },
+          isEarlyAccess: true,
+        },
+      ],
+      relations: {
+        game: true,
+      },
+    });
   }
 
   private buildMetaUpdate(gameData: IGameSteamData, meta: GameMeta) {
@@ -62,6 +91,7 @@ export class GameMetaService {
       ),
       discount: normalize(gameData.discount),
       comingSoon: gameData.comingSoon,
+      releaseDate: gameData.releaseDate,
       isEarlyAccess: gameData.isEarlyAccess,
     };
   }

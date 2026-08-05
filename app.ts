@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { session, Telegraf } from "telegraf";
 
+import { AutoParserModule, NotificationModule } from "./src/modules";
 import {
   ParserCommand,
   StartCommand,
@@ -9,8 +10,8 @@ import {
   GameNewsCommand,
   GlobalSubscriptionCommand,
   GameSubscriptionCommand,
+  GameReleasesCommand,
 } from "./src/commands";
-import { AutoParserModule, NotificationModule } from "./src/modules";
 
 import {
   GameMetaService,
@@ -40,11 +41,15 @@ class Bot {
           parserSelectedGame: null,
           pendingGame: [],
           messagesId: {
+            gameMenuCommandMessageId: [],
+
             gameAddMessagesId: [],
             gameDeleteMessagesId: [],
+
             gameNewsMessagesId: [],
             gameParserMessageId: [],
-            gameMenuCommandMessageId: [],
+            gameReleasesMessageId: [],
+
             userSubscriptionsMessageId: [],
             gameSubscriptionsMessageId: [],
           },
@@ -96,6 +101,7 @@ class Bot {
 
       new ParserCommand(this.bot, gameMetaService, gameService, steamService),
       new GameNewsCommand(this.bot, newsService, gameService, steamService),
+      new GameReleasesCommand(this.bot, gameMetaService, steamService),
 
       new GlobalSubscriptionCommand(this.bot, userNewsSubscriptionService),
       new GameSubscriptionCommand(

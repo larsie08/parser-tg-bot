@@ -137,10 +137,6 @@ export class AutoParserModule extends Command {
 
       if (!releaseDate) return;
 
-      const formatedReleaseDate = this.formatReleaseDate(releaseDate);
-
-      if (!formatedReleaseDate) return;
-
       const gameMeta = await this.gameMetaService.getMetaInfo(game.id);
 
       if (!gameMeta) return;
@@ -152,7 +148,7 @@ export class AutoParserModule extends Command {
               sendAutoMessageToUser(
                 user.userId,
                 this.bot,
-                createEarlyAccessReleaseMessage(game, formatedReleaseDate),
+                createEarlyAccessReleaseMessage(game, releaseDate),
               );
             } catch (error) {
               console.error(
@@ -163,9 +159,9 @@ export class AutoParserModule extends Command {
           }),
         );
 
-        await this.gameMetaService.upsertReleaseInfo(
+        await this.gameMetaService.upsertEarlyReleaseInfo(
           game.meta,
-          formatedReleaseDate,
+          releaseDate,
         );
       }
     }
@@ -212,13 +208,5 @@ export class AutoParserModule extends Command {
         }),
       );
     }
-  }
-
-  private formatReleaseDate(releaseDate: string): string | null {
-    const match = releaseDate.match(
-      /Leaving Early Access:\s*([0-9]{1,2}\s+[A-Za-z]{3},\s+\d{4})/,
-    );
-
-    return match?.[1] ?? null;
   }
 }
