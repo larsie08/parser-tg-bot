@@ -12,6 +12,7 @@ import {
   createGameMessage,
   createNewsMessage,
   filterRelevantNews,
+  formatReleaseDate,
   getDiffData,
   hasMetaData,
   sendAutoMessageToUser,
@@ -69,17 +70,30 @@ export class AutoParserModule extends Command {
 
     const changesDetected = getDiffData(game, steamGameData);
     const hasAnyChange = Object.values(changesDetected).length > 0;
+    const changesKeys = Object.keys(changesDetected);
 
     if (hasMetaData(game.meta) && !hasAnyChange) return;
 
     if (hasMetaData(game.meta) && hasAnyChange) {
+      const releaseDate = changesKeys.includes("releaseDate")
+        ? (() => {
+            const date = steamGameData.releaseDate ?? game.meta.releaseDate;
+            return date ? formatReleaseDate(date) : undefined;
+          })()
+        : undefined;
+
       await Promise.all(
-        game.users.map((user) => {
+        game.users.map(async (user) => {
           try {
-            sendAutoMessageToUser(
+            await sendAutoMessageToUser(
               user.userId,
               this.bot,
-              createGameMessage(steamGameData, game, changesDetected),
+              createGameMessage(
+                steamGameData,
+                game,
+                changesDetected,
+                releaseDate,
+              ),
             );
           } catch (error) {
             console.error(
@@ -143,9 +157,9 @@ export class AutoParserModule extends Command {
 
       if (releaseDate !== gameMeta.releaseDate) {
         await Promise.all(
-          game.users.map((user) => {
+          game.users.map(async (user) => {
             try {
-              sendAutoMessageToUser(
+              await sendAutoMessageToUser(
                 user.userId,
                 this.bot,
                 createEarlyAccessReleaseMessage(game, releaseDate),
@@ -192,9 +206,9 @@ export class AutoParserModule extends Command {
   ): Promise<void> {
     for (const user of usersNews) {
       await Promise.all(
-        user.news.appnews.newsitems.map((news) => {
+        user.news.appnews.newsitems.map(async (news) => {
           try {
-            sendAutoMessageToUser(
+            await sendAutoMessageToUser(
               user.userId,
               this.bot,
               createNewsMessage(news, gameName, existedNews.appnews.newsitems),

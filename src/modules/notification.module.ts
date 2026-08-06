@@ -28,25 +28,27 @@ export class NotificationModule extends Command {
         for (const gameMeta of games) {
           if (!gameMeta.releaseDate) continue;
 
-          const game = gameMeta.game;
           const releaseDays = getDaysUntilRelease(gameMeta.releaseDate);
-          const message = this.createReleaseCountdownMessage(
-            game,
-            releaseDays!,
-          );
 
-          await Promise.all(
-            game.users.map((user) => {
-              try {
-                sendAutoMessageToUser(user.userId, this.bot, message);
-              } catch (error) {
-                console.error(
-                  "Произошла ошибка с асинхронным отправлением сообщений.",
-                  error,
-                );
-              }
-            }),
-          );
+          if (releaseDays && this.shouldSendNotification(releaseDays)) {
+            const message = this.createReleaseCountdownMessage(
+              gameMeta.game,
+              releaseDays,
+            );
+
+            await Promise.all(
+              gameMeta.game.users.map(async (user) => {
+                try {
+                  await sendAutoMessageToUser(user.userId, this.bot, message);
+                } catch (error) {
+                  console.error(
+                    "Произошла ошибка с асинхронным отправлением сообщений.",
+                    error,
+                  );
+                }
+              }),
+            );
+          }
         }
       },
       24 * 60 * 60 * 1000,
@@ -90,5 +92,11 @@ export class NotificationModule extends Command {
     }
 
     return "дней";
+  }
+
+  private shouldSendNotification(releaseDate: number): boolean {
+    const releaseNotifications = [30, 14, 7, 3, 1];
+
+    return releaseNotifications.includes(releaseDate);
   }
 }

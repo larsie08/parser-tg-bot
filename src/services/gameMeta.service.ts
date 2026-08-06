@@ -3,7 +3,6 @@ import { AppDataSource } from "../config/typeOrm.config";
 
 import { IGameSteamData } from "../context";
 import { Game, GameMeta } from "../entities";
-import { needsReleaseTracking } from "../utils";
 
 export class GameMetaService {
   async upsertMetaInfo(gameData: IGameSteamData, game: Game): Promise<void> {

@@ -4,6 +4,7 @@ import { GameMetaService, GameService, SteamService } from "../../services";
 import {
   cancelOperationMessage,
   createGameMessage,
+  formatReleaseDate,
   getDiffData,
   getGameNameFromMessageCallback,
   hasMetaData,
@@ -86,15 +87,22 @@ export class ParserCommand extends Command {
       );
 
     const changesDetected = getDiffData(game, gameData);
-
     const hasAnyChange = Object.keys(changesDetected).length > 0;
+    const changesKeys = Object.keys(changesDetected);
 
     if (!hasMetaData(game.meta) || hasAnyChange)
       await this.gameMetaService.upsertMetaInfo(gameData, game);
 
+    const releaseDate = changesKeys.includes("releaseDate")
+      ? (() => {
+          const date = gameData.releaseDate ?? game.meta.releaseDate;
+          return date ? formatReleaseDate(date) : undefined;
+        })()
+      : undefined;
+
     await sendAndTrackMessage(
       context,
-      createGameMessage(gameData, game, changesDetected),
+      createGameMessage(gameData, game, changesDetected, releaseDate),
       "gameParserMessageId",
     );
   }

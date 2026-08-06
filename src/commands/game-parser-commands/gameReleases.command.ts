@@ -33,8 +33,6 @@ export class GameReleasesCommand extends Command {
         ...games.filter((gameMeta) => gameMeta.releaseDate),
       ];
 
-      console.log(gamesWithReleaseDate);
-
       if (gamesWithoutReleaseDate) {
         for (const gameMeta of gamesWithoutReleaseDate) {
           const releaseDate = await this.searchReleaseDate(gameMeta);
@@ -49,11 +47,11 @@ export class GameReleasesCommand extends Command {
       }
 
       await Promise.all(
-        gamesWithReleaseDate.map((gameMeta) => {
+        gamesWithReleaseDate.map(async (gameMeta) => {
           const releaseDate = formatReleaseDate(gameMeta.releaseDate!);
 
           try {
-            sendAndDeleteWithTimeout(
+            await sendAndDeleteWithTimeout(
               context,
               this.createUpcomingReleaseMessage(gameMeta, releaseDate),
               10 * 60 * 1000,

@@ -102,6 +102,7 @@ export function createGameMessage(
   gameData: IGameSteamData | GameMeta,
   game: Game,
   diff: Partial<IGameSteamData>,
+  formatedReleaseDate: string | undefined,
 ): string {
   const messageParts: string[] = [`🎮 *Название:* ${game.name}`];
 
@@ -136,14 +137,18 @@ export function createGameMessage(
     prefix = "📅 *Изменение даты выхода!*\n\n";
 
     if (gameData.releaseDate) {
-      messageParts.push(`📅 *Дата выхода:* ${gameData.releaseDate}`);
+      messageParts.push(
+        `📅 *Дата выхода:* ${formatedReleaseDate ?? gameData.releaseDate}`,
+      );
     }
   }
 
   if (!hasPriceChanges && !hasReleaseChanges) {
     if (gameData.comingSoon) {
       if (gameData.releaseDate) {
-        messageParts.push(`📅 *Дата выхода:* ${gameData.releaseDate}`);
+        messageParts.push(
+          `📅 *Дата выхода:* ${formatedReleaseDate ?? gameData.releaseDate}`,
+        );
       }
     } else {
       if (gameData.oldPrice) {

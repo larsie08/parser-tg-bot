@@ -166,7 +166,7 @@ export class SteamService {
     if (isEarlyAccess) return false;
     if (!release_date.coming_soon) return false;
 
-    const deniedDates = new Set(["coming soon"]); // по мере нахождения - увеличить
+    const deniedDates = new Set(["coming soon", "to be announced"]); // по мере нахождения - увеличить
 
     return !deniedDates.has(release_date.date.toLowerCase());
   }
