@@ -28,7 +28,7 @@ export const AppDataSource = new DataSource({
     UserNewsSubscription,
     GameNewsSubscription,
   ],
-  migrations: ["src/migrations/*.ts"],
+  migrations: [__dirname + "/../migrations/*.{ts,js}"],
   synchronize: false,
   logging: true,
 });
