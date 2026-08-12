@@ -22,7 +22,7 @@
     "@types/jest": "^30.0.0",
     "@types/jsdom": "^30.0.0",
     "@types/node": "^26.2.0",
-    "eslint": "^10.4.1",
+    "eslint": "^10.8.1",
     "globals": "^17.6.0",
     "ts-jest": "^29.4.6",
     "ts-node-dev": "^2.0.0",
