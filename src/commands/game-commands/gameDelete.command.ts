@@ -1,9 +1,9 @@
-import { Markup, Telegraf } from "telegraf";
+import { Telegraf } from "telegraf";
 
 import { GameService, UserService } from "../../services";
 import {
+  buildGamePaginationMarkUp,
   cancelOperationMessage,
-  getGameNameFromMessageCallback,
   notifyUserAboutError,
   sendAndTrackMessage,
   showGameSelectionMenu,
@@ -33,49 +33,68 @@ export class GameDeleteCommand extends Command {
       await showGameSelectionMenu(
         context,
         games,
+        0,
         "gameDeleteMessagesId",
-        "Вы можете отменить процесс удаления:",
-        Markup.inlineKeyboard([
-          Markup.button.callback("Удалить", `game_delete_select`),
-        ]),
-        Markup.inlineKeyboard([
-          Markup.button.callback("Отменить", "game_delete_cancel"),
-        ]),
+        "game_delete",
+        true,
       );
     });
 
-    this.bot.action("game_delete_select", async (context: IBotContext) => {
-      const selectedGameName = getGameNameFromMessageCallback(context);
+    this.bot.action(
+      /^game_delete_select:(\d+):(\d+)$/,
+      async (context: IBotContext) => {
+        const gameId = Number(context.match?.[1]);
+        const page = Number(context.match?.[2]);
 
-      if (!selectedGameName)
-        return notifyUserAboutError(context, "Ошибка при выборе игры.");
+        if (!gameId)
+          return notifyUserAboutError(context, "Ошибка при выборе игры.");
 
-      const game = await this.gameService.getUserGame(selectedGameName);
+        const game = await this.gameService.getUserGame(gameId);
 
-      if (!game)
-        return notifyUserAboutError(
+        if (!game)
+          return notifyUserAboutError(
+            context,
+            `Не удалось найти игру при удалении: ${game}`,
+          );
+
+        await this.handleDeleteGame(context, game);
+
+        await sendAndTrackMessage(
           context,
-          `Не удалось найти игру при удалении: ${game}`,
+          `Игра "${game.name}" успешно удалена.`,
+          "gameDeleteMessagesId",
         );
 
-      await this.handleDeleteGame(context, game);
+        const games = await this.gameService.getUserAllGames(
+          context.session.user!.userId,
+        );
 
-      await sendAndTrackMessage(
-        context,
-        `Игра "${game.name}" успешно удалена.`,
-        "gameDeleteMessagesId",
-      );
+        await context.editMessageReplyMarkup(
+          buildGamePaginationMarkUp(games, page, "game_delete", true)
+            .reply_markup,
+        );
 
-      if (context.callbackQuery?.message) {
-        try {
-          const gameMessageId = context.callbackQuery?.message?.message_id;
+        await context.answerCbQuery();
+      },
+    );
 
-          await context.deleteMessage(gameMessageId);
-        } catch (error) {
-          console.error("Не удалось удалить сообщение пользователя.", error);
-        }
-      }
-    });
+    this.bot.action(
+      /^game_delete_toggle_page:(\d+)$/,
+      async (context: IBotContext) => {
+        const page = Number(context.match?.[1]);
+
+        const games = await this.gameService.getUserAllGames(
+          context.session.user!.userId,
+        );
+
+        await context.editMessageReplyMarkup(
+          buildGamePaginationMarkUp(games, page, "game_delete", true)
+            .reply_markup,
+        );
+
+        await context.answerCbQuery();
+      },
+    );
 
     this.bot.action("game_delete_cancel", async (context: IBotContext) => {
       await cancelOperationMessage(
@@ -96,10 +115,9 @@ export class GameDeleteCommand extends Command {
       await this.gameService.deleteGame(game);
     } catch (error) {
       console.error("Ошибка при удалении игры:", error);
-      await sendAndTrackMessage(
+      await notifyUserAboutError(
         context,
         "Произошла ошибка при удалении игры.",
-        "gameDeleteMessagesId",
       );
     }
   }

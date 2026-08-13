@@ -10,6 +10,8 @@ import {
 } from "../context";
 import { Game, GameMeta } from "../entities";
 
+const GAMES_PER_PAGE = 5;
+
 export function timeoutDeleteMessage(
   context: IBotContext,
   messageId: number,
@@ -229,21 +231,62 @@ export function createNewsMessage(
 export async function showGameSelectionMenu(
   context: IBotContext,
   games: Game[],
+  page: number,
   messageArrayId: MessagesIdKey,
-  textMessageCancel: string,
-  markUpGames: Markup.Markup<InlineKeyboardMarkup>,
-  markUpCancel: Markup.Markup<InlineKeyboardMarkup>,
+  action: string,
+  deleteOption: boolean = false,
 ) {
-  for (const game of games) {
-    await sendAndTrackMessage(context, game.name, messageArrayId, markUpGames);
-  }
+  const markup = buildGamePaginationMarkUp(games, page, action, deleteOption);
 
   await sendAndTrackMessage(
     context,
-    textMessageCancel,
+    "📰 *Выберите игру:*",
     messageArrayId,
-    markUpCancel,
+    markup,
   );
+}
+
+export function buildGamePaginationMarkUp(
+  games: Game[],
+  page: number,
+  action: string,
+  deleteOption = false,
+): Markup.Markup<InlineKeyboardMarkup> {
+  const start = page * GAMES_PER_PAGE;
+  const pageGames = games.slice(start, start + GAMES_PER_PAGE);
+
+  const totalPages = Math.ceil(games.length / GAMES_PER_PAGE);
+
+  const keyboard = pageGames.map((game) => [
+    Markup.button.callback(
+      `🎮 ${game.name}`,
+      `${action}_select:${game.id}${deleteOption ? `:${page}` : ""}`,
+    ),
+  ]);
+
+  const navigation = [];
+
+  if (page > 0) {
+    navigation.push(
+      Markup.button.callback("◀️", `${action}_toggle_page:${page - 1}`),
+    );
+  }
+
+  navigation.push(
+    Markup.button.callback(`${page + 1} / ${totalPages}`, "noop"),
+  );
+
+  if (page < totalPages - 1) {
+    navigation.push(
+      Markup.button.callback("▶️", `${action}_toggle_page:${page + 1}`),
+    );
+  }
+
+  keyboard.push(navigation);
+
+  keyboard.push([Markup.button.callback("❌ Отмена", `${action}_cancel`)]);
+
+  return Markup.inlineKeyboard(keyboard);
 }
 
 export function getGameNameFromMessageCallback(context: IBotContext): string {

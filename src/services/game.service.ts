@@ -2,18 +2,16 @@ import { AppDataSource } from "../config/typeOrm.config";
 import { Game } from "../entities";
 
 export class GameService {
-  async getUserGame(gameName: string): Promise<Game | null> {
+  async getUserGame(gameId: number): Promise<Game | null> {
     return await AppDataSource.getRepository(Game).findOne({
-      where: { name: gameName },
+      where: { id: gameId },
       relations: { meta: true },
     });
   }
 
-  async getUserGameWithSubscriptions(
-    gameName: string,
-  ): Promise<Game | null> {
+  async getUserGameWithSubscriptions(gameId: number): Promise<Game | null> {
     return await AppDataSource.getRepository(Game).findOne({
-      where: { name: gameName },
+      where: { id: gameId },
       relations: {
         subscriptions: { user: true },
       },

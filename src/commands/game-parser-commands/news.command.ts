@@ -1,4 +1,4 @@
-import { Markup, Telegraf } from "telegraf";
+import { Telegraf } from "telegraf";
 
 import { GameService, NewsService, SteamService } from "../../services";
 import {
@@ -6,10 +6,10 @@ import {
   compareNewNews,
   createNewsMessage,
   filterRelevantNews,
-  getGameNameFromMessageCallback,
   notifyUserAboutError,
   sendAndTrackMessage,
   showGameSelectionMenu,
+  buildGamePaginationMarkUp,
 } from "../../utils";
 
 import { Command, GameNewsInfo, IBotContext } from "../../context";
@@ -40,27 +40,20 @@ export class GameNewsCommand extends Command {
       await showGameSelectionMenu(
         context,
         games,
+        0,
         "gameNewsMessagesId",
-        "Отменить проверку новостей.",
-        Markup.inlineKeyboard([
-          Markup.button.callback("Узнать новость", "news_check_game"),
-        ]),
-        Markup.inlineKeyboard([
-          Markup.button.callback("Отменить", "news_check_cancel"),
-        ]),
+        "news_check",
       );
     });
 
-    this.bot.action("news_check_game", async (context) => {
-      const gameNameFromMessage = getGameNameFromMessageCallback(context);
+    this.bot.action(/^news_check_select:(\d+)$/, async (context) => {
+      const gameId = Number(context.match?.[1]);
 
-      if (!gameNameFromMessage)
+      if (!gameId)
         return notifyUserAboutError(context, "Ошибка при выборе игры.");
 
       const gameEntity =
-        await this.gameService.getUserGameWithSubscriptions(
-          gameNameFromMessage,
-        );
+        await this.gameService.getUserGameWithSubscriptions(gameId);
 
       if (!gameEntity) {
         return notifyUserAboutError(context, "Игра не найдена.");
@@ -100,6 +93,23 @@ export class GameNewsCommand extends Command {
 
       await this.sendNewsToUser(context, filteredNews, gameEntity.name);
     });
+
+    this.bot.action(
+      /^news_check_toggle_page:(\d+)$/,
+      async (context: IBotContext) => {
+        const page = Number(context.match?.[1]);
+
+        const games = await this.gameService.getUserAllGames(
+          context.session.user!.userId,
+        );
+
+        await context.editMessageReplyMarkup(
+          buildGamePaginationMarkUp(games, page, "news_check").reply_markup,
+        );
+
+        await context.answerCbQuery();
+      },
+    );
 
     this.bot.action("news_check_cancel", async (context: IBotContext) => {
       await cancelOperationMessage(context, "gameNewsMessagesId", null);

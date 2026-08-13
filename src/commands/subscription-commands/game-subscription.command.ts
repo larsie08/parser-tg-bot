@@ -2,9 +2,9 @@ import { Markup, Telegraf } from "telegraf";
 
 import { GameNewsSubscriptionService, GameService } from "../../services";
 import {
+  buildGamePaginationMarkUp,
   buildSubscriptionMarkupKeyboard,
   cancelOperationMessage,
-  getGameNameFromMessageCallback,
   getKeySubscriptionFromKeyboardCallback,
   notifyUserAboutError,
   sendAndDeleteWithTimeout,
@@ -42,23 +42,18 @@ export class GameSubscriptionCommand extends Command {
       await showGameSelectionMenu(
         context,
         games,
+        0,
         "gameSubscriptionsMessageId",
-        "Отменить операцию",
-        Markup.inlineKeyboard([
-          Markup.button.callback("Выбрать игру", "game_subscription_select"),
-        ]),
-        Markup.inlineKeyboard([
-          Markup.button.callback("Отменить", "game_subscription_cancel"),
-        ]),
+        "game_subscription",
       );
     });
 
     this.bot.action(
-      "game_subscription_select",
+      /^game_subscription_select:(\d+)$/,
       async (context: IBotContext) => {
-        const selectedGameName = getGameNameFromMessageCallback(context);
+        const gameId = Number(context.match?.[1]);
 
-        const game = await this.gameService.getUserGame(selectedGameName);
+        const game = await this.gameService.getUserGame(gameId);
 
         if (!game)
           return notifyUserAboutError(
@@ -79,6 +74,10 @@ export class GameSubscriptionCommand extends Command {
             gameSubscriptionSettings,
           );
 
+        context.deleteMessage(
+          context.session.messagesId.gameSubscriptionsMessageId.shift(),
+        );
+
         context.session.selectedGame = game;
 
         await sendAndTrackMessage(
@@ -87,6 +86,24 @@ export class GameSubscriptionCommand extends Command {
           "gameSubscriptionsMessageId",
           buildSubscriptionMarkupKeyboard(context, "game"),
         );
+      },
+    );
+
+    this.bot.action(
+      /^game_subscription_toggle_page:(\d+)$/,
+      async (context: IBotContext) => {
+        const page = Number(context.match?.[1]);
+
+        const games = await this.gameService.getUserAllGames(
+          context.session.user!.userId,
+        );
+
+        await context.editMessageReplyMarkup(
+          buildGamePaginationMarkUp(games, page, "game_subscription")
+            .reply_markup,
+        );
+
+        await context.answerCbQuery();
       },
     );
 

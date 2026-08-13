@@ -2,11 +2,11 @@ import { Markup, Telegraf } from "telegraf";
 
 import { GameMetaService, GameService, SteamService } from "../../services";
 import {
+  buildGamePaginationMarkUp,
   cancelOperationMessage,
   createGameMessage,
   formatReleaseDate,
   getDiffData,
-  getGameNameFromMessageCallback,
   hasMetaData,
   notifyUserAboutError,
   sendAndTrackMessage,
@@ -30,11 +30,31 @@ export class ParserCommand extends Command {
       await this.handleGameSelection(context);
     });
 
-    this.bot.action("price_check_game", async (context: IBotContext) => {
-      const parserSelectedGame = getGameNameFromMessageCallback(context);
+    this.bot.action(
+      /^price_check_select:(\d+)$/,
+      async (context: IBotContext) => {
+        const gameId = Number(context.match?.[1]);
 
-      await this.handleSteamPrice(context, parserSelectedGame);
-    });
+        await this.handleSteamPrice(context, gameId);
+      },
+    );
+
+    this.bot.action(
+      /^price_check_toggle_page:(\d+)$/,
+      async (context: IBotContext) => {
+        const page = Number(context.match?.[1]);
+
+        const games = await this.gameService.getUserAllGames(
+          context.session.user!.userId,
+        );
+
+        await context.editMessageReplyMarkup(
+          buildGamePaginationMarkUp(games, page, "price_check").reply_markup,
+        );
+
+        await context.answerCbQuery();
+      },
+    );
 
     this.bot.action("price_check_cancel", async (context: IBotContext) => {
       await cancelOperationMessage(context, "gameParserMessageId", null);
@@ -57,22 +77,17 @@ export class ParserCommand extends Command {
     await showGameSelectionMenu(
       context,
       games,
+      0,
       "gameParserMessageId",
-      "Отменить",
-      Markup.inlineKeyboard([
-        Markup.button.callback("Узнать цену", "price_check_game"),
-      ]),
-      Markup.inlineKeyboard([
-        Markup.button.callback("Отменить", "price_check_cancel"),
-      ]),
+      "price_check",
     );
   }
 
   private async handleSteamPrice(
     context: IBotContext,
-    parserSelectedGame: string,
+    gameId: number,
   ): Promise<void> {
-    const game = await this.gameService.getUserGame(parserSelectedGame);
+    const game = await this.gameService.getUserGame(gameId);
 
     if (!game) throw new Error("Не удалось найти игру в базе данных.");
 
