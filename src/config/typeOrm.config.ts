@@ -1,7 +1,6 @@
 import { DataSource } from "typeorm";
 
 import { ConfigService } from "./config.service";
-
 import {
   Game,
   GameMeta,
@@ -9,7 +8,7 @@ import {
   News,
   User,
   UserNewsSubscription,
-} from "../entities";
+} from "../modules";
 
 const configService = new ConfigService();
 
@@ -28,7 +27,7 @@ export const AppDataSource = new DataSource({
     UserNewsSubscription,
     GameNewsSubscription,
   ],
-  migrations: [__dirname + "/../migrations/*.{ts,js}"],
+  migrations: [__dirname + "/../config/migrations/*.{ts,js}"],
   synchronize: false,
   logging: true,
 });

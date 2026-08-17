@@ -1,7 +1,5 @@
 import { Context } from "telegraf";
-
-import { Game, User } from "../entities";
-import { NewsSubscriptionsSettings } from "./news.interface";
+import { Game, NewsSubscriptionsSettings, User } from "../modules";
 
 export type PendingGame = {
   steamGameName: string;
@@ -44,3 +42,16 @@ export interface IBotContext extends Context {
   session: SessionData;
   match?: RegExpExecArray;
 }
+
+export const COMMAND_ACTIONS = {
+  gameAddCommand: "game_add",
+  gameDeleteCommand: "game_delete",
+  gameReleasesCommand: "game_releases",
+  gameNewsCommand: "news_check",
+  gameParserCommand: "price_check",
+  globalSubscriptionCommand: "global_subscription",
+  gameSubscriptionCommand: "game_subscription",
+} as const;
+
+export type CommandActionName =
+  (typeof COMMAND_ACTIONS)[keyof typeof COMMAND_ACTIONS];

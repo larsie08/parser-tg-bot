@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { session, Telegraf } from "telegraf";
 
-import { AutoParserModule, NotificationModule } from "./src/modules";
+import { AutoParserJob, NotificationJob } from "./src/jobs";
 import {
   ParserCommand,
   StartCommand,
@@ -14,18 +14,24 @@ import {
 } from "./src/commands";
 
 import {
+  Game,
+  GameMeta,
   GameMetaService,
-  GameNewsSubscriptionService,
+  GameNewsSubscription,
   GameService,
+  News,
   NewsService,
-  SteamService,
-  UserNewsSubscriptionService,
+  NewsSubscriptionService,
+  NewsType,
+  User,
+  UserNewsSubscription,
   UserService,
-} from "./src/services";
+} from "./src/modules";
+import { TelegramService } from "./src/services";
+import { SteamService } from "./src/integrations";
 
-import { Command, IBotContext, NewsType } from "./src/context";
-import { AppDataSource } from "./src/config/typeOrm.config";
-import { ConfigService, IConfigService } from "./src/config";
+import { Command, IBotContext } from "./src/context";
+import { AppDataSource, ConfigService, IConfigService } from "./src/config";
 
 class Bot {
   bot: Telegraf<IBotContext>;
@@ -76,38 +82,80 @@ class Bot {
   }
 
   init() {
-    const gameService = new GameService();
-    const gameMetaService = new GameMetaService();
-    const newsService = new NewsService();
-    const userService = new UserService();
+    const gameService = new GameService(AppDataSource.getRepository(Game));
+    const gameMetaService = new GameMetaService(
+      AppDataSource.getRepository(GameMeta),
+    );
+    const newsService = new NewsService(AppDataSource.getRepository(News));
+    const userService = new UserService(
+      AppDataSource.getRepository(User),
+      AppDataSource.getRepository(UserNewsSubscription),
+    );
+    const newsSubscriptionService = new NewsSubscriptionService(
+      AppDataSource.getRepository(UserNewsSubscription),
+      AppDataSource.getRepository(GameNewsSubscription),
+    );
     const steamService = new SteamService();
-    const userNewsSubscriptionService = new UserNewsSubscriptionService();
-    const gameNewsSubscriptionService = new GameNewsSubscriptionService();
+    const telegramService = new TelegramService(this.bot);
 
     this.commands = [
-      new StartCommand(this.bot, userService),
+      new StartCommand(this.bot, userService, telegramService),
 
-      new AutoParserModule(
+      new AutoParserJob(
         this.bot,
         gameService,
         gameMetaService,
         newsService,
         steamService,
+        telegramService,
       ),
-      new NotificationModule(this.bot, gameMetaService),
+      new NotificationJob(this.bot, gameMetaService, telegramService),
 
-      new GameAddCommand(this.bot, userService, gameService, steamService),
-      new GameDeleteCommand(this.bot, userService, gameService),
+      new GameAddCommand(
+        this.bot,
+        userService,
+        gameService,
+        steamService,
+        telegramService,
+      ),
+      new GameDeleteCommand(
+        this.bot,
+        userService,
+        gameService,
+        telegramService,
+      ),
 
-      new ParserCommand(this.bot, gameMetaService, gameService, steamService),
-      new GameNewsCommand(this.bot, newsService, gameService, steamService),
-      new GameReleasesCommand(this.bot, gameMetaService, steamService),
+      new ParserCommand(
+        this.bot,
+        gameMetaService,
+        gameService,
+        steamService,
+        telegramService,
+      ),
+      new GameNewsCommand(
+        this.bot,
+        newsService,
+        gameService,
+        steamService,
+        telegramService,
+      ),
+      new GameReleasesCommand(
+        this.bot,
+        gameMetaService,
+        steamService,
+        telegramService,
+      ),
 
-      new GlobalSubscriptionCommand(this.bot, userNewsSubscriptionService),
+      new GlobalSubscriptionCommand(
+        this.bot,
+        newsSubscriptionService,
+        telegramService,
+      ),
       new GameSubscriptionCommand(
         this.bot,
         gameService,
-        gameNewsSubscriptionService,
+        newsSubscriptionService,
+        telegramService,
       ),
     ];
 

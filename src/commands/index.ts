@@ -1,11 +1,11 @@
 export * from "./start.command";
 
-export * from "./game-parser-commands/parser.command";
-export * from "./game-parser-commands/news.command";
-export * from "./game-parser-commands/gameReleases.command";
+export * from "./game-parser/parser.command";
+export * from "./game-parser/news.command";
+export * from "./game-parser/gameReleases.command";
 
-export * from "./game-commands/gameAdd.command";
-export * from "./game-commands/gameDelete.command";
+export * from "./game-management/gameAdd.command";
+export * from "./game-management/gameDelete.command";
 
-export * from "./subscription-commands/global-subscription.command";
-export * from "./subscription-commands/game-subscription.command";
+export * from "./subscriptions/global-subscription.command";
+export * from "./subscriptions/game-subscription.command";

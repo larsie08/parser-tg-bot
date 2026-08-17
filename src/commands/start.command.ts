@@ -1,19 +1,16 @@
 import { Telegraf, Markup } from "telegraf";
 
-import { UserService } from "../services";
+import { TelegramService } from "../services";
+import { User, UserService } from "../modules";
 
-import { User } from "../entities";
 import { Command, IBotContext } from "../context";
-import {
-  cancelOperationMessage,
-  sendAndTrackMessage,
-  trackUserMessage,
-} from "../utils";
+import { trackUserMessage } from "../shared";
 
 export class StartCommand extends Command {
   constructor(
-    bot: Telegraf<IBotContext>,
-    private userService: UserService,
+    readonly bot: Telegraf<IBotContext>,
+    private readonly userService: UserService,
+    private readonly telegramService: TelegramService,
   ) {
     super(bot);
   }
@@ -34,7 +31,7 @@ export class StartCommand extends Command {
     });
 
     this.bot.action("start_command_cancel", async (context: IBotContext) => {
-      await cancelOperationMessage(
+      await this.telegramService.cancelOperationMessage(
         context,
         "gameMenuCommandMessageId",
         null,
@@ -47,7 +44,7 @@ export class StartCommand extends Command {
     this.bot.hears("Меню парсера", async (context: IBotContext) => {
       trackUserMessage(context, "gameMenuCommandMessageId");
 
-      await sendAndTrackMessage(
+      await this.telegramService.sendAndTrackMessage(
         context,
         "Выберите команду",
         "gameMenuCommandMessageId",
@@ -73,7 +70,7 @@ export class StartCommand extends Command {
     this.bot.hears("Управление играми", async (context: IBotContext) => {
       trackUserMessage(context, "gameMenuCommandMessageId");
 
-      await sendAndTrackMessage(
+      await this.telegramService.sendAndTrackMessage(
         context,
         "Выберите команду",
         "gameMenuCommandMessageId",
@@ -96,7 +93,7 @@ export class StartCommand extends Command {
     this.bot.hears("Управление уведомлениями", async (context: IBotContext) => {
       trackUserMessage(context, "gameMenuCommandMessageId");
 
-      await sendAndTrackMessage(
+      await this.telegramService.sendAndTrackMessage(
         context,
         "Выберите команду",
         "gameMenuCommandMessageId",
