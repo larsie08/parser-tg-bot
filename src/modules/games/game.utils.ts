@@ -1,6 +1,14 @@
+import { Markup } from "telegraf";
+import { InlineKeyboardMarkup } from "telegraf/types";
+
+import { buildPaginationButtons } from "../../shared";
+
+import { CommandActionName } from "../../context";
 import { Game } from "./game.entity";
 import { IGameSteamData } from "./game.interface";
 import { GameMeta } from "./gameMeta.entity";
+
+const GAMES_PER_PAGE = 5;
 
 export function getDiffData(
   game: Game,
@@ -79,4 +87,27 @@ export function parseGameNamesFromMessage(text: string): string[] {
     .split(";")
     .map((game) => game.trim())
     .filter((game) => game.length > 0);
+}
+
+export function buildGamePaginationMarkUp(
+  games: Game[],
+  page: number,
+  action: CommandActionName,
+  deleteOption = false,
+): Markup.Markup<InlineKeyboardMarkup> {
+  const start = page * GAMES_PER_PAGE;
+  const pageGames = games.slice(start, start + GAMES_PER_PAGE);
+
+  const totalPages = Math.ceil(games.length / GAMES_PER_PAGE);
+
+  const keyboard = pageGames.map((game) => [
+    Markup.button.callback(
+      `🎮 ${game.name}`,
+      `${action}_select:${game.id}${deleteOption ? `:${page}` : ""}`,
+    ),
+  ]);
+
+  const pagination = buildPaginationButtons(page, totalPages, action, false);
+
+  return Markup.inlineKeyboard([...keyboard, ...pagination]);
 }

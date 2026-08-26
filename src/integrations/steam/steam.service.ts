@@ -40,7 +40,7 @@ export class SteamService {
   async fetchGameNews(gameId: string): Promise<GameNewsInfo | null> {
     try {
       const { data } = await axios.get(
-        `http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=${gameId}&count=3&maxlength=300&format=json`,
+        `http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=${gameId}&count=15&maxlength=300&format=json`,
       );
       return data;
     } catch (error) {

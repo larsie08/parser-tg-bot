@@ -64,6 +64,12 @@ export class TelegramService {
     await context.deleteMessages(context.session.messagesId[messageArrayId]);
   }
 
+  async deleteLastMessage(context: IBotContext, messageArrayId: MessagesIdKey) {
+    await context.deleteMessage(
+      context.session.messagesId[messageArrayId].shift(),
+    );
+  }
+
   private timeoutDeleteMessage(
     context: IBotContext,
     messageId: number,

@@ -1,8 +1,12 @@
 import { Telegraf } from "telegraf";
 
 import { TelegramService } from "../../services";
-import { Game, GameService, UserService } from "../../modules";
-import { buildGamePaginationMarkUp } from "../../shared";
+import {
+  buildGamePaginationMarkUp,
+  Game,
+  GameService,
+  UserService,
+} from "../../modules";
 
 import { Command, IBotContext } from "../../context";
 

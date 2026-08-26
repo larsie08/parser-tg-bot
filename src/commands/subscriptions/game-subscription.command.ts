@@ -2,6 +2,7 @@ import { Telegraf } from "telegraf";
 
 import { TelegramService } from "../../services";
 import {
+  buildGamePaginationMarkUp,
   buildSubscriptionMarkupKeyboard,
   GameService,
   getKeySubscriptionFromKeyboardCallback,
@@ -10,8 +11,6 @@ import {
   setSubscriptionContextStateDefault,
   setSubscriptionsSessionState,
 } from "../../modules";
-
-import { buildGamePaginationMarkUp } from "../../shared";
 
 import { Command, IBotContext } from "../../context";
 
@@ -75,8 +74,9 @@ export class GameSubscriptionCommand extends Command {
             gameSubscriptionSettings,
           );
 
-        context.deleteMessage(
-          context.session.messagesId.gameSubscriptionsMessageId.shift(),
+        await this.telegramService.deleteLastMessage(
+          context,
+          "gameSubscriptionsMessageId",
         );
 
         context.session.selectedGame = game;

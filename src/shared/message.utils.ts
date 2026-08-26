@@ -1,15 +1,18 @@
 import { Markup } from "telegraf";
 
-import { InlineKeyboardMarkup } from "telegraf/types";
 import {
   CommandActionName,
   IBotContext,
   MessagesIdKey,
   PendingGame,
 } from "../context";
-import { Game, GameMeta, IGameSteamData, NewsItem } from "../modules";
-
-const GAMES_PER_PAGE = 5;
+import {
+  Game,
+  GameMeta,
+  GameNewsInfo,
+  IGameSteamData,
+  NewsItem,
+} from "../modules";
 
 export function createGameMessage(
   gameData: IGameSteamData | GameMeta,
@@ -99,49 +102,6 @@ export function createNewsMessage(
   return message;
 }
 
-export function buildGamePaginationMarkUp(
-  games: Game[],
-  page: number,
-  action: CommandActionName,
-  deleteOption = false,
-): Markup.Markup<InlineKeyboardMarkup> {
-  const start = page * GAMES_PER_PAGE;
-  const pageGames = games.slice(start, start + GAMES_PER_PAGE);
-
-  const totalPages = Math.ceil(games.length / GAMES_PER_PAGE);
-
-  const keyboard = pageGames.map((game) => [
-    Markup.button.callback(
-      `🎮 ${game.name}`,
-      `${action}_select:${game.id}${deleteOption ? `:${page}` : ""}`,
-    ),
-  ]);
-
-  const navigation = [];
-
-  if (page > 0) {
-    navigation.push(
-      Markup.button.callback("◀️", `${action}_toggle_page:${page - 1}`),
-    );
-  }
-
-  navigation.push(
-    Markup.button.callback(`${page + 1} / ${totalPages}`, "noop"),
-  );
-
-  if (page < totalPages - 1) {
-    navigation.push(
-      Markup.button.callback("▶️", `${action}_toggle_page:${page + 1}`),
-    );
-  }
-
-  keyboard.push(navigation);
-
-  keyboard.push([Markup.button.callback("❌ Отмена", `${action}_cancel`)]);
-
-  return Markup.inlineKeyboard(keyboard);
-}
-
 export function trackUserMessage(
   context: IBotContext,
   messageArrayId: MessagesIdKey,
@@ -176,4 +136,36 @@ export function editAddMessageGames(
     : games.length === 1
       ? `Игра успешно добавлена: ${games[0]}`
       : `Игры успешно добавлены: ${games.join(", ")}`;
+}
+
+export function buildPaginationButtons(
+  page: number,
+  totalPages: number,
+  action: CommandActionName,
+  isNewsMenu: boolean,
+) {
+  const navigation = [];
+
+  const actionPrefix = isNewsMenu ? `${action + "_news"}` : action;
+
+  if (page > 0) {
+    navigation.push(
+      Markup.button.callback("◀️", `${actionPrefix}_toggle_page:${page - 1}`),
+    );
+  }
+
+  navigation.push(
+    Markup.button.callback(`${page + 1} / ${totalPages}`, "noop"),
+  );
+
+  if (page < totalPages - 1) {
+    navigation.push(
+      Markup.button.callback("▶️", `${actionPrefix}_toggle_page:${page + 1}`),
+    );
+  }
+
+  return [
+    navigation,
+    [Markup.button.callback("❌ Отмена", `${action}_cancel`)],
+  ];
 }

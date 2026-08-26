@@ -1,5 +1,5 @@
 import { Context } from "telegraf";
-import { Game, NewsSubscriptionsSettings, User } from "../modules";
+import { Game, NewsItem, NewsSubscriptionsSettings, User } from "../modules";
 
 export type PendingGame = {
   steamGameName: string;
@@ -36,6 +36,7 @@ export interface SessionData {
   };
   user: User | null;
   selectedGame: Game | null;
+  filteredNews: NewsItem[] | null;
 }
 
 export interface IBotContext extends Context {

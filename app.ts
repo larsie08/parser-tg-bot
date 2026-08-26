@@ -76,6 +76,7 @@ class Bot {
           },
           user: null,
           selectedGame: null,
+          filteredNews: null,
         }),
       }),
     );

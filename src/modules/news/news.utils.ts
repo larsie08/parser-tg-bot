@@ -1,3 +1,4 @@
+import { Markup } from "telegraf";
 import {
   GameNewsInfo,
   GameNewsSubscription,
@@ -7,6 +8,10 @@ import {
   NewsType,
   UserNewsSubscription,
 } from "..";
+import { buildPaginationButtons } from "../../shared";
+import { CommandActionName } from "../../context";
+
+const NEWS_PER_PAGE = 5;
 
 export function filterRelevantNews(
   news: GameNewsInfo,
@@ -46,6 +51,28 @@ export async function compareNewNews(
       newsitems: newNewsItems,
     },
   };
+}
+
+export function buildNewsPaginationMarkUp(
+  news: NewsItem[],
+  page: number,
+  action: CommandActionName,
+) {
+  const start = page * NEWS_PER_PAGE;
+  const pageNews = news.slice(start, start + NEWS_PER_PAGE);
+
+  const totalPages = Math.ceil(news.length / NEWS_PER_PAGE);
+
+  const keyboard = pageNews.map((news) => [
+    Markup.button.callback(
+      `🎮 ${news.title}`,
+      `${action}_news_select:${news.gid}`,
+    ),
+  ]);
+
+  const pagination = buildPaginationButtons(page, totalPages, action, true);
+
+  return Markup.inlineKeyboard([...keyboard, ...pagination]);
 }
 
 function hasCategory(item: NewsItem, category: NewsType): boolean {

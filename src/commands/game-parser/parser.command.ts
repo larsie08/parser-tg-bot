@@ -2,13 +2,15 @@ import { Telegraf } from "telegraf";
 
 import { TelegramService } from "../../services";
 import { SteamService } from "../../integrations";
-import { GameMetaService, GameService, getDiffData, hasMetaData } from "../../modules";
-
 import {
   buildGamePaginationMarkUp,
-  createGameMessage,
-  formatReleaseDate,
-} from "../../shared";
+  GameMetaService,
+  GameService,
+  getDiffData,
+  hasMetaData,
+} from "../../modules";
+
+import { createGameMessage, formatReleaseDate } from "../../shared";
 
 import { Command, IBotContext } from "../../context";
 
