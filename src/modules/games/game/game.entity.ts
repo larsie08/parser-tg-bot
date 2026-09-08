@@ -2,13 +2,14 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   ManyToMany,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
-import { GameMeta, GameNewsSubscription, News, User } from "..";
+import { Additions, GameMeta, GameNewsSubscription, News, User } from "../..";
 
 @Entity()
 export class Game {
@@ -35,6 +36,9 @@ export class Game {
 
   @OneToMany(() => GameNewsSubscription, (subscription) => subscription.game)
   subscriptions!: GameNewsSubscription[];
+
+  @OneToMany(() => Additions, (adddition) => adddition.game)
+  additions!: Additions[];
 
   @CreateDateColumn()
   createdAt!: Date;

@@ -3,16 +3,23 @@ import { Telegraf } from "telegraf";
 import { TelegramService } from "../services";
 import { SteamService } from "../integrations";
 import {
+  Additions,
+  AdditionsService,
   compareNewNews,
+  createAdditionMessage,
+  createNewAdditionMessage,
   FilteredUsersNewsPreference,
   filterRelevantNews,
   Game,
   GameMetaService,
+  GameMetaType,
   GameNewsInfo,
   GameService,
   getDiffData,
   hasMetaData,
+  IGameSteamData,
   NewsService,
+  User,
 } from "../modules";
 
 import {
@@ -32,6 +39,7 @@ export class AutoParserJob extends Command {
     private readonly newsService: NewsService,
     private readonly steamService: SteamService,
     private readonly telegramService: TelegramService,
+    private readonly additionsService: AdditionsService,
   ) {
     super(bot);
   }
@@ -48,9 +56,11 @@ export class AutoParserJob extends Command {
             await this.processSteamGame(game);
             await this.processGameNews(game);
             await this.processEarlyReleaseDate(game);
+            await this.processGameAdditions(game);
           } catch (error) {
             console.error(
               `Ошибка обработки игр для пользователей. ${game.name}:`,
+              error,
             );
           }
         }
@@ -72,7 +82,37 @@ export class AutoParserJob extends Command {
 
     if (hasMetaData(game.meta) && !hasAnyChange) return;
 
-    if (hasMetaData(game.meta) && hasAnyChange) {
+    if (changesKeys.includes("dlc") && changesDetected.dlc) {
+      const isFirstAdditionsSync = game.additions.length === 0;
+
+      for (const steamId of changesDetected.dlc) {
+        const additionInfo =
+          await this.steamService.fetchGameMetaInfoRegionalSteam(steamId);
+
+        if (!additionInfo) continue;
+
+        const addition = await this.additionsService.saveAddition(
+          additionInfo,
+          game,
+          steamId,
+        );
+
+        if (isFirstAdditionsSync) continue;
+
+        await this.sendMessageAboutGameChanges(
+          game,
+          GameMetaType.ADDITION,
+          game.users,
+          additionInfo,
+          changesDetected,
+          true,
+          "",
+          addition,
+        );
+      }
+    }
+
+    if (hasMetaData(game.meta) && !changesKeys.includes("dlc")) {
       const releaseDate = changesKeys.includes("releaseDate")
         ? (() => {
             const date = steamGameData.releaseDate ?? game.meta.releaseDate;
@@ -80,29 +120,22 @@ export class AutoParserJob extends Command {
           })()
         : undefined;
 
-      await Promise.all(
-        game.users.map(async (user) => {
-          try {
-            await this.telegramService.sendAutoMessageToUser(
-              user.userId,
-              createGameMessage(
-                steamGameData,
-                game,
-                changesDetected,
-                releaseDate,
-              ),
-            );
-          } catch (error) {
-            console.error(
-              "Произошла ошибка с асинхронным отправлением сообщений.",
-              error,
-            );
-          }
-        }),
+      await this.sendMessageAboutGameChanges(
+        game,
+        GameMetaType.GAME,
+        game.users,
+        steamGameData,
+        changesDetected,
+        false,
+        releaseDate,
       );
     }
 
-    await this.gameMetaService.upsertMetaInfo(steamGameData, game);
+    await this.gameMetaService.upsertMetaInfo(
+      steamGameData,
+      game.id,
+      GameMetaType.GAME,
+    );
   }
 
   private async processGameNews(game: Game): Promise<void> {
@@ -136,7 +169,7 @@ export class AutoParserJob extends Command {
   }
 
   private async processEarlyReleaseDate(game: Game): Promise<void> {
-    if (game.meta.comingSoon) return;
+    if (game.meta && game.meta.comingSoon) return;
 
     if (
       game.meta.isEarlyAccess &&
@@ -177,6 +210,54 @@ export class AutoParserJob extends Command {
     }
   }
 
+  private async processGameAdditions(game: Game): Promise<void> {
+    const additions = await this.additionsService.getGameAllAdditions(game.id);
+
+    if (!additions) return;
+
+    for (const additionItem of additions) {
+      const additionData =
+        await this.steamService.fetchGameMetaInfoRegionalSteam(
+          additionItem.steamId,
+        );
+
+      if (!additionData) continue;
+
+      const changesDetected = getDiffData(game, additionData);
+      const hasAnyChange = Object.values(changesDetected).length > 0;
+      const changesKeys = Object.keys(changesDetected);
+
+      if (!hasAnyChange) continue;
+
+      if (hasMetaData(additionItem.meta) && hasAnyChange) {
+        const releaseDate = changesKeys.includes("releaseDate")
+          ? (() => {
+              const date =
+                additionData.releaseDate ?? additionItem.meta.releaseDate;
+              return date ? formatReleaseDate(date) : undefined;
+            })()
+          : undefined;
+
+        await this.sendMessageAboutGameChanges(
+          game,
+          GameMetaType.ADDITION,
+          game.users,
+          additionData,
+          changesDetected,
+          false,
+          releaseDate,
+          additionItem,
+        );
+      }
+
+      await this.gameMetaService.upsertMetaInfo(
+        additionData,
+        additionItem.id,
+        GameMetaType.ADDITION,
+      );
+    }
+  }
+
   private async filterUsersSubscriptionsNews(
     game: Game,
     news: GameNewsInfo,
@@ -193,6 +274,54 @@ export class AutoParserJob extends Command {
     }
 
     return usersNews;
+  }
+
+  private async sendMessageAboutGameChanges(
+    game: Game,
+    type: GameMetaType,
+    users: User[],
+    steamGameData: IGameSteamData,
+    changesDetected: Partial<IGameSteamData>,
+    isNewAddition: boolean,
+    releaseDate?: string | undefined,
+    addition?: Additions,
+  ) {
+    let message = "";
+
+    if (type === GameMetaType.GAME) {
+      message = createGameMessage(
+        steamGameData,
+        game,
+        changesDetected,
+        releaseDate,
+      );
+    } else if (type === GameMetaType.ADDITION && addition && isNewAddition) {
+      message = createNewAdditionMessage(addition, game);
+    } else if (type === GameMetaType.ADDITION && addition) {
+      message = createAdditionMessage(
+        steamGameData,
+        addition,
+        game,
+        changesDetected,
+        releaseDate,
+      );
+    }
+
+    await Promise.all(
+      users.map(async (user) => {
+        try {
+          await this.telegramService.sendAutoMessageToUser(
+            user.userId,
+            message,
+          );
+        } catch (error) {
+          console.error(
+            "Произошла ошибка с асинхронным отправлением сообщений.",
+            error,
+          );
+        }
+      }),
+    );
   }
 
   private async sendMessageNews(

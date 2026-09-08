@@ -6,4 +6,5 @@ export interface IGameSteamData {
   releaseDate: string | undefined;
   comingSoon: boolean;
   isEarlyAccess: boolean;
+  dlc?: string[];
 }

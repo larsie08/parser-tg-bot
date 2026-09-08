@@ -1,24 +1,29 @@
 import { Repository } from "typeorm";
-import { Game, GameMeta } from "..";
-import { IGameSteamData } from "./game.interface";
+import { buildMetaUpdate, GameMeta, GameMetaType, IGameSteamData } from "../..";
 
 export class GameMetaService {
   constructor(private readonly gameMetaRepository: Repository<GameMeta>) {}
 
-  async upsertMetaInfo(gameData: IGameSteamData, game: Game): Promise<void> {
+  async upsertMetaInfo(
+    gameData: IGameSteamData,
+    entityId: number,
+    type: GameMetaType,
+  ): Promise<void> {
+    const relation = type === GameMetaType.GAME ? "game" : "addition";
+
     let meta = await this.gameMetaRepository.findOne({
       where: {
-        game: {
-          id: game.id,
+        [relation]: {
+          id: entityId,
         },
       },
     });
 
     if (!meta) {
-      meta = this.gameMetaRepository.create({ game: { id: game.id } });
+      meta = this.createMeta(entityId, type);
     }
 
-    Object.assign(meta, this.buildMetaUpdate(gameData, meta));
+    Object.assign(meta, buildMetaUpdate(gameData, meta));
 
     await this.gameMetaRepository.save(meta);
   }
@@ -48,11 +53,18 @@ export class GameMetaService {
 
   async getGamesIsComingSoon(): Promise<GameMeta[] | null> {
     return this.gameMetaRepository.find({
-      where: {
-        comingSoon: true,
-      },
+      where: [
+        {
+          comingSoon: true,
+        },
+        {
+          isEarlyAccess: true,
+        },
+      ],
+
       relations: {
         game: { users: true },
+        addition: { game: { users: true } },
       },
     });
   }
@@ -75,21 +87,16 @@ export class GameMetaService {
     });
   }
 
-  private buildMetaUpdate(gameData: IGameSteamData, meta: GameMeta) {
-    const normalize = <T>(v: string | undefined | null): string | null =>
-      v == null || v.trim() === "" ? null : v;
+  private createMeta(entityId: number, type: GameMetaType): GameMeta {
+    if (type === GameMetaType.GAME)
+      return this.gameMetaRepository.create({
+        type,
+        game: { id: entityId },
+      });
 
-    return {
-      price: normalize(gameData.price),
-      oldPrice: normalize(
-        meta.price && meta.price !== gameData.price
-          ? meta.price
-          : meta.oldPrice,
-      ),
-      discount: normalize(gameData.discount),
-      comingSoon: gameData.comingSoon,
-      releaseDate: gameData.releaseDate,
-      isEarlyAccess: gameData.isEarlyAccess,
-    };
+    return this.gameMetaRepository.create({
+      type,
+      addition: { id: entityId },
+    });
   }
 }

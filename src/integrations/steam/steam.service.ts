@@ -123,9 +123,11 @@ export class SteamService {
         ? data[gameId].data.release_date.date
         : undefined,
       comingSoon: data[gameId].data.release_date.coming_soon,
-      isEarlyAccess: data[gameId].data.genres.some(
-        (obj) => obj.description === "Early Access",
-      ),
+      isEarlyAccess:
+        data[gameId].data.genres?.some(
+          (obj) => obj.description === "Early Access",
+        ) || false,
+      dlc: data[gameId].data.dlc?.map((dlcId) => String(dlcId)),
     };
   }
 
@@ -156,6 +158,8 @@ export class SteamService {
     gameId: string,
   ): boolean {
     const { genres, release_date } = data[gameId].data;
+
+    if (!genres) return false;
 
     const isEarlyAccess = genres.some(
       (genre) => genre.description === "Early Access",

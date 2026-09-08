@@ -1,7 +1,14 @@
 import { Telegraf } from "telegraf";
 
 import { TelegramService } from "../services";
-import { Game, GameMetaService, needsReleaseTracking } from "../modules";
+import {
+  Additions,
+  Game,
+  GameMetaService,
+  GameMetaType,
+  needsReleaseTracking,
+  User,
+} from "../modules";
 
 import { Command, IBotContext } from "../context";
 import { getDaysUntilRelease } from "../shared";
@@ -18,35 +25,33 @@ export class NotificationJob extends Command {
   async handle(): Promise<void> {
     setInterval(
       async () => {
-        const games = await this.gameMetaService.getGamesIsComingSoon();
+        const gamesMeta = await this.gameMetaService.getGamesIsComingSoon();
 
-        if (!games) return;
+        if (!gamesMeta) return console.log("Не найдено ни одной игры.");
 
-        for (const gameMeta of games) {
-          if (!gameMeta.releaseDate) continue;
+        for (const gameMeta of gamesMeta) {
+          try {
+            const owner = gameMeta[gameMeta.type];
 
-          const releaseDays = getDaysUntilRelease(gameMeta.releaseDate);
+            if (!owner || !gameMeta.releaseDate) return;
 
-          if (releaseDays && this.shouldSendNotification(releaseDays)) {
-            const message = this.createReleaseCountdownMessage(
-              gameMeta.game,
-              releaseDays,
-            );
+            const releaseDays = getDaysUntilRelease(gameMeta.releaseDate);
 
-            await Promise.all(
-              gameMeta.game.users.map(async (user) => {
-                try {
-                  await this.telegramService.sendAutoMessageToUser(
-                    user.userId,
-                    message,
-                  );
-                } catch (error) {
-                  console.error(
-                    "Произошла ошибка с асинхронным отправлением сообщений.",
-                    error,
-                  );
-                }
-              }),
+            if (releaseDays && this.shouldSendNotification(releaseDays)) {
+              const users =
+                gameMeta.type === GameMetaType.GAME
+                  ? gameMeta.game!.users
+                  : gameMeta.addition!.game.users;
+
+              await this.sendMessageAboutGameReleases(
+                users,
+                owner,
+                releaseDays,
+              );
+            }
+          } catch (error) {
+            console.error(
+              `Ошибка обработки релизов игр для пользователей. ${gameMeta[gameMeta.type]?.name}:`,
             );
           }
         }
@@ -55,12 +60,39 @@ export class NotificationJob extends Command {
     );
   }
 
+  private async sendMessageAboutGameReleases(
+    users: User[],
+    owner: Game | Additions,
+    releaseDays: number,
+  ): Promise<void> {
+    const message = this.createReleaseCountdownMessage(owner, releaseDays);
+
+    await Promise.all(
+      users.map(async (user) => {
+        try {
+          await this.telegramService.sendAutoMessageToUser(
+            user.userId,
+            message,
+          );
+        } catch (error) {
+          console.error(
+            "Произошла ошибка с асинхронным отправлением сообщений.",
+            error,
+          );
+        }
+      }),
+    );
+  }
+
   private createReleaseCountdownMessage(
-    game: Game,
+    game: Game | Additions,
     daysUntilRelease: number,
   ): string {
+    const isAddition = game.meta?.type === GameMetaType.ADDITION;
+    const entityName = isAddition ? "Дополнение" : "Игра";
+
     if (daysUntilRelease === 0 && needsReleaseTracking(game.meta)) {
-      return `🎮 *${game.name}*\n\n🎉 Игра уже вышла!`;
+      return `🎮 *${game.name}*\n\n🎉 ${entityName} уже вышло!`;
     }
 
     const word = this.getDaysWord(daysUntilRelease);

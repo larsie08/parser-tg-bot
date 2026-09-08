@@ -1,9 +1,15 @@
-export * from "./games/game.service";
-export * from "./games/gameMeta.service";
-export * from "./games/game.entity";
-export * from "./games/gameMeta.entity";
-export * from "./games/game.utils";
-export * from "./games/game.interface";
+export * from "./games/game/game.service";
+export * from "./games/game/game.entity";
+export * from "./games/game/game.interface";
+export * from "./games/game/game.utils";
+
+export * from "./games/meta/gameMeta.service";
+export * from "./games/meta/gameMeta.entity";
+export * from "./games/meta/gameMeta.types";
+
+export * from "./games/additions/additions.entity";
+export * from "./games/additions/additions.service";
+export * from "./games/additions/additions.utils";
 
 export * from "./news/news.service";
 export * from "./news/news.entity";

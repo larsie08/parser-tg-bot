@@ -7,17 +7,31 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
-
-import { Game } from "./game.entity";
+import { Game } from "../game/game.entity";
+import { Additions } from "../additions/additions.entity";
+import { GameMetaType } from "./gameMeta.types";
 
 @Entity()
 export class GameMeta {
   @PrimaryGeneratedColumn()
   id!: number;
 
+  @Column({
+    type: "enum",
+    enum: GameMetaType,
+    enumName: "game_meta_type",
+  })
+  type!: GameMetaType;
+
   @OneToOne(() => Game, (game) => game.meta, { onDelete: "CASCADE" })
   @JoinColumn({ name: "game_id" })
-  game!: Game;
+  game?: Game;
+
+  @OneToOne(() => Additions, (addition) => addition.meta, {
+    onDelete: "CASCADE",
+  })
+  @JoinColumn({ name: "addition_id" })
+  addition?: Additions;
 
   @Column({ nullable: true })
   price?: string;

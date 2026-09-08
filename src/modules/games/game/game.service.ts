@@ -28,6 +28,7 @@ export class GameService {
           UserNewsSubscription: true,
           gameSubscriptions: { game: true },
         },
+        additions: true,
       },
     });
   }

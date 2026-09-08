@@ -14,6 +14,8 @@ import {
 } from "./src/commands";
 
 import {
+  Additions,
+  AdditionsService,
   Game,
   GameMeta,
   GameMetaService,
@@ -83,18 +85,30 @@ class Bot {
   }
 
   init() {
-    const gameService = new GameService(AppDataSource.getRepository(Game));
-    const gameMetaService = new GameMetaService(
-      AppDataSource.getRepository(GameMeta),
+    const gameRepository = AppDataSource.getRepository(Game);
+    const gameMetaRepository = AppDataSource.getRepository(GameMeta);
+    const additionsRepository = AppDataSource.getRepository(Additions);
+    const newsRepository = AppDataSource.getRepository(News);
+    const userRepository = AppDataSource.getRepository(User);
+    const userSubscriptionRepository =
+      AppDataSource.getRepository(UserNewsSubscription);
+    const gameSubscriptionRepository =
+      AppDataSource.getRepository(GameNewsSubscription);
+
+    const gameService = new GameService(gameRepository);
+    const gameMetaService = new GameMetaService(gameMetaRepository);
+    const additionsService = new AdditionsService(
+      additionsRepository,
+      gameMetaRepository,
     );
-    const newsService = new NewsService(AppDataSource.getRepository(News));
+    const newsService = new NewsService(newsRepository);
     const userService = new UserService(
-      AppDataSource.getRepository(User),
-      AppDataSource.getRepository(UserNewsSubscription),
+      userRepository,
+      userSubscriptionRepository,
     );
     const newsSubscriptionService = new NewsSubscriptionService(
-      AppDataSource.getRepository(UserNewsSubscription),
-      AppDataSource.getRepository(GameNewsSubscription),
+      userSubscriptionRepository,
+      gameSubscriptionRepository,
     );
     const steamService = new SteamService();
     const telegramService = new TelegramService(this.bot);
@@ -109,6 +123,7 @@ class Bot {
         newsService,
         steamService,
         telegramService,
+        additionsService,
       ),
       new NotificationJob(this.bot, gameMetaService, telegramService),
 

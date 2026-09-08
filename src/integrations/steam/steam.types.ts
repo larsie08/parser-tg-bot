@@ -20,7 +20,9 @@ type SteamGameData = {
 
   platforms: SteamPlatforms;
 
-  genres: SteamGenre[];
+  dlc?: number[];
+
+  genres?: SteamGenre[];
 
   recommendations?: {
     total: number;

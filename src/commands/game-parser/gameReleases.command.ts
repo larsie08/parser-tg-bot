@@ -68,10 +68,13 @@ export class GameReleasesCommand extends Command {
 
   private async searchReleaseDate(gameMeta: GameMeta): Promise<string | null> {
     let releaseDate: string | null = null;
+    const owner = gameMeta[gameMeta.type];
+
+    if (!gameMeta) return null;
 
     if (gameMeta.isEarlyAccess && !gameMeta.comingSoon) {
       const data = await this.steamService.fetchEarlyAccessReleaseDate(
-        gameMeta.game.steamId,
+        owner!.steamId,
       );
 
       if (data) releaseDate = data;
@@ -79,7 +82,7 @@ export class GameReleasesCommand extends Command {
 
     if (gameMeta.comingSoon && !gameMeta.isEarlyAccess) {
       const data = await this.steamService.fetchGameMetaInfoRegionalSteam(
-        gameMeta.game.steamId,
+        owner!.steamId,
       );
 
       if (data?.releaseDate) releaseDate = data.releaseDate;
@@ -93,6 +96,9 @@ export class GameReleasesCommand extends Command {
     formatedReleaseDate: string,
   ): string {
     const message: string[] = [];
+    const owner = gameMeta[gameMeta.type];
+
+    if (!owner) return "";
 
     if (gameMeta.comingSoon) {
       message.push("🚀 *Найдена дата выхода игры!*");
@@ -101,14 +107,14 @@ export class GameReleasesCommand extends Command {
     }
 
     message.push("");
-    message.push(`🎮 *Игра:* ${gameMeta.game.name}`);
+    message.push(`🎮 *Игра:* ${owner.name}`);
 
     if (gameMeta.releaseDate) {
       message.push(`📅 *Дата релиза:* ${formatedReleaseDate}`);
     }
 
-    if (gameMeta.game.href) {
-      message.push(`🔗 [Страница Steam](${gameMeta.game.href})`);
+    if (owner.href) {
+      message.push(`🔗 [Страница Steam](${gameMeta[gameMeta.type]!.href})`);
     }
 
     return message.join("\n");

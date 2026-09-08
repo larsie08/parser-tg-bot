@@ -5,6 +5,7 @@ import { SteamService } from "../../integrations";
 import {
   buildGamePaginationMarkUp,
   GameMetaService,
+  GameMetaType,
   GameService,
   getDiffData,
   hasMetaData,
@@ -111,7 +112,11 @@ export class ParserCommand extends Command {
     const changesKeys = Object.keys(changesDetected);
 
     if (!hasMetaData(game.meta) || hasAnyChange)
-      await this.gameMetaService.upsertMetaInfo(gameData, game);
+      await this.gameMetaService.upsertMetaInfo(
+        gameData,
+        game.id,
+        GameMetaType.GAME,
+      );
 
     const releaseDate = changesKeys.includes("releaseDate")
       ? (() => {

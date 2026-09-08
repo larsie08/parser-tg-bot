@@ -1,12 +1,10 @@
 import { Markup } from "telegraf";
 import { InlineKeyboardMarkup } from "telegraf/types";
 
-import { buildPaginationButtons } from "../../shared";
+import { buildPaginationButtons } from "../../../shared";
 
-import { CommandActionName } from "../../context";
-import { Game } from "./game.entity";
-import { IGameSteamData } from "./game.interface";
-import { GameMeta } from "./gameMeta.entity";
+import { CommandActionName } from "../../../context";
+import { Additions, Game, GameMeta, GameMetaType, IGameSteamData } from "../..";
 
 const GAMES_PER_PAGE = 5;
 
@@ -26,13 +24,30 @@ export function getDiffData(
     "oldPrice",
     "releaseTime",
     "lastSteamPageCheck",
-    game.meta.isEarlyAccess && "releaseDate",
   ];
+
+  if (game.meta.isEarlyAccess) deniedKeys.push("releaseDate");
 
   const normalize = <T>(value: T | null | undefined): T | null => value ?? null;
 
   for (const key of Object.keys(steamGameData) as (keyof IGameSteamData)[]) {
     if (deniedKeys.includes(key)) continue;
+
+    if (key === "dlc" && steamGameData.dlc) {
+      const additionsGameId = new Set(
+        game.additions.map((addition) => addition.steamId),
+      );
+
+      const newDlc = steamGameData.dlc.filter(
+        (dlcId) => !additionsGameId.has(dlcId),
+      );
+
+      if (newDlc.length > 0) {
+        changes.dlc = newDlc;
+      }
+
+      continue;
+    }
 
     const newValue = normalize(steamGameData[key]);
     const oldValue = normalize(game.meta[key as keyof GameMeta]);
@@ -110,4 +125,20 @@ export function buildGamePaginationMarkUp(
   const pagination = buildPaginationButtons(page, totalPages, action, false);
 
   return Markup.inlineKeyboard([...keyboard, ...pagination]);
+}
+
+export function buildMetaUpdate(gameData: IGameSteamData, meta: GameMeta) {
+  const normalize = <T>(v: string | undefined | null): string | null =>
+    v == null || v.trim() === "" ? null : v;
+
+  return {
+    price: normalize(gameData.price),
+    oldPrice: normalize(
+      meta.price && meta.price !== gameData.price ? meta.price : meta.oldPrice,
+    ),
+    discount: normalize(gameData.discount),
+    comingSoon: gameData.comingSoon,
+    releaseDate: gameData.releaseDate,
+    isEarlyAccess: gameData.isEarlyAccess,
+  };
 }
