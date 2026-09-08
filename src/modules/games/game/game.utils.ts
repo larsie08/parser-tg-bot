@@ -4,7 +4,7 @@ import { InlineKeyboardMarkup } from "telegraf/types";
 import { buildPaginationButtons } from "../../../shared";
 
 import { CommandActionName } from "../../../context";
-import { Additions, Game, GameMeta, GameMetaType, IGameSteamData } from "../..";
+import { Game, GameMeta, IGameSteamData } from "../..";
 
 const GAMES_PER_PAGE = 5;
 

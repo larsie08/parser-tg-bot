@@ -1,10 +1,11 @@
 import { Telegraf, Markup } from "telegraf";
 
-import { TelegramService } from "../services";
-import { User, UserService } from "../modules";
+import { User, UserService } from "../../modules";
+import { TelegramService } from "../telegram.service";
 
-import { Command, IBotContext } from "../context";
-import { trackUserMessage } from "../shared";
+import { trackUserMessage } from "../../shared";
+
+import { Command, IBotContext } from "../../context";
 
 export class StartCommand extends Command {
   constructor(

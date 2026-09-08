@@ -97,3 +97,42 @@ export function createNewAdditionMessage(
 
   return messageParts.join("\n");
 }
+
+export function getAdditionDiffData(
+  addition: Additions,
+  steamGameData: IGameSteamData,
+): Partial<IGameSteamData> {
+  const changes: Partial<IGameSteamData> = {};
+
+  if (!addition.meta) {
+    return changes;
+  }
+
+  const deniedKeys = [
+    "name",
+    "href",
+    "oldPrice",
+    "releaseTime",
+    "lastSteamPageCheck",
+    "dlc",
+  ];
+
+  if (addition.meta.isEarlyAccess) {
+    deniedKeys.push("releaseDate");
+  }
+
+  const normalize = <T>(value: T | null | undefined): T | null => value ?? null;
+
+  for (const key of Object.keys(steamGameData) as (keyof IGameSteamData)[]) {
+    if (deniedKeys.includes(key)) continue;
+
+    const newValue = normalize(steamGameData[key]);
+    const oldValue = normalize(addition.meta[key as keyof GameMeta]);
+
+    if (oldValue !== newValue) {
+      changes[key] = newValue as never;
+    }
+  }
+
+  return changes;
+}

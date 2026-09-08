@@ -1,18 +1,12 @@
 import { Markup } from "telegraf";
 
+import { Game, GameMeta, IGameSteamData, NewsItem } from "../modules";
 import {
   CommandActionName,
   IBotContext,
   MessagesIdKey,
   PendingGame,
 } from "../context";
-import {
-  Game,
-  GameMeta,
-  GameNewsInfo,
-  IGameSteamData,
-  NewsItem,
-} from "../modules";
 
 export function createGameMessage(
   gameData: IGameSteamData | GameMeta,

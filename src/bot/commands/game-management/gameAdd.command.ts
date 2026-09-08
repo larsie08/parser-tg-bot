@@ -1,6 +1,6 @@
 import { Markup, Telegraf } from "telegraf";
 
-import { TelegramService } from "../../services";
+import { TelegramService } from "../../telegram.service";
 import {
   Game,
   GameService,
@@ -8,12 +8,12 @@ import {
   parseGameNamesFromMessage,
   User,
   UserService,
-} from "../../modules";
-import { SteamService } from "../../integrations";
+} from "../../../modules";
+import { SteamService } from "../../../integrations";
 
-import { editAddMessageGames, trackUserMessage } from "../../shared";
+import { editAddMessageGames, trackUserMessage } from "../../../shared";
 
-import { Command, IBotContext, PendingGame } from "../../context";
+import { Command, IBotContext, PendingGame } from "../../../context";
 
 export class GameAddCommand extends Command {
   constructor(

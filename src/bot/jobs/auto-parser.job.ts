@@ -1,7 +1,7 @@
 import { Telegraf } from "telegraf";
 
-import { TelegramService } from "../services";
-import { SteamService } from "../integrations";
+import { TelegramService } from "../telegram.service";
+import { SteamService } from "../../integrations";
 import {
   Additions,
   AdditionsService,
@@ -15,21 +15,22 @@ import {
   GameMetaType,
   GameNewsInfo,
   GameService,
+  getAdditionDiffData,
   getDiffData,
   hasMetaData,
   IGameSteamData,
   NewsService,
   User,
-} from "../modules";
+} from "../../modules";
 
 import {
   createGameMessage,
   createNewsMessage,
   formatReleaseDate,
   shouldCheckSteamPage,
-} from "../shared";
+} from "../../shared";
 
-import { Command, IBotContext } from "../context";
+import { Command, IBotContext } from "../../context";
 
 export class AutoParserJob extends Command {
   constructor(
@@ -223,7 +224,7 @@ export class AutoParserJob extends Command {
 
       if (!additionData) continue;
 
-      const changesDetected = getDiffData(game, additionData);
+      const changesDetected = getAdditionDiffData(additionItem, additionData);
       const hasAnyChange = Object.values(changesDetected).length > 0;
       const changesKeys = Object.keys(changesDetected);
 

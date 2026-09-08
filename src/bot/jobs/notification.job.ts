@@ -1,6 +1,6 @@
 import { Telegraf } from "telegraf";
 
-import { TelegramService } from "../services";
+import { TelegramService } from "../telegram.service";
 import {
   Additions,
   Game,
@@ -8,10 +8,10 @@ import {
   GameMetaType,
   needsReleaseTracking,
   User,
-} from "../modules";
+} from "../../modules";
 
-import { Command, IBotContext } from "../context";
-import { getDaysUntilRelease } from "../shared";
+import { Command, IBotContext } from "../../context";
+import { getDaysUntilRelease } from "../../shared";
 
 export class NotificationJob extends Command {
   constructor(

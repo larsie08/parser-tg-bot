@@ -1,6 +1,6 @@
 import { Telegraf } from "telegraf";
 
-import { TelegramService } from "../../services";
+import { TelegramService } from "../../telegram.service";
 import {
   buildGamePaginationMarkUp,
   buildSubscriptionMarkupKeyboard,
@@ -10,9 +10,9 @@ import {
   NewsSubscriptionsSettings,
   setSubscriptionContextStateDefault,
   setSubscriptionsSessionState,
-} from "../../modules";
+} from "../../../modules";
 
-import { Command, IBotContext } from "../../context";
+import { Command, IBotContext } from "../../../context";
 
 export class GameSubscriptionCommand extends Command {
   constructor(

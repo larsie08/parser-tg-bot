@@ -1,7 +1,7 @@
 import { Markup, Telegraf } from "telegraf";
 
-import { TelegramService } from "../../services";
-import { SteamService } from "../../integrations";
+import { TelegramService } from "../../telegram.service";
+import { SteamService } from "../../../integrations";
 import {
   buildGamePaginationMarkUp,
   buildNewsPaginationMarkUp,
@@ -11,10 +11,10 @@ import {
   GameNewsInfo,
   GameService,
   NewsService,
-} from "../../modules";
-import { createNewsMessage } from "../../shared";
+} from "../../../modules";
+import { createNewsMessage } from "../../../shared";
 
-import { Command, IBotContext } from "../../context";
+import { Command, IBotContext } from "../../../context";
 
 export class GameNewsCommand extends Command {
   constructor(

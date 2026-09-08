@@ -1,14 +1,14 @@
 import { Telegraf } from "telegraf";
 
-import { TelegramService } from "../../services";
+import { TelegramService } from "../../telegram.service";
 import {
   buildGamePaginationMarkUp,
   Game,
   GameService,
   UserService,
-} from "../../modules";
+} from "../../../modules";
 
-import { Command, IBotContext } from "../../context";
+import { Command, IBotContext } from "../../../context";
 
 export class GameDeleteCommand extends Command {
   constructor(
@@ -64,22 +64,35 @@ export class GameDeleteCommand extends Command {
 
         await this.handleDeleteGame(context, game);
 
-        await this.telegramService.sendAndTrackMessage(
+        await this.telegramService.sendAndDeleteWithTimeout(
           context,
           `Игра "${game.name}" успешно удалена.`,
-          "gameDeleteMessagesId",
         );
 
         const games = await this.gameService.getUserAllGames(
           context.session.user!.userId,
         );
 
-        await context.editMessageReplyMarkup(
-          buildGamePaginationMarkUp(games, page, "game_delete", true)
-            .reply_markup,
-        );
+        if (games.length === 0) {
+          await this.telegramService.deleteLastMessage(
+            context,
+            "gameDeleteMessagesId",
+          );
 
-        await context.answerCbQuery();
+          await this.telegramService.sendAndDeleteWithTimeout(
+            context,
+            "У вас нет игр для удаления.",
+          );
+        }
+
+        if (games.length > 0) {
+          await context.editMessageReplyMarkup(
+            buildGamePaginationMarkUp(games, page, "game_delete", true)
+              .reply_markup,
+          );
+
+          await context.answerCbQuery();
+        }
       },
     );
 

@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { session, Telegraf } from "telegraf";
 
-import { AutoParserJob, NotificationJob } from "./src/jobs";
+import { AutoParserJob, NotificationJob } from "./src/bot/jobs";
 import {
   ParserCommand,
   StartCommand,
@@ -11,7 +11,7 @@ import {
   GlobalSubscriptionCommand,
   GameSubscriptionCommand,
   GameReleasesCommand,
-} from "./src/commands";
+} from "./src/bot/commands";
 
 import {
   Additions,
@@ -29,7 +29,7 @@ import {
   UserNewsSubscription,
   UserService,
 } from "./src/modules";
-import { TelegramService } from "./src/services";
+import { TelegramService } from "./src/bot/telegram.service";
 import { SteamService } from "./src/integrations";
 
 import { Command, IBotContext } from "./src/context";

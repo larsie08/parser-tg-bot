@@ -1,12 +1,12 @@
 import { Telegraf } from "telegraf";
 
-import { TelegramService } from "../../services";
-import { SteamService } from "../../integrations";
-import { GameMeta, GameMetaService } from "../../modules";
+import { SteamService } from "../../../integrations";
+import { TelegramService } from "../../telegram.service";
+import { GameMeta, GameMetaService } from "../../../modules";
 
-import { formatReleaseDate } from "../../shared";
+import { formatReleaseDate } from "../../../shared";
 
-import { Command, IBotContext } from "../../context";
+import { Command, IBotContext } from "../../../context";
 
 export class GameReleasesCommand extends Command {
   constructor(

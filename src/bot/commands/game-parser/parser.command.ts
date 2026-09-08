@@ -1,7 +1,7 @@
 import { Telegraf } from "telegraf";
 
-import { TelegramService } from "../../services";
-import { SteamService } from "../../integrations";
+import { TelegramService } from "../../telegram.service";
+import { SteamService } from "../../../integrations";
 import {
   buildGamePaginationMarkUp,
   GameMetaService,
@@ -9,11 +9,11 @@ import {
   GameService,
   getDiffData,
   hasMetaData,
-} from "../../modules";
+} from "../../../modules";
 
-import { createGameMessage, formatReleaseDate } from "../../shared";
+import { createGameMessage, formatReleaseDate } from "../../../shared";
 
-import { Command, IBotContext } from "../../context";
+import { Command, IBotContext } from "../../../context";
 
 export class ParserCommand extends Command {
   constructor(
