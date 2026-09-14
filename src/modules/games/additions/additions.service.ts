@@ -1,7 +1,12 @@
 import { Repository } from "typeorm";
-import { Additions } from "./additions.entity";
-import { GameMeta } from "../meta/gameMeta.entity";
-import { buildMetaUpdate, Game, GameMetaType, IGameSteamData } from "../..";
+import {
+  Additions,
+  buildMetaUpdate,
+  Game,
+  GameMeta,
+  GameMetaType,
+  IGameSteamData,
+} from "../..";
 
 export class AdditionsService {
   constructor(

@@ -126,19 +126,3 @@ export function buildGamePaginationMarkUp(
 
   return Markup.inlineKeyboard([...keyboard, ...pagination]);
 }
-
-export function buildMetaUpdate(gameData: IGameSteamData, meta: GameMeta) {
-  const normalize = <T>(v: string | undefined | null): string | null =>
-    v == null || v.trim() === "" ? null : v;
-
-  return {
-    price: normalize(gameData.price),
-    oldPrice: normalize(
-      meta.price && meta.price !== gameData.price ? meta.price : meta.oldPrice,
-    ),
-    discount: normalize(gameData.discount),
-    comingSoon: gameData.comingSoon,
-    releaseDate: gameData.releaseDate,
-    isEarlyAccess: gameData.isEarlyAccess,
-  };
-}

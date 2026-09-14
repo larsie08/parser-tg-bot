@@ -51,7 +51,7 @@ export class GameMetaService {
     });
   }
 
-  async getGamesIsComingSoon(): Promise<GameMeta[] | null> {
+  async getGamesWithUpcomingReleaseForJob(): Promise<GameMeta[] | null> {
     return this.gameMetaRepository.find({
       where: [
         {
@@ -80,9 +80,12 @@ export class GameMetaService {
           game: { users: { id: userId } },
           isEarlyAccess: true,
         },
+        { addition: { game: { users: { id: userId } } }, comingSoon: true },
+        { addition: { game: { users: { id: userId } } }, isEarlyAccess: true },
       ],
       relations: {
         game: true,
+        addition: { game: true },
       },
     });
   }

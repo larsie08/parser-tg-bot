@@ -2,7 +2,7 @@ import { Telegraf } from "telegraf";
 
 import { SteamService } from "../../../integrations";
 import { TelegramService } from "../../telegram.service";
-import { GameMeta, GameMetaService } from "../../../modules";
+import { GameMeta, GameMetaService, GameMetaType } from "../../../modules";
 
 import { formatReleaseDate } from "../../../shared";
 
@@ -96,25 +96,50 @@ export class GameReleasesCommand extends Command {
     formatedReleaseDate: string,
   ): string {
     const message: string[] = [];
-    const owner = gameMeta[gameMeta.type];
 
-    if (!owner) return "";
+    if (gameMeta.type === GameMetaType.GAME) {
+      if (!gameMeta.game) return "";
 
-    if (gameMeta.comingSoon) {
-      message.push("🚀 *Найдена дата выхода игры!*");
-    } else if (gameMeta.isEarlyAccess) {
-      message.push("🎉 *Найдена дата выхода из раннего доступа!*");
-    }
+      if (gameMeta.comingSoon) {
+        message.push("🚀 *Найдена дата выхода игры!*");
+      } else if (gameMeta.isEarlyAccess) {
+        message.push("🎉 *Найдена дата выхода из раннего доступа!*");
+      }
 
-    message.push("");
-    message.push(`🎮 *Игра:* ${owner.name}`);
+      message.push("");
+      message.push(`🎮 *Игра:* ${gameMeta.game.name}`);
 
-    if (gameMeta.releaseDate) {
-      message.push(`📅 *Дата релиза:* ${formatedReleaseDate}`);
-    }
+      if (gameMeta.releaseDate) {
+        message.push(`📅 *Дата релиза:* ${formatedReleaseDate}`);
+      }
 
-    if (owner.href) {
-      message.push(`🔗 [Страница Steam](${gameMeta[gameMeta.type]!.href})`);
+      if (gameMeta.game.href) {
+        message.push(`🔗 [Страница Steam](${gameMeta.game.href})`);
+      }
+    } else {
+      if (!gameMeta.addition) return "";
+
+      if (gameMeta.comingSoon) {
+        message.push("🚀 *Найдена дата выхода дополнения!*");
+      } else if (gameMeta.isEarlyAccess) {
+        message.push("🎉 *Найдена дата выхода дополнения из раннего доступа!*");
+      }
+
+      message.push("");
+
+      if (gameMeta.addition.game) {
+        message.push(`🎮 *Игра:* ${gameMeta.addition.game.name}`);
+      }
+
+      message.push(`📦 *Дополнение:* ${gameMeta.addition.name}`);
+
+      if (gameMeta.releaseDate) {
+        message.push(`📅 *Дата релиза:* ${formatedReleaseDate}`);
+      }
+
+      if (gameMeta.addition.href) {
+        message.push(`🔗 [Страница Steam](${gameMeta.addition.href})`);
+      }
     }
 
     return message.join("\n");

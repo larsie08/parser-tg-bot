@@ -25,7 +25,8 @@ export class NotificationJob extends Command {
   async handle(): Promise<void> {
     setInterval(
       async () => {
-        const gamesMeta = await this.gameMetaService.getGamesIsComingSoon();
+        const gamesMeta =
+          await this.gameMetaService.getGamesWithUpcomingReleaseForJob();
 
         if (!gamesMeta) return console.log("Не найдено ни одной игры.");
 

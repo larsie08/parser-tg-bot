@@ -2,8 +2,7 @@ import axios from "axios";
 import { JSDOM } from "jsdom";
 
 import { SteamAppDetailsResponse } from "./steam.types";
-import { IGameSteamData } from "../../modules";
-import { GameNewsInfo } from "../../modules/news/news.interface";
+import { GameNewsInfo, IGameSteamData } from "../../modules";
 
 export class SteamService {
   async fetchGameIdSteam(

@@ -6,6 +6,7 @@ export * from "./games/game/game.utils";
 export * from "./games/meta/gameMeta.service";
 export * from "./games/meta/gameMeta.entity";
 export * from "./games/meta/gameMeta.types";
+export * from "./games/meta/gameMeta.utils";
 
 export * from "./games/additions/additions.entity";
 export * from "./games/additions/additions.service";
