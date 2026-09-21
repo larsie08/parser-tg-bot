@@ -8,79 +8,11 @@ import {
   PendingGame,
 } from "../context";
 
-export function createGameMessage(
-  gameData: IGameSteamData | GameMeta,
-  game: Game,
-  diff: Partial<IGameSteamData>,
-  formatedReleaseDate: string | undefined,
-): string {
-  const messageParts: string[] = [`🎮 *Название:* ${game.name}`];
-
-  const changedFields = Object.keys(diff ?? {}) as (keyof IGameSteamData)[];
-
-  const hasPriceChanges =
-    changedFields.includes("price") ||
-    changedFields.includes("oldPrice") ||
-    changedFields.includes("discount");
-
-  const hasReleaseChanges = changedFields.includes("releaseDate");
-
-  let prefix = "";
-
-  if (hasPriceChanges) {
-    prefix = "🔔 *Изменение цены!*\n\n";
-
-    if (gameData.oldPrice) {
-      messageParts.push(`💸 *Старая цена:* ${gameData.oldPrice}`);
-    }
-
-    if (gameData.price) {
-      messageParts.push(`💰 *Новая цена:* ${gameData.price}`);
-    }
-
-    if (gameData.discount && gameData.discount !== "0") {
-      messageParts.push(`🔥 *Скидка:* ${gameData.discount}%`);
-    }
-  }
-
-  if (hasReleaseChanges) {
-    prefix = "📅 *Изменение даты выхода!*\n\n";
-
-    if (gameData.releaseDate) {
-      messageParts.push(
-        `📅 *Дата выхода:* ${formatedReleaseDate ?? gameData.releaseDate}`,
-      );
-    }
-  }
-
-  if (!hasPriceChanges && !hasReleaseChanges) {
-    if (gameData.comingSoon) {
-      if (gameData.releaseDate) {
-        messageParts.push(
-          `📅 *Дата выхода:* ${formatedReleaseDate ?? gameData.releaseDate}`,
-        );
-      }
-    } else {
-      if (gameData.oldPrice) {
-        messageParts.push(`💸 *Старая цена:* ${gameData.oldPrice}`);
-      }
-
-      if (gameData.price) {
-        messageParts.push(`💰 *Цена:* ${gameData.price}`);
-      }
-
-      if (gameData.discount && gameData.discount !== "0") {
-        messageParts.push(`🔥 *Скидка:* ${gameData.discount}%`);
-      }
-    }
-  }
-
-  if (game.href) {
-    messageParts.push(`🔗 [Ссылка](${game.href})`);
-  }
-
-  return prefix + messageParts.join("\n");
-}
+const currencyFormattedString: Record<string, string> = {
+  RUB: "руб.",
+  USD: "$",
+  EUR: "€",
+};
 
 export function createNewsMessage(
   currentNews: NewsItem,
@@ -162,4 +94,8 @@ export function buildPaginationButtons(
     navigation,
     [Markup.button.callback("❌ Отмена", `${action}_cancel`)],
   ];
+}
+
+export function formatCurrency(currency: string): string {
+  return currencyFormattedString[currency] ?? currency;
 }

@@ -1,4 +1,5 @@
 import { Additions, Game, GameMeta, IGameSteamData } from "../..";
+import { formatCurrency } from "../../../shared";
 
 export function createAdditionMessage(
   additionData: IGameSteamData,
@@ -6,6 +7,7 @@ export function createAdditionMessage(
   game: Game,
   diff: Partial<IGameSteamData>,
   formatedReleaseDate?: string,
+  isLowestPrice = false,
 ): string {
   const messageParts: string[] = [
     `🎮 *Игра:* ${game.name}`,
@@ -21,17 +23,23 @@ export function createAdditionMessage(
 
   const hasReleaseChanges = changedFields.includes("releaseDate");
 
+  const currency = formatCurrency(additionData.currency!);
+
   let prefix = "";
 
   if (hasPriceChanges) {
-    prefix = "🔔 *Изменение цены дополнения!*\n\n";
+    prefix = isLowestPrice
+      ? "🔥 *Новая минимальная цена дополнения!*\n\n"
+      : "🔔 *Изменение цены дополнения!*\n\n";
 
     if (additionData.oldPrice) {
-      messageParts.push(`💸 *Старая цена:* ${additionData.oldPrice}`);
+      messageParts.push(
+        `💸 *Старая цена:* ${additionData.oldPrice} ${currency}`,
+      );
     }
 
     if (additionData.price) {
-      messageParts.push(`💰 *Новая цена:* ${additionData.price}`);
+      messageParts.push(`💰 *Новая цена:* ${additionData.price} ${currency}`);
     }
 
     if (additionData.discount && additionData.discount !== "0") {
@@ -60,11 +68,13 @@ export function createAdditionMessage(
       }
     } else {
       if (additionData.oldPrice) {
-        messageParts.push(`💸 *Старая цена:* ${additionData.oldPrice}`);
+        messageParts.push(
+          `💸 *Старая цена:* ${additionData.oldPrice} ${currency}`,
+        );
       }
 
       if (additionData.price) {
-        messageParts.push(`💰 *Цена:* ${additionData.price}`);
+        messageParts.push(`💰 *Цена:* ${additionData.price} ${currency}`);
       }
 
       if (additionData.discount && additionData.discount !== "0") {

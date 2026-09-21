@@ -1,8 +1,10 @@
 import { GameMeta, IGameSteamData } from "../..";
 
 export function buildMetaUpdate(gameData: IGameSteamData, meta: GameMeta) {
-  const normalize = <T>(v: string | undefined | null): string | null =>
+  const normalizeString = (v: string | undefined | null): string | null =>
     v == null || v.trim() === "" ? null : v;
+  const normalizeNumber = (v: number | undefined | null): number | null =>
+    v == null || isNaN(v) ? null : v;
 
   const releaseDate =
     gameData.releaseDate &&
@@ -12,13 +14,14 @@ export function buildMetaUpdate(gameData: IGameSteamData, meta: GameMeta) {
       : null;
 
   return {
-    price: normalize(gameData.price),
-    oldPrice: normalize(
+    price: normalizeNumber(gameData.price),
+    oldPrice: normalizeNumber(
       meta.price && meta.price !== gameData.price ? meta.price : meta.oldPrice,
     ),
-    discount: normalize(gameData.discount),
+    discount: normalizeString(gameData.discount),
     comingSoon: gameData.comingSoon,
     releaseDate: releaseDate,
     isEarlyAccess: gameData.isEarlyAccess,
+    currency: gameData.currency,
   };
 }

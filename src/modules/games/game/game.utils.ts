@@ -1,7 +1,7 @@
 import { Markup } from "telegraf";
 import { InlineKeyboardMarkup } from "telegraf/types";
 
-import { buildPaginationButtons } from "../../../shared";
+import { buildPaginationButtons, formatCurrency } from "../../../shared";
 
 import { CommandActionName } from "../../../context";
 import { Game, GameMeta, IGameSteamData } from "../..";
@@ -60,6 +60,77 @@ export function getDiffData(
   return changes;
 }
 
+export function createGameMessage(
+  gameData: IGameSteamData | GameMeta,
+  game: Game,
+  diff: Partial<IGameSteamData>,
+  formatedReleaseDate?: string,
+  isLowestPrice = false,
+): string {
+  const messageParts: string[] = [`🎮 *Название:* ${game.name}`];
+
+  const changedFields = Object.keys(diff ?? {}) as (keyof IGameSteamData)[];
+
+  const hasPriceChanges =
+    changedFields.includes("price") ||
+    changedFields.includes("oldPrice") ||
+    changedFields.includes("discount");
+  const hasReleaseChanges = changedFields.includes("releaseDate");
+
+  const currency = formatCurrency(gameData.currency!);
+
+  if (hasPriceChanges) {
+    messageParts.push(
+      isLowestPrice
+        ? "🔥 *Новая минимальная цена!*\n"
+        : "🔔 *Изменение цены!*\n",
+    );
+    if (gameData.oldPrice) {
+      messageParts.push(`💸 *Старая цена:* ${gameData.oldPrice} ${currency}`);
+    }
+    if (gameData.price) {
+      messageParts.push(`💰 *Новая цена:* ${gameData.price} ${currency}`);
+    }
+    if (gameData.discount && gameData.discount !== "0") {
+      messageParts.push(`🔥 *Скидка:* ${gameData.discount}%`);
+    }
+  }
+
+  if (hasReleaseChanges) {
+    messageParts.push("📅 *Изменение даты выхода!*\n");
+    if (gameData.releaseDate) {
+      messageParts.push(
+        `📅 *Дата выхода:* ${formatedReleaseDate ?? gameData.releaseDate}`,
+      );
+    }
+  }
+
+  if (!hasPriceChanges && !hasReleaseChanges) {
+    if (gameData.comingSoon) {
+      if (gameData.releaseDate) {
+        messageParts.push(
+          `📅 *Дата выхода:* ${formatedReleaseDate ?? gameData.releaseDate}`,
+        );
+      }
+    } else {
+      if (gameData.oldPrice) {
+        messageParts.push(`💸 *Старая цена:* ${gameData.oldPrice} ${currency}`);
+      }
+      if (gameData.price) {
+        messageParts.push(`💰 *Цена:* ${gameData.price} ${currency}`);
+      }
+      if (gameData.discount && gameData.discount !== "0") {
+        messageParts.push(`🔥 *Скидка:* ${gameData.discount}%`);
+      }
+    }
+  }
+
+  if (game.href) {
+    messageParts.push(`🔗 [Ссылка](${game.href})`);
+  }
+  return messageParts.join("\n");
+}
+
 export function hasMetaData(meta: GameMeta | null): boolean {
   if (!meta) return false;
 
@@ -74,7 +145,7 @@ export function hasMetaData(meta: GameMeta | null): boolean {
 
   return keys.some((key) => {
     const value = meta[key];
-    return value != null && value !== "";
+    return value && value !== "";
   });
 }
 

@@ -111,12 +111,16 @@ export class SteamService {
   ): IGameSteamData | null {
     return {
       name: data[gameId].data.name,
-      price: data[gameId].data.price_overview?.final_formatted,
+      price:
+        data[gameId].data.price_overview &&
+        data[gameId].data.price_overview?.final / 100,
       oldPrice:
-        data[gameId].data.price_overview?.initial_formatted !==
-        data[gameId].data.price_overview?.final_formatted
-          ? data[gameId].data.price_overview?.initial_formatted
+        data[gameId].data.price_overview &&
+        data[gameId].data.price_overview?.initial !==
+          data[gameId].data.price_overview?.final
+          ? data[gameId].data.price_overview?.initial / 100
           : undefined,
+      currency: data[gameId].data.price_overview?.currency,
       discount: data[gameId].data.price_overview?.discount_percent.toString(),
       releaseDate: this.shouldSaveReleaseDate(data, gameId)
         ? data[gameId].data.release_date.date

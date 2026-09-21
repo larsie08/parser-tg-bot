@@ -2,11 +2,13 @@ import { Telegraf } from "telegraf";
 
 import { TelegramService } from "../telegram.service";
 import { SteamService } from "../../integrations";
+
 import {
   Additions,
   AdditionsService,
   compareNewNews,
   createAdditionMessage,
+  createGameMessage,
   createNewAdditionMessage,
   FilteredUsersNewsPreference,
   filterRelevantNews,
@@ -20,11 +22,12 @@ import {
   hasMetaData,
   IGameSteamData,
   NewsService,
+  PriceHistoryService,
+  PriceTrackingService,
   User,
 } from "../../modules";
 
 import {
-  createGameMessage,
   createNewsMessage,
   formatReleaseDate,
   shouldCheckSteamPage,
@@ -41,6 +44,8 @@ export class AutoParserJob extends Command {
     private readonly steamService: SteamService,
     private readonly telegramService: TelegramService,
     private readonly additionsService: AdditionsService,
+    private readonly priceTrackingService: PriceTrackingService,
+    private readonly priceHistoryService: PriceHistoryService,
   ) {
     super(bot);
   }
@@ -107,6 +112,7 @@ export class AutoParserJob extends Command {
           additionInfo,
           changesDetected,
           true,
+          false,
           "",
           addition,
         );
@@ -114,6 +120,14 @@ export class AutoParserJob extends Command {
     }
 
     if (hasMetaData(game.meta) && !changesKeys.includes("dlc")) {
+      const lowestPriceInHistory =
+        await this.priceHistoryService.getLowestPriceInHistory(game.meta.id);
+
+      const isLowestPrice =
+        lowestPriceInHistory != null &&
+        steamGameData.price != null &&
+        steamGameData.price < lowestPriceInHistory.price;
+
       const releaseDate = changesKeys.includes("releaseDate")
         ? (() => {
             const date = steamGameData.releaseDate ?? game.meta.releaseDate;
@@ -128,11 +142,12 @@ export class AutoParserJob extends Command {
         steamGameData,
         changesDetected,
         false,
+        isLowestPrice,
         releaseDate,
       );
     }
 
-    await this.gameMetaService.upsertMetaInfo(
+    await this.priceTrackingService.processSaveMetaInfoAndHistory(
       steamGameData,
       game.id,
       GameMetaType.GAME,
@@ -170,7 +185,7 @@ export class AutoParserJob extends Command {
   }
 
   private async processEarlyReleaseDate(game: Game): Promise<void> {
-    if (game.meta && game.meta.comingSoon) return;
+    if (hasMetaData(game.meta) && game.meta.comingSoon) return;
 
     if (
       game.meta.isEarlyAccess &&
@@ -231,6 +246,14 @@ export class AutoParserJob extends Command {
       if (!hasAnyChange) continue;
 
       if (hasMetaData(additionItem.meta) && hasAnyChange) {
+        const lowestPriceInHistory =
+          await this.priceHistoryService.getLowestPriceInHistory(game.meta.id);
+
+        const isLowestPrice =
+          lowestPriceInHistory != null &&
+          additionData.price != null &&
+          additionData.price < lowestPriceInHistory.price;
+
         const releaseDate = changesKeys.includes("releaseDate")
           ? (() => {
               const date =
@@ -246,12 +269,13 @@ export class AutoParserJob extends Command {
           additionData,
           changesDetected,
           false,
+          isLowestPrice,
           releaseDate,
           additionItem,
         );
       }
 
-      await this.gameMetaService.upsertMetaInfo(
+      await this.priceTrackingService.processSaveMetaInfoAndHistory(
         additionData,
         additionItem.id,
         GameMetaType.ADDITION,
@@ -284,6 +308,7 @@ export class AutoParserJob extends Command {
     steamGameData: IGameSteamData,
     changesDetected: Partial<IGameSteamData>,
     isNewAddition: boolean,
+    isLowestPrice: boolean = false,
     releaseDate?: string | undefined,
     addition?: Additions,
   ) {
@@ -295,6 +320,7 @@ export class AutoParserJob extends Command {
         game,
         changesDetected,
         releaseDate,
+        isLowestPrice,
       );
     } else if (type === GameMetaType.ADDITION && addition && isNewAddition) {
       message = createNewAdditionMessage(addition, game);

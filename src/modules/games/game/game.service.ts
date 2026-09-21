@@ -7,7 +7,7 @@ export class GameService {
   async getUserGame(gameId: number): Promise<Game | null> {
     return await this.gameRepository.findOne({
       where: { id: gameId },
-      relations: { meta: true },
+      relations: { meta: true, additions: true },
     });
   }
 

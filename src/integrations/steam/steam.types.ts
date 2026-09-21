@@ -30,7 +30,7 @@ type SteamGameData = {
 };
 
 type SteamPriceOverview = {
-  currency: string;
+  currency: SteamCurrency;
 
   initial: number;
   final: number;
@@ -57,3 +57,5 @@ type SteamGenre = {
   id: string;
   description: string;
 };
+
+type SteamCurrency = "RUB" | "USD" | "EUR";

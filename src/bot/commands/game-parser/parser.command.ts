@@ -4,22 +4,24 @@ import { TelegramService } from "../../telegram.service";
 import { SteamService } from "../../../integrations";
 import {
   buildGamePaginationMarkUp,
+  createGameMessage,
   GameMetaService,
   GameMetaType,
   GameService,
   getDiffData,
   hasMetaData,
+  PriceTrackingService,
 } from "../../../modules";
 
-import { createGameMessage, formatReleaseDate } from "../../../shared";
+import { formatReleaseDate } from "../../../shared";
 
 import { Command, IBotContext } from "../../../context";
 
 export class ParserCommand extends Command {
   constructor(
     readonly bot: Telegraf<IBotContext>,
-    private readonly gameMetaService: GameMetaService,
     private readonly gameService: GameService,
+    private readonly priceTrackingService: PriceTrackingService,
     private readonly steamService: SteamService,
     private readonly telegramService: TelegramService,
   ) {
@@ -111,13 +113,6 @@ export class ParserCommand extends Command {
     const hasAnyChange = Object.keys(changesDetected).length > 0;
     const changesKeys = Object.keys(changesDetected);
 
-    if (!hasMetaData(game.meta) || hasAnyChange)
-      await this.gameMetaService.upsertMetaInfo(
-        gameData,
-        game.id,
-        GameMetaType.GAME,
-      );
-
     const releaseDate = changesKeys.includes("releaseDate")
       ? (() => {
           const date = gameData.releaseDate ?? game.meta.releaseDate;
@@ -130,5 +125,12 @@ export class ParserCommand extends Command {
       createGameMessage(gameData, game, changesDetected, releaseDate),
       "gameParserMessageId",
     );
+
+    if (!hasMetaData(game.meta) || hasAnyChange)
+      await this.priceTrackingService.processSaveMetaInfoAndHistory(
+        gameData,
+        game.id,
+        GameMetaType.GAME,
+      );
   }
 }

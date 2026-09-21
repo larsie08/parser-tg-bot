@@ -12,10 +12,14 @@ export * from "./games/additions/additions.entity";
 export * from "./games/additions/additions.service";
 export * from "./games/additions/additions.utils";
 
-export * from "./news/news.service";
-export * from "./news/news.entity";
-export * from "./news/news.utils";
-export * from "./news/news.interface";
+export * from "./game-tracking/news-game/news.service";
+export * from "./game-tracking/news-game/news.entity";
+export * from "./game-tracking/news-game/news.utils";
+export * from "./game-tracking/news-game/news.interface";
+
+export * from "./game-tracking/price-history/price-history.service";
+export * from "./game-tracking/price-history/price-history.entity";
+export * from "./game-tracking/price-history/price-tracking.service";
 
 export * from "./subscriptions/newsSubscription.service";
 export * from "./subscriptions/gameNewsSubscription.entity";

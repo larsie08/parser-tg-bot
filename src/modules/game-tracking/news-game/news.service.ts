@@ -1,5 +1,5 @@
 import { Repository } from "typeorm";
-import { Game, News } from "..";
+import { Game, News } from "../..";
 
 export class NewsService {
   constructor(private readonly newsRepository: Repository<News>) {}

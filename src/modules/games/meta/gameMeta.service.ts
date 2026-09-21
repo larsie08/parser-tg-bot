@@ -8,17 +8,8 @@ export class GameMetaService {
     gameData: IGameSteamData,
     entityId: number,
     type: GameMetaType,
+    meta: GameMeta | null,
   ): Promise<void> {
-    const relation = type === GameMetaType.GAME ? "game" : "addition";
-
-    let meta = await this.gameMetaRepository.findOne({
-      where: {
-        [relation]: {
-          id: entityId,
-        },
-      },
-    });
-
     if (!meta) {
       meta = this.createMeta(entityId, type);
     }

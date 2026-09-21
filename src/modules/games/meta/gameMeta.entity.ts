@@ -3,13 +3,12 @@ import {
   CreateDateColumn,
   Entity,
   JoinColumn,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
-import { Game } from "../game/game.entity";
-import { Additions } from "../additions/additions.entity";
-import { GameMetaType } from "./gameMeta.types";
+import { Additions, Game, GameMetaType, PriceHistory } from "../..";
 
 @Entity()
 export class GameMeta {
@@ -33,11 +32,37 @@ export class GameMeta {
   @JoinColumn({ name: "addition_id" })
   addition?: Additions;
 
-  @Column({ nullable: true })
-  price?: string;
+  @OneToMany(() => PriceHistory, (history) => history.meta, {
+    onDelete: "CASCADE",
+  })
+  priceHistory?: PriceHistory[];
+
+  @Column({
+    type: "numeric",
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    transformer: {
+      to: (value: number | null) => value,
+      from: (value: string | null) => (value === null ? null : Number(value)),
+    },
+  })
+  price?: number;
+
+  @Column({
+    type: "numeric",
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    transformer: {
+      to: (value: number | null) => value,
+      from: (value: string | null) => (value === null ? null : Number(value)),
+    },
+  })
+  oldPrice?: number;
 
   @Column({ nullable: true })
-  oldPrice?: string;
+  currency?: string;
 
   @Column({ nullable: true })
   discount?: string;

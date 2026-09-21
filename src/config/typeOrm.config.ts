@@ -7,6 +7,7 @@ import {
   GameMeta,
   GameNewsSubscription,
   News,
+  PriceHistory,
   User,
   UserNewsSubscription,
 } from "../modules";
@@ -28,6 +29,7 @@ export const AppDataSource = new DataSource({
     UserNewsSubscription,
     GameNewsSubscription,
     Additions,
+    PriceHistory,
   ],
   migrations: [__dirname + "/../config/migrations/*.{ts,js}"],
   synchronize: false,

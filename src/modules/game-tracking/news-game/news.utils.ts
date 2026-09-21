@@ -7,9 +7,9 @@ import {
   NewsItem,
   NewsType,
   UserNewsSubscription,
-} from "..";
-import { buildPaginationButtons } from "../../shared";
-import { CommandActionName } from "../../context";
+} from "../..";
+import { buildPaginationButtons } from "../../../shared";
+import { CommandActionName } from "../../../context";
 
 const NEWS_PER_PAGE = 5;
 

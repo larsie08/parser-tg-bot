@@ -25,6 +25,9 @@ import {
   NewsService,
   NewsSubscriptionService,
   NewsType,
+  PriceHistory,
+  PriceHistoryService,
+  PriceTrackingService,
   User,
   UserNewsSubscription,
   UserService,
@@ -89,6 +92,7 @@ class Bot {
     const gameMetaRepository = AppDataSource.getRepository(GameMeta);
     const additionsRepository = AppDataSource.getRepository(Additions);
     const newsRepository = AppDataSource.getRepository(News);
+    const priceHistoryRepository = AppDataSource.getRepository(PriceHistory);
     const userRepository = AppDataSource.getRepository(User);
     const userSubscriptionRepository =
       AppDataSource.getRepository(UserNewsSubscription);
@@ -102,6 +106,7 @@ class Bot {
       gameMetaRepository,
     );
     const newsService = new NewsService(newsRepository);
+    const priceHistoryService = new PriceHistoryService(priceHistoryRepository);
     const userService = new UserService(
       userRepository,
       userSubscriptionRepository,
@@ -112,6 +117,11 @@ class Bot {
     );
     const steamService = new SteamService();
     const telegramService = new TelegramService(this.bot);
+    const priceTrackingService = new PriceTrackingService(
+      gameMetaRepository,
+      gameMetaService,
+      priceHistoryService,
+    );
 
     this.commands = [
       new StartCommand(this.bot, userService, telegramService),
@@ -124,6 +134,8 @@ class Bot {
         steamService,
         telegramService,
         additionsService,
+        priceTrackingService,
+        priceHistoryService,
       ),
       new NotificationJob(this.bot, gameMetaService, telegramService),
 
@@ -143,8 +155,8 @@ class Bot {
 
       new ParserCommand(
         this.bot,
-        gameMetaService,
         gameService,
+        priceTrackingService,
         steamService,
         telegramService,
       ),
