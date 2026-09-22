@@ -7,7 +7,7 @@ import {
   ADDITIONDATA_WITH_PRICE_RU_CHANGES,
   ADDITIONDATA_WITH_PRICE_USD_CHANGES,
   ADDITIONDATA_WITH_RELEASEDATE_CHANGES,
-  EMPTY_ADDITIONDATA,
+  EMPTY_ADDITION_DATA,
 } from "../_data";
 
 describe("getAdditionDiffData", () => {
@@ -41,6 +41,6 @@ describe("getAdditionDiffData", () => {
     ).toEqual({ isEarlyAccess: true, releaseDate: "15 Oct, 2026" });
   });
   it("return empty object when there are no changes", () => {
-    expect(getAdditionDiffData(ADDITION, EMPTY_ADDITIONDATA)).toEqual({});
+    expect(getAdditionDiffData(ADDITION, EMPTY_ADDITION_DATA)).toEqual({});
   });
 });

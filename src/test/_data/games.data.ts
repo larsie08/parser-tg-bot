@@ -136,7 +136,7 @@ export const STEAMGAMEDATA_WITH_ADDITIONS_CHANGES: IGameSteamData = {
   dlc: ["5001840", "4024620", "4572870"],
 };
 
-export const EMPTY_ADDITIONDATA: IGameSteamData = {
+export const EMPTY_ADDITION_DATA: IGameSteamData = {
   name: ADDITION.name,
   releaseDate: undefined,
   currency: undefined,

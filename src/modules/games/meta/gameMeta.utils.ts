@@ -6,12 +6,9 @@ export function buildMetaUpdate(gameData: IGameSteamData, meta: GameMeta) {
   const normalizeNumber = (v: number | undefined | null): number | null =>
     v == null || isNaN(v) ? null : v;
 
-  const releaseDate =
-    gameData.releaseDate &&
-    !Number.isNaN(new Date(gameData.releaseDate).getTime()) &&
-    new Date(gameData.releaseDate).getTime() > Date.now()
-      ? gameData.releaseDate
-      : null;
+  const releaseDate = isUpcomingReleaseDate(gameData.releaseDate)
+    ? gameData.releaseDate!
+    : null;
 
   return {
     price: normalizeNumber(gameData.price),
@@ -22,6 +19,30 @@ export function buildMetaUpdate(gameData: IGameSteamData, meta: GameMeta) {
     comingSoon: gameData.comingSoon,
     releaseDate: releaseDate,
     isEarlyAccess: gameData.isEarlyAccess,
-    currency: gameData.currency,
+    currency: normalizeString(gameData.currency),
   };
+}
+
+function isUpcomingReleaseDate(
+  releaseDate: string | null | undefined,
+): boolean {
+  if (!releaseDate) {
+    return false;
+  }
+
+  const quarterMatch = releaseDate.match(/^Q([1-4])\s+(\d{4})$/);
+
+  if (quarterMatch) {
+    const quarter = Number(quarterMatch[1]);
+    const year = Number(quarterMatch[2]);
+
+    const quarterEndMonth = quarter * 3;
+    const quarterEndDate = new Date(Date.UTC(year, quarterEndMonth, 0));
+
+    return quarterEndDate.getTime() > Date.now();
+  }
+
+  const date = new Date(releaseDate);
+
+  return !Number.isNaN(date.getTime()) && date.getTime() > Date.now();
 }
