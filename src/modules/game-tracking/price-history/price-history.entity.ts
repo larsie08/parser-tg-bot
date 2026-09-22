@@ -22,7 +22,7 @@ export class PriceHistory {
   @Column({ nullable: true })
   currency!: string;
 
-  @Column()
+  @Column({ nullable: true })
   discount!: string;
 
   @Column({ nullable: true })

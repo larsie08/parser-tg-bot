@@ -2,7 +2,7 @@ import { describe, expect, it } from "@jest/globals";
 
 import { getDiffData } from "../../modules";
 import {
-  EMPTY_STEAMGAMEDATA,
+  BASE_STEAMGAMEDATA,
   EMPTY_STEAMGAMEDATA_WITH_PRICE,
   GAME,
   GAME_WITH_META_PRICE,
@@ -47,7 +47,7 @@ describe("getDiffData", () => {
     });
   });
   it("return empty object when there are no changes", () => {
-    expect(getDiffData(GAME, EMPTY_STEAMGAMEDATA)).toEqual({});
+    expect(getDiffData(GAME, BASE_STEAMGAMEDATA)).toEqual({});
   });
 
   it("return empty object when there are no changes with initial price meta", () => {
