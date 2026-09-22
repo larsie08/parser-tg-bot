@@ -1,6 +1,5 @@
 import { Markup } from "telegraf";
 
-import { Game, GameMeta, IGameSteamData, NewsItem } from "../modules";
 import {
   CommandActionName,
   IBotContext,
@@ -13,20 +12,6 @@ const currencyFormattedString: Record<string, string> = {
   USD: "$",
   EUR: "€",
 };
-
-export function createNewsMessage(
-  currentNews: NewsItem,
-  gameName: string,
-  news?: NewsItem[],
-): string {
-  let message: string = `Название Игры: ${gameName}\nНовость: ${currentNews.title}\nТекст: ${currentNews.contents}\nСсылка: ${currentNews.url}`;
-
-  if (news && !news.some((item) => item.gid === currentNews.gid)) {
-    message = `Новая новость!\nНазвание Игры: ${gameName}\nНовость: ${currentNews.title}\nТекст: ${currentNews.contents}\nСсылка: ${currentNews.url}`;
-  }
-
-  return message;
-}
 
 export function trackUserMessage(
   context: IBotContext,

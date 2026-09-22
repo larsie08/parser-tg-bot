@@ -10,8 +10,9 @@ import {
   User,
 } from "../../modules";
 
-import { Command, IBotContext } from "../../context";
 import { getDaysUntilRelease } from "../../shared";
+
+import { Command, IBotContext } from "../../context";
 
 export class NotificationJob extends Command {
   constructor(
@@ -34,7 +35,7 @@ export class NotificationJob extends Command {
           try {
             const owner = gameMeta[gameMeta.type];
 
-            if (!owner || !gameMeta.releaseDate) return;
+            if (!owner || !gameMeta.releaseDate) continue;
 
             const releaseDays = getDaysUntilRelease(gameMeta.releaseDate);
 

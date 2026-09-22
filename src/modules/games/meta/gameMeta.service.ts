@@ -25,7 +25,6 @@ export class GameMetaService {
   ): Promise<void> {
     meta.releaseDate = releaseDate;
     meta.isEarlyAccess = true;
-    meta.lastSteamPageCheck = new Date();
 
     await this.gameMetaRepository.save(meta);
   }

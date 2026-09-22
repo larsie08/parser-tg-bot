@@ -6,13 +6,13 @@ import {
   buildGamePaginationMarkUp,
   buildNewsPaginationMarkUp,
   compareNewNews,
+  createNewsMessage,
   filterRelevantNews,
   Game,
   GameNewsInfo,
   GameService,
   NewsService,
 } from "../../../modules";
-import { createNewsMessage } from "../../../shared";
 
 import { Command, IBotContext } from "../../../context";
 

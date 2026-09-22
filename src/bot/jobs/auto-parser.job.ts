@@ -10,10 +10,10 @@ import {
   createAdditionMessage,
   createGameMessage,
   createNewAdditionMessage,
+  createNewsMessage,
   FilteredUsersNewsPreference,
   filterRelevantNews,
   Game,
-  GameMetaService,
   GameMetaType,
   GameNewsInfo,
   GameService,
@@ -27,11 +27,7 @@ import {
   User,
 } from "../../modules";
 
-import {
-  createNewsMessage,
-  formatReleaseDate,
-  shouldCheckSteamPage,
-} from "../../shared";
+import { formatReleaseDate } from "../../shared";
 
 import { Command, IBotContext } from "../../context";
 
@@ -39,7 +35,6 @@ export class AutoParserJob extends Command {
   constructor(
     readonly bot: Telegraf<IBotContext>,
     private readonly gameService: GameService,
-    private readonly gameMetaService: GameMetaService,
     private readonly newsService: NewsService,
     private readonly steamService: SteamService,
     private readonly telegramService: TelegramService,
@@ -61,7 +56,6 @@ export class AutoParserJob extends Command {
           try {
             await this.processSteamGame(game);
             await this.processGameNews(game);
-            await this.processEarlyReleaseDate(game);
             await this.processGameAdditions(game);
           } catch (error) {
             console.error(
@@ -181,48 +175,6 @@ export class AutoParserJob extends Command {
 
     for (const news of existedNews.appnews.newsitems) {
       await this.newsService.saveNewsGame(news.title, news.gid, game);
-    }
-  }
-
-  private async processEarlyReleaseDate(game: Game): Promise<void> {
-    if (hasMetaData(game.meta) && game.meta.comingSoon) return;
-
-    if (
-      game.meta.isEarlyAccess &&
-      shouldCheckSteamPage(game.meta.lastSteamPageCheck)
-    ) {
-      const releaseDate = await this.steamService.fetchEarlyAccessReleaseDate(
-        game.steamId,
-      );
-
-      if (!releaseDate) return;
-
-      const gameMeta = await this.gameMetaService.getMetaInfo(game.id);
-
-      if (!gameMeta) return;
-
-      if (releaseDate !== gameMeta.releaseDate) {
-        await Promise.all(
-          game.users.map(async (user) => {
-            try {
-              await this.telegramService.sendAutoMessageToUser(
-                user.userId,
-                this.createEarlyAccessReleaseMessage(game, releaseDate),
-              );
-            } catch (error) {
-              console.error(
-                "Произошла ошибка с асинхронным отправкой сообщений",
-                error,
-              );
-            }
-          }),
-        );
-
-        await this.gameMetaService.upsertEarlyReleaseInfo(
-          game.meta,
-          releaseDate,
-        );
-      }
     }
   }
 
@@ -373,19 +325,5 @@ export class AutoParserJob extends Command {
         }),
       );
     }
-  }
-
-  private createEarlyAccessReleaseMessage(
-    game: Game,
-    releaseDate: string,
-  ): string {
-    return [
-      "🎉 *Найдена дата выхода из раннего доступа!*",
-      "",
-      `🎮 *Игра:* ${game.name}`,
-      `📅 *Дата выхода версии 1.0:* ${releaseDate}`,
-      "",
-      `🔗 ${game.href}`,
-    ].join("\n");
   }
 }

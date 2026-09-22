@@ -79,9 +79,6 @@ export class GameMeta {
   @Column({ nullable: true })
   isEarlyAccess?: boolean;
 
-  @Column({ nullable: true })
-  lastSteamPageCheck?: Date;
-
   @CreateDateColumn()
   createdAt!: Date;
 

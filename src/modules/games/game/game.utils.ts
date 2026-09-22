@@ -23,7 +23,6 @@ export function getDiffData(
     "href",
     "oldPrice",
     "releaseTime",
-    "lastSteamPageCheck",
   ];
 
   if (game.meta.isEarlyAccess) deniedKeys.push("releaseDate");

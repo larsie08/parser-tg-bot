@@ -101,9 +101,9 @@ export class GameReleasesCommand extends Command {
       if (!gameMeta.game) return "";
 
       if (gameMeta.comingSoon) {
-        message.push("🚀 *Найдена дата выхода игры!*");
+        message.push("🚀 *Дата выхода игры!*");
       } else if (gameMeta.isEarlyAccess) {
-        message.push("🎉 *Найдена дата выхода из раннего доступа!*");
+        message.push("🎉 *Дата выхода из раннего доступа!*");
       }
 
       message.push("");
@@ -120,9 +120,9 @@ export class GameReleasesCommand extends Command {
       if (!gameMeta.addition) return "";
 
       if (gameMeta.comingSoon) {
-        message.push("🚀 *Найдена дата выхода дополнения!*");
+        message.push("🚀 *Дата выхода дополнения!*");
       } else if (gameMeta.isEarlyAccess) {
-        message.push("🎉 *Найдена дата выхода дополнения из раннего доступа!*");
+        message.push("🎉 *Дата выхода дополнения из раннего доступа!*");
       }
 
       message.push("");

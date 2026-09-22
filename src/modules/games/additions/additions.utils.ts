@@ -123,7 +123,6 @@ export function getAdditionDiffData(
     "href",
     "oldPrice",
     "releaseTime",
-    "lastSteamPageCheck",
     "dlc",
   ];
 

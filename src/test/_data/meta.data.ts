@@ -15,7 +15,6 @@ export const BASE_META: GameMeta = {
   releaseTime: undefined,
   comingSoon: false,
   isEarlyAccess: false,
-  lastSteamPageCheck: new Date("2026-09-22 00:31:36.98"),
   createdAt: new Date("2026-09-22 00:31:36.98"),
   updatedAt: new Date("2026-09-22 00:31:36.98"),
 };
@@ -41,5 +40,3 @@ export const META_WITH_PRICE: GameMeta = {
   price: 360,
   currency: "RUB",
 };
-
-

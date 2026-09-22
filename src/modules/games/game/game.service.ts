@@ -33,6 +33,13 @@ export class GameService {
     });
   }
 
+  async getGamesWithEarlyAccess(): Promise<Game[]> {
+    return this.gameRepository.find({
+      where: { meta: { isEarlyAccess: true } },
+      relations: { meta: true, users: true },
+    });
+  }
+
   async getUserAllGames(userId: number): Promise<Game[]> {
     return this.gameRepository.find({
       where: { users: { userId } },

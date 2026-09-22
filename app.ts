@@ -1,7 +1,11 @@
 import "reflect-metadata";
 import { session, Telegraf } from "telegraf";
 
-import { AutoParserJob, NotificationJob } from "./src/bot/jobs";
+import {
+  AutoParserJob,
+  EarlyAccessReleaseDateJob,
+  NotificationJob,
+} from "./src/bot/jobs";
 import {
   ParserCommand,
   StartCommand,
@@ -129,13 +133,19 @@ class Bot {
       new AutoParserJob(
         this.bot,
         gameService,
-        gameMetaService,
         newsService,
         steamService,
         telegramService,
         additionsService,
         priceTrackingService,
         priceHistoryService,
+      ),
+      new EarlyAccessReleaseDateJob(
+        this.bot,
+        gameService,
+        gameMetaService,
+        steamService,
+        telegramService,
       ),
       new NotificationJob(this.bot, gameMetaService, telegramService),
 
