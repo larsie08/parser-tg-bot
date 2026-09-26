@@ -52,17 +52,17 @@ export class SteamService {
     gameId: string,
   ): Promise<IGameSteamData | null> {
     try {
-      let data = await this.fetchAppDetails(gameId, "ru");
+      for (const region of ["ru", "us", "en"]) {
+        const data = await this.fetchAppDetails(gameId, region);
 
-      if (!data[gameId]?.success) {
-        data = await this.fetchAppDetails(gameId, "us");
+        const [responseKey, _response] = Object.entries(data)[0];
+
+        if (data[responseKey].success) {
+          return this.parseSteamPriceJsonData(data, responseKey);
+        }
       }
 
-      if (!data[gameId]?.success) {
-        return null;
-      }
-
-      return this.parseSteamPriceJsonData(data, gameId);
+      return null;
     } catch (error) {
       console.error("Ошибка при получении данных с Steam:", error);
       return null;

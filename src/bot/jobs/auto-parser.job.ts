@@ -14,6 +14,7 @@ import {
   FilteredUsersNewsPreference,
   filterRelevantNews,
   Game,
+  GameMeta,
   GameMetaType,
   GameNewsInfo,
   GameService,
@@ -78,7 +79,9 @@ export class AutoParserJob extends Command {
 
     const changesDetected = getDiffData(game, steamGameData);
     const hasAnyChange = Object.values(changesDetected).length > 0;
-    const changesKeys = Object.keys(changesDetected);
+    const changesKeys = Object.keys(
+      changesDetected,
+    ) as (keyof IGameSteamData)[];
 
     if (hasMetaData(game.meta) && !hasAnyChange) return;
 
@@ -107,6 +110,7 @@ export class AutoParserJob extends Command {
           changesDetected,
           true,
           false,
+          false,
           "",
           addition,
         );
@@ -114,6 +118,12 @@ export class AutoParserJob extends Command {
     }
 
     if (hasMetaData(game.meta) && !changesKeys.includes("dlc")) {
+      const isGameNowReleased = this.hasGameReleased(
+        steamGameData,
+        game.meta,
+        changesKeys,
+      );
+
       const lowestPriceInHistory =
         await this.priceHistoryService.getLowestPriceInHistory(game.meta.id);
 
@@ -137,6 +147,7 @@ export class AutoParserJob extends Command {
         changesDetected,
         false,
         isLowestPrice,
+        isGameNowReleased,
         releaseDate,
       );
     }
@@ -193,7 +204,9 @@ export class AutoParserJob extends Command {
 
       const changesDetected = getAdditionDiffData(additionItem, additionData);
       const hasAnyChange = Object.values(changesDetected).length > 0;
-      const changesKeys = Object.keys(changesDetected);
+      const changesKeys = Object.keys(
+        changesDetected,
+      ) as (keyof IGameSteamData)[];
 
       if (!hasAnyChange) continue;
 
@@ -205,6 +218,12 @@ export class AutoParserJob extends Command {
           lowestPriceInHistory != null &&
           additionData.price != null &&
           additionData.price < lowestPriceInHistory.price;
+
+        const isGameNowReleased = this.hasGameReleased(
+          additionData,
+          game.meta,
+          changesKeys,
+        );
 
         const releaseDate = changesKeys.includes("releaseDate")
           ? (() => {
@@ -222,6 +241,7 @@ export class AutoParserJob extends Command {
           changesDetected,
           false,
           isLowestPrice,
+          isGameNowReleased,
           releaseDate,
           additionItem,
         );
@@ -261,6 +281,7 @@ export class AutoParserJob extends Command {
     changesDetected: Partial<IGameSteamData>,
     isNewAddition: boolean,
     isLowestPrice: boolean = false,
+    isGameReleased: boolean = false,
     releaseDate?: string | undefined,
     addition?: Additions,
   ) {
@@ -273,6 +294,7 @@ export class AutoParserJob extends Command {
         changesDetected,
         releaseDate,
         isLowestPrice,
+        isGameReleased,
       );
     } else if (type === GameMetaType.ADDITION && addition && isNewAddition) {
       message = createNewAdditionMessage(addition, game);
@@ -325,5 +347,24 @@ export class AutoParserJob extends Command {
         }),
       );
     }
+  }
+
+  private hasGameReleased(
+    gameData: IGameSteamData,
+    meta: GameMeta,
+    changesKeys: (keyof IGameSteamData)[],
+  ): boolean {
+    const earlyAccessEnded =
+      changesKeys.includes("isEarlyAccess") &&
+      meta.isEarlyAccess === true &&
+      gameData.isEarlyAccess === false;
+
+    const comingSoonEnded =
+      changesKeys.includes("comingSoon") &&
+      meta.comingSoon === true &&
+      gameData.comingSoon === false &&
+      gameData.isEarlyAccess === false;
+
+    return earlyAccessEnded || comingSoonEnded;
   }
 }

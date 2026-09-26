@@ -8,6 +8,7 @@ export function createAdditionMessage(
   diff: Partial<IGameSteamData>,
   formatedReleaseDate?: string,
   isLowestPrice = false,
+  isGameReleased = false,
 ): string {
   const messageParts: string[] = [
     `🎮 *Игра:* ${game.name}`,
@@ -26,6 +27,10 @@ export function createAdditionMessage(
   const currency = formatCurrency(additionData.currency!);
 
   let prefix = "";
+
+  if (isGameReleased) {
+    prefix = "🎉 *Дополнение уже вышло!*\n\n";
+  }
 
   if (hasPriceChanges) {
     prefix = isLowestPrice
@@ -47,7 +52,7 @@ export function createAdditionMessage(
     }
   }
 
-  if (hasReleaseChanges) {
+  if (hasReleaseChanges && !isGameReleased) {
     prefix = "📅 *Изменение даты выхода дополнения!*\n\n";
 
     if (additionData.releaseDate) {
@@ -57,7 +62,7 @@ export function createAdditionMessage(
     }
   }
 
-  if (!hasPriceChanges && !hasReleaseChanges) {
+  if (!hasPriceChanges && !hasReleaseChanges && !isGameReleased) {
     if (additionData.comingSoon) {
       if (additionData.releaseDate) {
         messageParts.push(
@@ -118,13 +123,7 @@ export function getAdditionDiffData(
     return changes;
   }
 
-  const deniedKeys = [
-    "name",
-    "href",
-    "oldPrice",
-    "releaseTime",
-    "dlc",
-  ];
+  const deniedKeys = ["name", "href", "oldPrice", "releaseTime", "dlc"];
 
   if (addition.meta.isEarlyAccess) {
     deniedKeys.push("releaseDate");

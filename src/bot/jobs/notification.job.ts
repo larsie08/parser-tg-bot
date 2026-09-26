@@ -6,7 +6,6 @@ import {
   Game,
   GameMetaService,
   GameMetaType,
-  needsReleaseTracking,
   User,
 } from "../../modules";
 
@@ -33,9 +32,9 @@ export class NotificationJob extends Command {
 
         for (const gameMeta of gamesMeta) {
           try {
-            const owner = gameMeta[gameMeta.type];
+            const entityOwner = gameMeta[gameMeta.type];
 
-            if (!owner || !gameMeta.releaseDate) continue;
+            if (!entityOwner || !gameMeta.releaseDate) continue;
 
             const releaseDays = getDaysUntilRelease(gameMeta.releaseDate);
 
@@ -47,7 +46,7 @@ export class NotificationJob extends Command {
 
               await this.sendMessageAboutGameReleases(
                 users,
-                owner,
+                entityOwner,
                 releaseDays,
               );
             }
@@ -64,10 +63,13 @@ export class NotificationJob extends Command {
 
   private async sendMessageAboutGameReleases(
     users: User[],
-    owner: Game | Additions,
+    entityOwner: Game | Additions,
     releaseDays: number,
   ): Promise<void> {
-    const message = this.createReleaseCountdownMessage(owner, releaseDays);
+    const message = this.createReleaseCountdownMessage(
+      entityOwner,
+      releaseDays,
+    );
 
     await Promise.all(
       users.map(async (user) => {
@@ -87,23 +89,16 @@ export class NotificationJob extends Command {
   }
 
   private createReleaseCountdownMessage(
-    game: Game | Additions,
+    entityOwner: Game | Additions,
     daysUntilRelease: number,
   ): string {
-    const isAddition = game.meta?.type === GameMetaType.ADDITION;
-    const entityName = isAddition ? "Дополнение" : "Игра";
-
-    if (daysUntilRelease === 0 && needsReleaseTracking(game.meta)) {
-      return `🎮 *${game.name}*\n\n🎉 ${entityName} уже вышло!`;
-    }
-
     const word = this.getDaysWord(daysUntilRelease);
 
     return [
-      `🎮 *${game.name}*`,
+      `🎮 *${entityOwner.name}*`,
       "",
       `📅 До выхода осталось *${daysUntilRelease}* ${word}.`,
-      game.href ? `🔗 [Страница Steam](${game.href})` : "",
+      entityOwner.href ? `🔗 [Страница Steam](${entityOwner.href})` : "",
     ]
       .filter(Boolean)
       .join("\n");

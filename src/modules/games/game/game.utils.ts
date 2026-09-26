@@ -18,12 +18,7 @@ export function getDiffData(
     return changes;
   }
 
-  const deniedKeys = [
-    "name",
-    "href",
-    "oldPrice",
-    "releaseTime",
-  ];
+  const deniedKeys = ["name", "href", "oldPrice", "releaseTime"];
 
   if (game.meta.isEarlyAccess) deniedKeys.push("releaseDate");
 
@@ -65,6 +60,7 @@ export function createGameMessage(
   diff: Partial<IGameSteamData>,
   formatedReleaseDate?: string,
   isLowestPrice = false,
+  isGameNowReleased = false,
 ): string {
   const messageParts: string[] = [`🎮 *Название:* ${game.name}`];
 
@@ -74,9 +70,14 @@ export function createGameMessage(
     changedFields.includes("price") ||
     changedFields.includes("oldPrice") ||
     changedFields.includes("discount");
+
   const hasReleaseChanges = changedFields.includes("releaseDate");
 
   const currency = formatCurrency(gameData.currency!);
+
+  if (isGameNowReleased) {
+    messageParts.push("🎉 *Игра уже вышла!*\n");
+  }
 
   if (hasPriceChanges) {
     messageParts.push(
@@ -84,19 +85,23 @@ export function createGameMessage(
         ? "🔥 *Новая минимальная цена!*\n"
         : "🔔 *Изменение цены!*\n",
     );
+
     if (gameData.oldPrice) {
       messageParts.push(`💸 *Старая цена:* ${gameData.oldPrice} ${currency}`);
     }
+
     if (gameData.price) {
       messageParts.push(`💰 *Новая цена:* ${gameData.price} ${currency}`);
     }
+
     if (gameData.discount && gameData.discount !== "0") {
       messageParts.push(`🔥 *Скидка:* ${gameData.discount}%`);
     }
   }
 
-  if (hasReleaseChanges) {
+  if (hasReleaseChanges && !isGameNowReleased) {
     messageParts.push("📅 *Изменение даты выхода!*\n");
+
     if (gameData.releaseDate) {
       messageParts.push(
         `📅 *Дата выхода:* ${formatedReleaseDate ?? gameData.releaseDate}`,
@@ -104,7 +109,7 @@ export function createGameMessage(
     }
   }
 
-  if (!hasPriceChanges && !hasReleaseChanges) {
+  if (!hasPriceChanges && !hasReleaseChanges && !isGameNowReleased) {
     if (gameData.comingSoon) {
       if (gameData.releaseDate) {
         messageParts.push(
@@ -115,9 +120,11 @@ export function createGameMessage(
       if (gameData.oldPrice) {
         messageParts.push(`💸 *Старая цена:* ${gameData.oldPrice} ${currency}`);
       }
+
       if (gameData.price) {
         messageParts.push(`💰 *Цена:* ${gameData.price} ${currency}`);
       }
+
       if (gameData.discount && gameData.discount !== "0") {
         messageParts.push(`🔥 *Скидка:* ${gameData.discount}%`);
       }
@@ -127,6 +134,7 @@ export function createGameMessage(
   if (game.href) {
     messageParts.push(`🔗 [Ссылка](${game.href})`);
   }
+
   return messageParts.join("\n");
 }
 
