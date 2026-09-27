@@ -11,7 +11,7 @@ import {
 
 import { getDaysUntilRelease } from "../../shared";
 
-import { Command, IBotContext } from "../../context";
+import { Command, IBotContext } from "../";
 
 export class NotificationJob extends Command {
   constructor(

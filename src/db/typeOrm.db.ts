@@ -1,6 +1,6 @@
 import { DataSource } from "typeorm";
 
-import { ConfigService } from "./config.service";
+import { ConfigService } from "../config/";
 import {
   Additions,
   Game,
@@ -31,7 +31,7 @@ export const AppDataSource = new DataSource({
     Additions,
     PriceHistory,
   ],
-  migrations: [__dirname + "/../config/migrations/*.{ts,js}"],
+  migrations: [__dirname + "/../db/migrations/*.{ts,js}"],
   synchronize: false,
   logging: true,
 });

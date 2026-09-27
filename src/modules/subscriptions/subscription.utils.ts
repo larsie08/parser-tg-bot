@@ -1,7 +1,7 @@
 import { Markup } from "telegraf";
 
 import { InlineKeyboardMarkup } from "telegraf/types";
-import { IBotContext } from "../../context";
+import { IBotContext } from "../../bot";
 import { NewsSubscriptionsSettings } from "./subscription.type";
 import { NewsCommandSettingsName } from "..";
 

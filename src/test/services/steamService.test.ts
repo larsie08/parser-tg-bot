@@ -11,6 +11,7 @@ import {
   STEAM_APP_DETAILS_RESPONSE_EUR,
   STEAM_APP_DETAILS_RESPONSE_RU,
   STEAM_APP_DETAILS_RESPONSE_USD,
+  STEAM_APP_DETAILS_WITH_WRONG_RESPONSE_KEY,
 } from "../_data";
 
 jest.mock("axios");
@@ -46,6 +47,18 @@ describe("fetchGameMetaInfoRegionalSteam", () => {
 
   it("parses EUR Steam response", async () => {
     mockedAxios.get.mockResolvedValue({ data: STEAM_APP_DETAILS_RESPONSE_EUR });
+
+    const result = await steamService.fetchGameMetaInfoRegionalSteam(
+      GAME.steamId,
+    );
+
+    expect(result).toEqual(EXPECTED_STEAM_APP_DETAILS_EUR);
+  });
+
+  it("parses response when response key differs from gameId", async () => {
+    mockedAxios.get.mockResolvedValue({
+      data: STEAM_APP_DETAILS_WITH_WRONG_RESPONSE_KEY,
+    });
 
     const result = await steamService.fetchGameMetaInfoRegionalSteam(
       GAME.steamId,

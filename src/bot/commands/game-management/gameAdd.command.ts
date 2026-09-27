@@ -13,7 +13,7 @@ import { SteamService } from "../../../integrations";
 
 import { editAddMessageGames, trackUserMessage } from "../../../shared";
 
-import { Command, IBotContext, PendingGame } from "../../../context";
+import { Command, IBotContext, PendingGame } from "../../";
 
 export class GameAddCommand extends Command {
   constructor(

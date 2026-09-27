@@ -3,7 +3,7 @@ import { InlineKeyboardMarkup } from "telegraf/types";
 
 import { buildPaginationButtons, formatCurrency } from "../../../shared";
 
-import { CommandActionName } from "../../../context";
+import { CommandActionName } from "../../../bot";
 import { Game, GameMeta, IGameSteamData } from "../..";
 
 const GAMES_PER_PAGE = 5;

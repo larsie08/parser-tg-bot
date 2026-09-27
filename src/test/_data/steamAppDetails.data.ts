@@ -1,5 +1,6 @@
 import { SteamAppDetailsResponse } from "../../integrations/steam/steam.types";
 import { IGameSteamData } from "../../modules";
+import { GAME } from "./games.data";
 
 export const STEAM_APP_DETAILS_RESPONSE_RU: SteamAppDetailsResponse = {
   "3321460": {
@@ -108,3 +109,10 @@ export const EXPECTED_STEAM_APP_DETAILS_EUR: IGameSteamData = {
   isEarlyAccess: false,
   dlc: ["5001840", "4024620", "4572870"],
 };
+
+const steamAppDetails = STEAM_APP_DETAILS_RESPONSE_EUR[GAME.steamId];
+
+export const STEAM_APP_DETAILS_WITH_WRONG_RESPONSE_KEY: SteamAppDetailsResponse =
+  {
+    "4808980": steamAppDetails,
+  };

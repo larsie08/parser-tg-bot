@@ -15,7 +15,7 @@ import {
 
 import { formatReleaseDate } from "../../../shared";
 
-import { Command, IBotContext } from "../../../context";
+import { Command, IBotContext } from "../../";
 
 export class ParserCommand extends Command {
   constructor(

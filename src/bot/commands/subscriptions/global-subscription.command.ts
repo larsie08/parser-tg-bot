@@ -10,7 +10,7 @@ import {
   setSubscriptionsSessionState,
 } from "../../../modules";
 
-import { Command, IBotContext } from "../../../context";
+import { Command, IBotContext } from "../../";
 
 export class GlobalSubscriptionCommand extends Command {
   constructor(

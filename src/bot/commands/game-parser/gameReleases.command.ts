@@ -6,7 +6,7 @@ import { GameMeta, GameMetaService, GameMetaType } from "../../../modules";
 
 import { formatReleaseDate } from "../../../shared";
 
-import { Command, IBotContext } from "../../../context";
+import { Command, IBotContext } from "../../";
 
 export class GameReleasesCommand extends Command {
   constructor(

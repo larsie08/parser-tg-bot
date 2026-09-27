@@ -1,6 +1,6 @@
 import { Markup, Telegraf } from "telegraf";
 
-import { IBotContext, MessagesIdKey } from "../context";
+import { IBotContext, MessagesIdKey } from "./";
 import { InlineKeyboardMarkup } from "telegraf/types";
 
 export class TelegramService {

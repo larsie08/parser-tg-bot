@@ -36,11 +36,11 @@ import {
   UserNewsSubscription,
   UserService,
 } from "./src/modules";
-import { TelegramService } from "./src/bot/telegram.service";
+import { Command, IBotContext, TelegramService } from "./src/bot";
 import { SteamService } from "./src/integrations";
 
-import { Command, IBotContext } from "./src/context";
-import { AppDataSource, ConfigService, IConfigService } from "./src/config";
+import { ConfigService, IConfigService } from "./src/config";
+import { AppDataSource } from "./src/db/typeOrm.db";
 
 class Bot {
   bot: Telegraf<IBotContext>;

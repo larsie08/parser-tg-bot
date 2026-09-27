@@ -5,7 +5,7 @@ import { TelegramService } from "../telegram.service";
 
 import { trackUserMessage } from "../../shared";
 
-import { Command, IBotContext } from "../../context";
+import { Command, IBotContext } from "../";
 
 export class StartCommand extends Command {
   constructor(

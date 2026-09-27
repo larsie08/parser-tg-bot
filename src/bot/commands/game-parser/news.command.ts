@@ -14,7 +14,7 @@ import {
   NewsService,
 } from "../../../modules";
 
-import { Command, IBotContext } from "../../../context";
+import { Command, IBotContext } from "../../";
 
 export class GameNewsCommand extends Command {
   constructor(

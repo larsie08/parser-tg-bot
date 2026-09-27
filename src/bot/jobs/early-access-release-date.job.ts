@@ -7,7 +7,7 @@ import { Game, GameMetaService, GameService, hasMetaData } from "../../modules";
 
 import { formatReleaseDate } from "../../shared";
 
-import { Command, IBotContext } from "../../context";
+import { Command, IBotContext } from "../";
 
 export class EarlyAccessReleaseDateJob extends Command {
   constructor(

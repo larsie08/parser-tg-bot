@@ -8,7 +8,7 @@ import {
   UserService,
 } from "../../../modules";
 
-import { Command, IBotContext } from "../../../context";
+import { Command, IBotContext } from "../../";
 
 export class GameDeleteCommand extends Command {
   constructor(

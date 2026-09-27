@@ -9,7 +9,7 @@ import {
   UserNewsSubscription,
 } from "../..";
 import { buildPaginationButtons } from "../../../shared";
-import { CommandActionName } from "../../../context";
+import { CommandActionName } from "../../../bot";
 
 const NEWS_PER_PAGE = 5;
 

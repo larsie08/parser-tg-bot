@@ -27,10 +27,9 @@ import {
   PriceTrackingService,
   User,
 } from "../../modules";
+import { Command, IBotContext } from "..";
 
 import { formatReleaseDate } from "../../shared";
-
-import { Command, IBotContext } from "../../context";
 
 export class AutoParserJob extends Command {
   constructor(

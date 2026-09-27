@@ -5,7 +5,7 @@ import {
   IBotContext,
   MessagesIdKey,
   PendingGame,
-} from "../context";
+} from "../bot";
 
 const currencyFormattedString: Record<string, string> = {
   RUB: "руб.",
