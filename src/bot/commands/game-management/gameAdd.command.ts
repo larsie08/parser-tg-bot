@@ -26,7 +26,7 @@ export class GameAddCommand extends Command {
     super(bot);
   }
 
-  handle(): void {
+  async handle(): Promise<void> {
     this.bot.action("game_add_start", async (context: IBotContext) => {
       await this.telegramService.sendAndTrackMessage(
         context,

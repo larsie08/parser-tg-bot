@@ -28,7 +28,7 @@ export class ParserCommand extends Command {
     super(bot);
   }
 
-  handle(): void {
+  async handle(): Promise<void> {
     this.bot.action("price_check_start", async (context: IBotContext) => {
       await this.handleGameSelection(context);
     });

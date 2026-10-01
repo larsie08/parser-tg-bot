@@ -18,7 +18,7 @@ export class GameReleasesCommand extends Command {
     super(bot);
   }
 
-  handle(): void {
+  async handle(): Promise<void> {
     this.bot.action("game_releases_start", async (context: IBotContext) => {
       const games = await this.gameMetaService.getGamesWithUpcomingRelease(
         context.session.user!.id,

@@ -27,7 +27,7 @@ export class GameNewsCommand extends Command {
     super(bot);
   }
 
-  handle(): void {
+  async handle(): Promise<void> {
     this.bot.action("news_check_start", async (context: IBotContext) => {
       const games = await this.gameService.getUserAllGames(
         context.session.user!.userId,

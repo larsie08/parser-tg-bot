@@ -21,7 +21,7 @@ export class GlobalSubscriptionCommand extends Command {
     super(bot);
   }
 
-  handle(): void {
+  async handle(): Promise<void> {
     this.bot.action(
       "global_subscription_start",
       async (context: IBotContext) => {

@@ -16,7 +16,7 @@ export class StartCommand extends Command {
     super(bot);
   }
 
-  handle(): void {
+  async handle(): Promise<void> {
     this.bot.start(async (context: IBotContext) => {
       const user = await this.handleUser(context);
       const userName = user?.userName || context.from?.first_name;
