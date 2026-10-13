@@ -1,16 +1,15 @@
-import { Repository } from "typeorm";
 import {
-  GameMeta,
   GameMetaService,
   GameMetaType,
+  getMetaRelation,
   hasMetaData,
   IGameSteamData,
+  PriceHistory,
   PriceHistoryService,
 } from "../..";
 
 export class PriceTrackingService {
   constructor(
-    private readonly metaRepository: Repository<GameMeta>,
     private readonly metaService: GameMetaService,
     private readonly historyService: PriceHistoryService,
   ) {}
@@ -20,19 +19,32 @@ export class PriceTrackingService {
     entityId: number,
     type: GameMetaType,
   ): Promise<void> {
-    const relation = type === GameMetaType.GAME ? "game" : "addition";
+    const relation = getMetaRelation(type);
 
-    let meta = await this.metaRepository.findOne({
-      where: {
-        [relation]: {
-          id: entityId,
-        },
-      },
-    });
+    const meta = await this.metaService.getMetaInfo(entityId, relation);
 
     if (hasMetaData(meta) && meta)
       await this.historyService.savePriceHistory(meta.id, meta);
 
     await this.metaService.upsertMetaInfo(gameData, entityId, type, meta);
+  }
+
+  async getLowestPriceInGameHistory(
+    entityId: number,
+    gameData: IGameSteamData,
+  ): Promise<PriceHistory | null> {
+    const priceHistoryNote =
+      await this.historyService.getLowestPriceInHistory(entityId);
+
+    if (
+      !priceHistoryNote ||
+      gameData.price == null ||
+      priceHistoryNote.price <= gameData.price ||
+      priceHistoryNote.currency !== gameData.currency
+    ) {
+      return null;
+    }
+
+    return priceHistoryNote;
   }
 }

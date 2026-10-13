@@ -1,4 +1,4 @@
-import { GameMeta, IGameSteamData } from "../..";
+import { GameMeta, GameMetaType, IGameSteamData } from "../..";
 
 export function buildMetaUpdate(gameData: IGameSteamData, meta: GameMeta) {
   const normalizeString = (v: string | undefined | null): string | null =>
@@ -45,4 +45,8 @@ function isUpcomingReleaseDate(
   const date = new Date(releaseDate);
 
   return !Number.isNaN(date.getTime()) && date.getTime() > Date.now();
+}
+
+export function getMetaRelation(type: GameMetaType): "game" | "addition" {
+  return type === GameMetaType.GAME ? "game" : "addition";
 }

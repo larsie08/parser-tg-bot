@@ -1,4 +1,4 @@
-import { Additions, Game, GameMeta, IGameSteamData } from "../..";
+import { Additions, Game, GameMeta, IGameSteamData, PriceHistory } from "../..";
 import { formatCurrency } from "../../../shared";
 
 export function createAdditionMessage(
@@ -6,8 +6,8 @@ export function createAdditionMessage(
   addition: Additions,
   game: Game,
   diff: Partial<IGameSteamData>,
+  lowestPriceInHistory: PriceHistory | null = null,
   formatedReleaseDate?: string,
-  isLowestPrice = false,
   isGameReleased = false,
 ): string {
   const messageParts: string[] = [
@@ -33,7 +33,7 @@ export function createAdditionMessage(
   }
 
   if (hasPriceChanges) {
-    prefix = isLowestPrice
+    lowestPriceInHistory
       ? "🔥 *Новая минимальная цена дополнения!*\n\n"
       : "🔔 *Изменение цены дополнения!*\n\n";
 

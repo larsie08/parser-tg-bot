@@ -13,10 +13,28 @@ export class PriceHistory {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ type: "numeric", precision: 10, scale: 2, nullable: true })
+  @Column({
+    type: "numeric",
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    transformer: {
+      to: (value: number | null) => value,
+      from: (value: string | null) => (value === null ? null : Number(value)),
+    },
+  })
   price!: number;
 
-  @Column({ type: "numeric", precision: 10, scale: 2, nullable: true })
+  @Column({
+    type: "numeric",
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    transformer: {
+      to: (value: number | null) => value,
+      from: (value: string | null) => (value === null ? null : Number(value)),
+    },
+  })
   oldPrice?: number;
 
   @Column({ nullable: true })

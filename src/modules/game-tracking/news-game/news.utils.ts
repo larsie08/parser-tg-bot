@@ -35,10 +35,10 @@ export function filterRelevantNews(
   };
 }
 
-export async function compareNewNews(
+export function compareNewNews(
   filteredCurrentNews: GameNewsInfo,
   news: News[],
-): Promise<GameNewsInfo> {
+): GameNewsInfo {
   const existingIds = new Set(news.map((item) => item.newsId));
 
   const newNewsItems = filteredCurrentNews.appnews.newsitems.filter(

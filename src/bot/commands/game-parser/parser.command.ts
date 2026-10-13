@@ -5,11 +5,11 @@ import { SteamService } from "../../../integrations";
 import {
   buildGamePaginationMarkUp,
   createGameMessage,
-  GameMetaService,
   GameMetaType,
   GameService,
   getDiffData,
   hasMetaData,
+  PriceHistoryService,
   PriceTrackingService,
 } from "../../../modules";
 
@@ -22,6 +22,7 @@ export class ParserCommand extends Command {
     readonly bot: Telegraf<IBotContext>,
     private readonly gameService: GameService,
     private readonly priceTrackingService: PriceTrackingService,
+    private readonly priceHistoryService: PriceHistoryService,
     private readonly steamService: SteamService,
     private readonly telegramService: TelegramService,
   ) {
@@ -113,6 +114,9 @@ export class ParserCommand extends Command {
     const hasAnyChange = Object.keys(changesDetected).length > 0;
     const changesKeys = Object.keys(changesDetected);
 
+    const lowestPriceInHistory =
+      await this.priceHistoryService.getLowestPriceInHistory(game.meta.id);
+
     const releaseDate = changesKeys.includes("releaseDate")
       ? (() => {
           const date = gameData.releaseDate ?? game.meta.releaseDate;
@@ -122,7 +126,13 @@ export class ParserCommand extends Command {
 
     await this.telegramService.sendAndTrackMessage(
       context,
-      createGameMessage(gameData, game, changesDetected, releaseDate),
+      createGameMessage(
+        gameData,
+        game,
+        changesDetected,
+        releaseDate,
+        lowestPriceInHistory,
+      ),
       "gameParserMessageId",
     );
 

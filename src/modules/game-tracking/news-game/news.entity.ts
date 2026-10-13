@@ -19,6 +19,9 @@ export class News {
   @Column()
   newsId!: string;
 
+  @Column({ type: "timestamptz", nullable: true })
+  publishedAt!: Date;
+
   @ManyToOne(() => Game, (game) => game.news, { onDelete: "CASCADE" })
   @JoinColumn({ name: "game_id" })
   game!: Game;

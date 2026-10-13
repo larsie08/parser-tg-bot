@@ -14,8 +14,7 @@ export class SteamService {
       );
       return this.parseSteamIdData(data);
     } catch (error) {
-      console.error("Ошибка при получении данных с Steam:", error);
-      return null;
+      throw new Error("Ошибка при получении данных о steamId");
     }
   }
 
@@ -31,20 +30,19 @@ export class SteamService {
       );
       return this.parseSteamReleaseDateData(data);
     } catch (error) {
-      console.error("Ошибка при получении данных с Steam:", error);
-      return null;
+      throw new Error("Ошибка при получении данных о раннем доступе");
     }
   }
 
   async fetchGameNews(gameId: string): Promise<GameNewsInfo | null> {
     try {
-      const { data } = await axios.get(
+      const { data } = await axios.get<GameNewsInfo>(
         `http://api.steampowered.com/ISteamNews/GetNewsForApp/v0002/?appid=${gameId}&count=15&maxlength=300&format=json`,
       );
-      return data;
+
+      return this.parseAndFiltersRelevantSteamNews(data);
     } catch (error) {
-      console.error("Ошибка при запросе новостей Steam:", error);
-      return null;
+      throw new Error("Ошибка при запросе новостей Steam");
     }
   }
 
@@ -64,8 +62,7 @@ export class SteamService {
 
       return null;
     } catch (error) {
-      console.error("Ошибка при получении данных с Steam:", error);
-      return null;
+      throw new Error("Ошибка при получении данных о цене");
     }
   }
 
@@ -154,6 +151,19 @@ export class SteamService {
     );
 
     return match?.[1] ?? null;
+  }
+
+  private parseAndFiltersRelevantSteamNews(data: GameNewsInfo): GameNewsInfo {
+    const newsItems = data.appnews.newsitems;
+
+    const newsWithFeedType = newsItems.filter((item) => item.feed_type);
+
+    return {
+      appnews: {
+        ...data.appnews,
+        newsitems: newsWithFeedType,
+      },
+    };
   }
 
   private shouldSaveReleaseDate(

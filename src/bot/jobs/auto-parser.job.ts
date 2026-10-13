@@ -23,7 +23,7 @@ import {
   hasMetaData,
   IGameSteamData,
   NewsService,
-  PriceHistoryService,
+  PriceHistory,
   PriceTrackingService,
   User,
 } from "../../modules";
@@ -40,7 +40,6 @@ export class AutoParserJob extends Command {
     private readonly telegramService: TelegramService,
     private readonly additionsService: AdditionsService,
     private readonly priceTrackingService: PriceTrackingService,
-    private readonly priceHistoryService: PriceHistoryService,
   ) {
     super(bot);
   }
@@ -101,14 +100,14 @@ export class AutoParserJob extends Command {
 
         if (isFirstAdditionsSync) continue;
 
-        await this.sendMessageAboutGameChanges(
+        await this.prepareAndSendMessageAboutGameChanges(
           game,
           GameMetaType.ADDITION,
           game.users,
           additionInfo,
           changesDetected,
           true,
-          false,
+          null,
           false,
           "",
           addition,
@@ -124,12 +123,10 @@ export class AutoParserJob extends Command {
       );
 
       const lowestPriceInHistory =
-        await this.priceHistoryService.getLowestPriceInHistory(game.meta.id);
-
-      const isLowestPrice =
-        lowestPriceInHistory != null &&
-        steamGameData.price != null &&
-        steamGameData.price < lowestPriceInHistory.price;
+        await this.priceTrackingService.getLowestPriceInGameHistory(
+          game.meta.id,
+          steamGameData,
+        );
 
       const releaseDate = changesKeys.includes("releaseDate")
         ? (() => {
@@ -138,14 +135,14 @@ export class AutoParserJob extends Command {
           })()
         : undefined;
 
-      await this.sendMessageAboutGameChanges(
+      await this.prepareAndSendMessageAboutGameChanges(
         game,
         GameMetaType.GAME,
         game.users,
         steamGameData,
         changesDetected,
         false,
-        isLowestPrice,
+        lowestPriceInHistory,
         isGameNowReleased,
         releaseDate,
       );
@@ -162,29 +159,29 @@ export class AutoParserJob extends Command {
     const fetchedNews = await this.steamService.fetchGameNews(game.steamId);
 
     if (!fetchedNews) {
-      return console.log(`Не удалось получить новости для игры: ${game.name}`);
+      throw new Error(`Не удалось получить новости для игры: ${game.name}`);
     }
 
     const news = await this.newsService.getNewsGame(game.steamId);
 
-    const existedNews = await compareNewNews(fetchedNews, news);
+    const existedNews = compareNewNews(fetchedNews, news);
 
-    const usersNews = await this.filterUsersSubscriptionsNews(
-      game,
-      existedNews,
-    );
+    const usersNews = this.filterUsersSubscriptionsNews(game, existedNews);
 
     if (!usersNews)
-      return console.log(
-        "Произошла ошибка с фильтрацией новостей пользователя.",
-      );
+      throw new Error("Произошла ошибка с фильтрацией новостей пользователя.");
 
     if (existedNews.appnews.newsitems.length > 0 && news.length !== 0) {
       await this.sendMessageNews(game.name, usersNews, existedNews);
     }
 
     for (const news of existedNews.appnews.newsitems) {
-      await this.newsService.saveNewsGame(news.title, news.gid, game);
+      await this.newsService.saveNewsGame(
+        news.title,
+        news.gid,
+        game,
+        news.date,
+      );
     }
   }
 
@@ -211,16 +208,14 @@ export class AutoParserJob extends Command {
 
       if (hasMetaData(additionItem.meta) && hasAnyChange) {
         const lowestPriceInHistory =
-          await this.priceHistoryService.getLowestPriceInHistory(game.meta.id);
-
-        const isLowestPrice =
-          lowestPriceInHistory != null &&
-          additionData.price != null &&
-          additionData.price < lowestPriceInHistory.price;
+          await this.priceTrackingService.getLowestPriceInGameHistory(
+            additionItem.meta.id,
+            additionData,
+          );
 
         const isGameNowReleased = this.hasGameReleased(
           additionData,
-          game.meta,
+          additionItem.meta,
           changesKeys,
         );
 
@@ -232,14 +227,14 @@ export class AutoParserJob extends Command {
             })()
           : undefined;
 
-        await this.sendMessageAboutGameChanges(
+        await this.prepareAndSendMessageAboutGameChanges(
           game,
           GameMetaType.ADDITION,
           game.users,
           additionData,
           changesDetected,
           false,
-          isLowestPrice,
+          lowestPriceInHistory,
           isGameNowReleased,
           releaseDate,
           additionItem,
@@ -254,10 +249,10 @@ export class AutoParserJob extends Command {
     }
   }
 
-  private async filterUsersSubscriptionsNews(
+  private filterUsersSubscriptionsNews(
     game: Game,
     news: GameNewsInfo,
-  ): Promise<FilteredUsersNewsPreference[] | null> {
+  ): FilteredUsersNewsPreference[] | null {
     const usersNews: FilteredUsersNewsPreference[] = [];
 
     for (const user of game.users) {
@@ -272,14 +267,14 @@ export class AutoParserJob extends Command {
     return usersNews;
   }
 
-  private async sendMessageAboutGameChanges(
+  private async prepareAndSendMessageAboutGameChanges(
     game: Game,
     type: GameMetaType,
     users: User[],
     steamGameData: IGameSteamData,
     changesDetected: Partial<IGameSteamData>,
     isNewAddition: boolean,
-    isLowestPrice: boolean = false,
+    lowestPriceInHistory: PriceHistory | null = null,
     isGameReleased: boolean = false,
     releaseDate?: string | undefined,
     addition?: Additions,
@@ -292,7 +287,7 @@ export class AutoParserJob extends Command {
         game,
         changesDetected,
         releaseDate,
-        isLowestPrice,
+        lowestPriceInHistory,
         isGameReleased,
       );
     } else if (type === GameMetaType.ADDITION && addition && isNewAddition) {
@@ -303,25 +298,12 @@ export class AutoParserJob extends Command {
         addition,
         game,
         changesDetected,
+        lowestPriceInHistory,
         releaseDate,
       );
     }
 
-    await Promise.all(
-      users.map(async (user) => {
-        try {
-          await this.telegramService.sendAutoMessageToUser(
-            user.userId,
-            message,
-          );
-        } catch (error) {
-          console.error(
-            "Произошла ошибка с асинхронным отправлением сообщений.",
-            error,
-          );
-        }
-      }),
-    );
+    await this.sendMessageToUsers(users, message);
   }
 
   private async sendMessageNews(
@@ -346,6 +328,27 @@ export class AutoParserJob extends Command {
         }),
       );
     }
+  }
+
+  private async sendMessageToUsers(
+    users: User[],
+    message: string,
+  ): Promise<void> {
+    await Promise.all(
+      users.map(async (user) => {
+        try {
+          await this.telegramService.sendAutoMessageToUser(
+            user.userId,
+            message,
+          );
+        } catch (error) {
+          console.error(
+            "Произошла ошибка с асинхронным отправлением сообщений.",
+            error,
+          );
+        }
+      }),
+    );
   }
 
   private hasGameReleased(

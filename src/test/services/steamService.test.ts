@@ -12,6 +12,8 @@ import {
   STEAM_APP_DETAILS_RESPONSE_RU,
   STEAM_APP_DETAILS_RESPONSE_USD,
   STEAM_APP_DETAILS_WITH_WRONG_RESPONSE_KEY,
+  STEAMGAMEDATA_EXPECTED_NEWS,
+  STEAMGAMEDATA_NEWS,
 } from "../_data";
 
 jest.mock("axios");
@@ -65,5 +67,19 @@ describe("fetchGameMetaInfoRegionalSteam", () => {
     );
 
     expect(result).toEqual(EXPECTED_STEAM_APP_DETAILS_EUR);
+  });
+});
+
+describe("fetchGameNews", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("parses response and filter relevant news without feed_type", async () => {
+    mockedAxios.get.mockResolvedValue({ data: STEAMGAMEDATA_NEWS });
+
+    const result = await steamService.fetchGameNews(GAME.steamId);
+
+    expect(result).toEqual(STEAMGAMEDATA_EXPECTED_NEWS);
   });
 });

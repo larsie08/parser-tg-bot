@@ -226,7 +226,12 @@ export class GameNewsCommand extends Command {
     const newsItems = news.appnews.newsitems;
 
     for (const item of newsItems) {
-      await this.newsService.saveNewsGame(item.title, item.gid, game);
+      await this.newsService.saveNewsGame(
+        item.title,
+        item.gid,
+        game,
+        item.date,
+      );
     }
   }
 }

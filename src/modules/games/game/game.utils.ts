@@ -4,7 +4,7 @@ import { InlineKeyboardMarkup } from "telegraf/types";
 import { buildPaginationButtons, formatCurrency } from "../../../shared";
 
 import { CommandActionName } from "../../../bot";
-import { Game, GameMeta, IGameSteamData } from "../..";
+import { Game, GameMeta, IGameSteamData, PriceHistory } from "../..";
 
 const GAMES_PER_PAGE = 5;
 
@@ -59,7 +59,7 @@ export function createGameMessage(
   game: Game,
   diff: Partial<IGameSteamData>,
   formatedReleaseDate?: string,
-  isLowestPrice = false,
+  lowestPriceInHistory: PriceHistory | null = null,
   isGameNowReleased = false,
 ): string {
   const messageParts: string[] = [`🎮 *Название:* ${game.name}`];
@@ -75,17 +75,22 @@ export function createGameMessage(
 
   const currency = formatCurrency(gameData.currency!);
 
+  const shouldSendLowestPriceFromCommand =
+    lowestPriceInHistory && lowestPriceInHistory.price !== gameData.price
+      ? true
+      : false;
+
   if (isGameNowReleased) {
     messageParts.push("🎉 *Игра уже вышла!*\n");
   }
 
   if (hasPriceChanges) {
-    messageParts.push(
-      isLowestPrice
-        ? "🔥 *Новая минимальная цена!*\n"
-        : "🔔 *Изменение цены!*\n",
-    );
-
+    if (lowestPriceInHistory) {
+      messageParts.push(
+        `🏆 *Новый исторический минимум:* ${gameData.price} ${currency}`,
+        `📉 *Предыдущий минимум:* ${lowestPriceInHistory.price} ${currency}`,
+      );
+    }
     if (gameData.oldPrice) {
       messageParts.push(`💸 *Старая цена:* ${gameData.oldPrice} ${currency}`);
     }
@@ -127,6 +132,12 @@ export function createGameMessage(
 
       if (gameData.discount && gameData.discount !== "0") {
         messageParts.push(`🔥 *Скидка:* ${gameData.discount}%`);
+      }
+
+      if (shouldSendLowestPriceFromCommand) {
+        messageParts.push(
+          `*Самая низкая зафиксированная цена:* ${lowestPriceInHistory!.price} ${currency}`,
+        );
       }
     }
   }

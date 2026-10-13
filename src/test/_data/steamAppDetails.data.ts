@@ -116,3 +116,5 @@ export const STEAM_APP_DETAILS_WITH_WRONG_RESPONSE_KEY: SteamAppDetailsResponse 
   {
     "4808980": steamAppDetails,
   };
+
+  

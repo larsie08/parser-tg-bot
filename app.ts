@@ -122,7 +122,6 @@ class Bot {
     const steamService = new SteamService();
     const telegramService = new TelegramService(this.bot);
     const priceTrackingService = new PriceTrackingService(
-      gameMetaRepository,
       gameMetaService,
       priceHistoryService,
     );
@@ -138,7 +137,6 @@ class Bot {
         telegramService,
         additionsService,
         priceTrackingService,
-        priceHistoryService,
       ),
       new EarlyAccessReleaseDateJob(
         this.bot,
@@ -167,6 +165,7 @@ class Bot {
         this.bot,
         gameService,
         priceTrackingService,
+        priceHistoryService,
         steamService,
         telegramService,
       ),

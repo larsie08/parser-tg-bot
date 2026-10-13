@@ -40,10 +40,14 @@ export type NewsItem = {
   contents: string;
   title: string;
   url: string;
+  date: number;
   feed_type: number;
   feedname: string;
   feedlabel: string;
-  tags: string[];
+  tags?: string[];
+  is_external_url: boolean;
+  author: string;
+  appid: number;
 };
 
 export type GameNewsInfo = {

@@ -10,11 +10,17 @@ export class NewsService {
     });
   }
 
-  async saveNewsGame(name: string, newsId: string, game: Game): Promise<void> {
+  async saveNewsGame(
+    name: string,
+    newsId: string,
+    game: Game,
+    publishedAt: number,
+  ): Promise<void> {
     const newsObj = this.newsRepository.create({
       name,
       newsId,
       game,
+      publishedAt: new Date(publishedAt * 1000),
     });
 
     await this.newsRepository.save(newsObj);

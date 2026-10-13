@@ -35,9 +35,12 @@ export class GameMetaService {
     await this.gameMetaRepository.save(meta);
   }
 
-  async getMetaInfo(gameId: number): Promise<GameMeta | null> {
+  async getMetaInfo(
+    entityId: number,
+    relation: "game" | "addition",
+  ): Promise<GameMeta | null> {
     return await this.gameMetaRepository.findOne({
-      where: { game: { id: gameId } },
+      where: { [relation]: { id: entityId } },
     });
   }
 
