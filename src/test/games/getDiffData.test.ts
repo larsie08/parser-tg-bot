@@ -29,7 +29,7 @@ describe("getDiffData", () => {
   it("detects release date change", () => {
     expect(getDiffData(GAME, STEAMGAMEDATA_WITH_RELEASEDATE_CHANGES)).toEqual({
       comingSoon: true,
-      releaseDate: "15 Oct, 2026",
+      releaseDate: "30 Oct, 2026",
     });
   });
 
@@ -38,7 +38,7 @@ describe("getDiffData", () => {
       getDiffData(GAME, STEAMGAMEDATA_WITH_EARLYRELEASEDATE_CHANGES),
     ).toEqual({
       isEarlyAccess: true,
-      releaseDate: "15 Oct, 2026",
+      releaseDate: "30 Oct, 2026",
     });
   });
   it("detects additions change", () => {

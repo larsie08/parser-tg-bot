@@ -5,6 +5,11 @@ export type SteamAppDetailsResponse = {
   };
 };
 
+export type ReleaseDateDataResponse = {
+  releaseDate: string | null;
+  releaseTime: Date | null;
+};
+
 type SteamGameData = {
   steam_appid: number;
 
@@ -59,3 +64,9 @@ type SteamGenre = {
 };
 
 type SteamCurrency = "RUB" | "USD" | "EUR";
+
+export const headersResponse = {
+  headers: {
+    Cookie: "birthtime=568022401; lastagecheckage=1-0-1990;",
+  },
+};

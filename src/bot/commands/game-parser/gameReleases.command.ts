@@ -41,7 +41,12 @@ export class GameReleasesCommand extends Command {
           gameMeta.releaseDate = releaseDate;
           gamesWithReleaseDate.push(gameMeta);
 
-          await this.gameMetaService.upsertReleaseDate(gameMeta, releaseDate);
+          await this.gameMetaService.upsertReleaseDate(
+            gameMeta,
+            releaseDate,
+            null,
+            false,
+          );
         }
       }
 
@@ -77,7 +82,7 @@ export class GameReleasesCommand extends Command {
         owner!.steamId,
       );
 
-      if (data) releaseDate = data;
+      if (data) releaseDate = data.releaseDate;
     }
 
     if (gameMeta.comingSoon && !gameMeta.isEarlyAccess) {

@@ -32,7 +32,7 @@ describe("getAdditionDiffData", () => {
       getAdditionDiffData(ADDITION, STEAMGAMEDATA_WITH_RELEASEDATE_CHANGES),
     ).toEqual({
       comingSoon: true,
-      releaseDate: "15 Oct, 2026",
+      releaseDate: "30 Oct, 2026",
     });
   });
   it("detects Early Access release date change", () => {
@@ -41,7 +41,7 @@ describe("getAdditionDiffData", () => {
         ADDITION,
         STEAMGAMEDATA_WITH_EARLYRELEASEDATE_CHANGES,
       ),
-    ).toEqual({ isEarlyAccess: true, releaseDate: "15 Oct, 2026" });
+    ).toEqual({ isEarlyAccess: true, releaseDate: "30 Oct, 2026" });
   });
   it("return empty object when there are no changes", () => {
     expect(getAdditionDiffData(ADDITION, BASE_ADDITIONDATA)).toEqual({});

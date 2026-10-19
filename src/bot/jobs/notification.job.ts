@@ -4,6 +4,7 @@ import { TelegramService } from "../telegram.service";
 import {
   Additions,
   Game,
+  GameMeta,
   GameMetaService,
   GameMetaType,
   User,
@@ -38,7 +39,10 @@ export class NotificationJob extends Command {
 
             const releaseDays = getDaysUntilRelease(gameMeta.releaseDate);
 
-            if (releaseDays && this.shouldSendNotification(releaseDays)) {
+            if (
+              releaseDays !== null &&
+              this.shouldSendNotification(releaseDays)
+            ) {
               const users =
                 gameMeta.type === GameMetaType.GAME
                   ? gameMeta.game!.users
@@ -47,6 +51,7 @@ export class NotificationJob extends Command {
               await this.sendMessageAboutGameReleases(
                 users,
                 entityOwner,
+                gameMeta,
                 releaseDays,
               );
             }
@@ -64,10 +69,12 @@ export class NotificationJob extends Command {
   private async sendMessageAboutGameReleases(
     users: User[],
     entityOwner: Game | Additions,
+    meta: GameMeta,
     releaseDays: number,
   ): Promise<void> {
     const message = this.createReleaseCountdownMessage(
       entityOwner,
+      meta,
       releaseDays,
     );
 
@@ -90,14 +97,31 @@ export class NotificationJob extends Command {
 
   private createReleaseCountdownMessage(
     entityOwner: Game | Additions,
+    meta: GameMeta,
     daysUntilRelease: number,
   ): string {
     const word = this.getDaysWord(daysUntilRelease);
 
+    const releaseQualifier = meta.isEarlyAccess && "из раннего доступа";
+    const ownerType = meta.type === GameMetaType.GAME ? "Игра" : "Дополнение";
+
+    const createDaysMessage = () => {
+      let message = "";
+
+      if (daysUntilRelease > 1)
+        message = `📅 До выхода ${releaseQualifier} осталось *${daysUntilRelease}* ${word}.`;
+      if (daysUntilRelease === 1)
+        message = `${ownerType} выходит ${releaseQualifier} завтра`;
+      if (daysUntilRelease === 0)
+        message = `${ownerType} выходит ${releaseQualifier} сегодня`;
+
+      return message;
+    };
+
     return [
       `🎮 *${entityOwner.name}*`,
       "",
-      `📅 До выхода осталось *${daysUntilRelease}* ${word}.`,
+      createDaysMessage(),
       entityOwner.href ? `🔗 [Страница Steam](${entityOwner.href})` : "",
     ]
       .filter(Boolean)
@@ -107,10 +131,6 @@ export class NotificationJob extends Command {
   private getDaysWord(days: number): string {
     const lastDigit = days % 10;
     const lastTwoDigits = days % 100;
-
-    if (lastDigit === 1 && lastTwoDigits !== 11) {
-      return "день";
-    }
 
     if (
       lastDigit >= 2 &&
@@ -124,7 +144,7 @@ export class NotificationJob extends Command {
   }
 
   private shouldSendNotification(releaseDate: number): boolean {
-    const releaseNotifications = [30, 14, 7, 3, 1];
+    const releaseNotifications = [30, 14, 7, 3, 1, 0];
 
     return releaseNotifications.includes(releaseDate);
   }

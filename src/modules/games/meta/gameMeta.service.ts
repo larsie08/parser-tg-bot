@@ -22,15 +22,23 @@ export class GameMetaService {
   async upsertEarlyReleaseInfo(
     meta: GameMeta,
     releaseDate: string,
+    releaseTime: Date | null,
   ): Promise<void> {
     meta.releaseDate = releaseDate;
     meta.isEarlyAccess = true;
+    meta.releaseTime = releaseTime;
 
     await this.gameMetaRepository.save(meta);
   }
 
-  async upsertReleaseDate(meta: GameMeta, releaseDate: string): Promise<void> {
+  async upsertReleaseDate(
+    meta: GameMeta,
+    releaseDate: string,
+    releaseTime: Date | null,
+    shouldUpdateTime: boolean = false,
+  ): Promise<void> {
     meta.releaseDate = releaseDate;
+    if (shouldUpdateTime) meta.releaseTime = releaseTime;
 
     await this.gameMetaRepository.save(meta);
   }

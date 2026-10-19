@@ -19,7 +19,7 @@ describe("buildMetaUpdate", () => {
       buildMetaUpdate(STEAMGAMEDATA_WITH_RELEASEDATE_CHANGES, BASE_META),
     ).toEqual({
       ...BASE_EXPECTED_META_UPDATE_RESULT,
-      releaseDate: "15 Oct, 2026",
+      releaseDate: "30 Oct, 2026",
       comingSoon: true,
     });
   });
@@ -77,7 +77,7 @@ describe("buildMetaUpdate", () => {
       oldPrice: null,
       discount: "10",
       currency: "RUB",
-      releaseDate: "15 Oct, 2026",
+      releaseDate: "30 Oct, 2026",
       comingSoon: true,
       isEarlyAccess: true,
     });

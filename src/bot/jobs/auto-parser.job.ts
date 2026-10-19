@@ -204,7 +204,7 @@ export class AutoParserJob extends Command {
         changesDetected,
       ) as (keyof IGameSteamData)[];
 
-      if (!hasAnyChange) continue;
+      if (hasMetaData(additionItem.meta) && !hasAnyChange) continue;
 
       if (hasMetaData(additionItem.meta) && hasAnyChange) {
         const lowestPriceInHistory =

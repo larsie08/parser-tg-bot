@@ -1,7 +1,11 @@
 import axios from "axios";
 import { JSDOM } from "jsdom";
 
-import { SteamAppDetailsResponse } from "./steam.types";
+import {
+  headersResponse,
+  ReleaseDateDataResponse,
+  SteamAppDetailsResponse,
+} from "./steam.types";
 import { GameNewsInfo, IGameSteamData } from "../../modules";
 
 export class SteamService {
@@ -9,7 +13,7 @@ export class SteamService {
     gameName: string,
   ): Promise<{ href: string; name: string } | null> {
     try {
-      const { data } = await axios.get(
+      const { data } = await axios.get<Buffer<ArrayBufferLike>>(
         `https://store.steampowered.com/search/?term=${gameName}&ignore_preferences=1`,
       );
       return this.parseSteamIdData(data);
@@ -18,19 +22,32 @@ export class SteamService {
     }
   }
 
-  async fetchEarlyAccessReleaseDate(gameId: string): Promise<string | null> {
+  async fetchEarlyAccessReleaseDate(
+    gameId: string,
+  ): Promise<ReleaseDateDataResponse | null> {
     try {
-      const { data } = await axios.get(
+      const { data } = await axios.get<Buffer<ArrayBufferLike>>(
         `https://store.steampowered.com/app/${gameId}`,
-        {
-          headers: {
-            Cookie: "birthtime=568022401; lastagecheckage=1-0-1990;",
-          },
-        },
+        headersResponse,
       );
-      return this.parseSteamReleaseDateData(data);
+      return this.parseEarlyAccessReleaseDateData(data);
     } catch (error) {
       throw new Error("Ошибка при получении данных о раннем доступе");
+    }
+  }
+
+  async fetchComingSoonReleaseDate(
+    gameId: string,
+  ): Promise<ReleaseDateDataResponse | null> {
+    try {
+      const { data } = await axios.get<Buffer<ArrayBufferLike>>(
+        `https://store.steampowered.com/app/${gameId}`,
+        headersResponse,
+      );
+
+      return this.parseComingSoonReleaseDateData(data);
+    } catch (error) {
+      throw new Error("Ошибка при получении данных о ближайшей дате релиза.");
     }
   }
 
@@ -72,11 +89,7 @@ export class SteamService {
   ): Promise<SteamAppDetailsResponse> {
     const { data } = await axios.get<SteamAppDetailsResponse>(
       `https://store.steampowered.com/api/appdetails?appids=${gameId}&cc=${countryCode}&l=en`,
-      {
-        headers: {
-          Cookie: "birthtime=568022401; lastagecheckage=1-0-1990;",
-        },
-      },
+      headersResponse,
     );
 
     return data;
@@ -131,26 +144,42 @@ export class SteamService {
     };
   }
 
-  private parseSteamReleaseDateData(
+  private parseEarlyAccessReleaseDateData(
     data: Buffer<ArrayBufferLike>,
-  ): string | null {
+  ): ReleaseDateDataResponse | null {
     const dom = new JSDOM(data);
 
     const infoBlock = dom.window.document.getElementsByClassName(
       "early_access_header",
     )[0];
 
-    const releaseDate = infoBlock
-      .getElementsByClassName("leaving_early_access")[0]
-      .querySelector("h2")?.textContent;
+    const releaseInfoBlock = infoBlock.getElementsByClassName(
+      "leaving_early_access",
+    )[0];
 
-    if (!releaseDate) return null;
+    const releaseDateText = releaseInfoBlock.querySelector("h2")?.textContent;
+    const releaseTimeText =
+      releaseInfoBlock.childNodes.length > 1
+        ? releaseInfoBlock.querySelector("p")?.textContent
+        : null;
 
-    const match = releaseDate.match(
+    if (!releaseDateText) return null;
+
+    const matchReleaseDate = releaseDateText.match(
       /Leaving Early Access:\s*([0-9]{1,2}\s+[A-Za-z]{3},\s+\d{4})/,
     );
+    const matchTime = releaseTimeText?.match(
+      /unlock in approximately (\d+)\s+hours?/i,
+    );
 
-    return match?.[1] ?? null;
+    const hours = Number(matchTime?.[1]);
+
+    const releaseTime = new Date(Date.now() + hours * 60 * 60 * 1000);
+
+    return {
+      releaseDate: matchReleaseDate?.[1] ?? null,
+      releaseTime,
+    };
   }
 
   private parseAndFiltersRelevantSteamNews(data: GameNewsInfo): GameNewsInfo {
@@ -163,6 +192,45 @@ export class SteamService {
         ...data.appnews,
         newsitems: newsWithFeedType,
       },
+    };
+  }
+
+  private parseComingSoonReleaseDateData(
+    data: Buffer<ArrayBufferLike>,
+  ): ReleaseDateDataResponse | null {
+    const dom = new JSDOM(data);
+
+    const infoBlock = dom.window.document.getElementsByClassName(
+      "game_area_comingsoon",
+    )[0];
+    const releaseDateBlock = infoBlock.querySelector("h1");
+
+    if (!releaseDateBlock) return null;
+
+    let releaseDateText =
+      releaseDateBlock?.childNodes.length >= 1 &&
+      releaseDateBlock.querySelector("span")?.textContent;
+    if (!releaseDateText) releaseDateText = releaseDateBlock.textContent;
+
+    const releaseTimeText =
+      infoBlock.getElementsByClassName("content")[0].childNodes.length >= 1
+        ? infoBlock.querySelector("p")?.textContent
+        : null;
+
+    const matchReleaseDate = releaseDateText?.match(
+      /^(?:Coming\s+)?(\d{1,2}\s+[A-Za-z]{3},\s+\d{4})$/i,
+    );
+    const releaseDate = matchReleaseDate?.[1] ?? null;
+
+    const matchTime = releaseTimeText?.match(
+      /unlock in approximately (\d+)\s+hours?/i,
+    );
+    const hours = Number(matchTime?.[1]);
+    const releaseTime = new Date(Date.now() + hours * 60 * 60 * 1000);
+
+    return {
+      releaseDate,
+      releaseTime,
     };
   }
 

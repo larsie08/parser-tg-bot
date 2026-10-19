@@ -70,8 +70,8 @@ export class GameMeta {
   @Column({ nullable: true })
   releaseDate?: string;
 
-  @Column({ nullable: true })
-  releaseTime?: string;
+  @Column({ type: "timestamptz", nullable: true })
+  releaseTime?: Date | null;
 
   @Column({ nullable: true })
   comingSoon?: boolean;

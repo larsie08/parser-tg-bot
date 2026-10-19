@@ -123,7 +123,7 @@ export function getAdditionDiffData(
     return changes;
   }
 
-  const deniedKeys = ["name", "href", "oldPrice", "releaseTime", "dlc"];
+  const deniedKeys = ["name", "href", "oldPrice", "dlc"];
 
   if (addition.meta.isEarlyAccess) {
     deniedKeys.push("releaseDate");

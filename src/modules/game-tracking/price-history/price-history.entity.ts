@@ -46,8 +46,8 @@ export class PriceHistory {
   @Column({ nullable: true })
   releaseDate?: string;
 
-  @Column({ nullable: true })
-  releaseTime?: string;
+  @Column({ type: "timestamptz", nullable: true })
+  releaseTime?: Date | null;
 
   @Column()
   comingSoon!: boolean;

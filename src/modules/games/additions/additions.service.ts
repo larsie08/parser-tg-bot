@@ -43,7 +43,10 @@ export class AdditionsService {
   async getGameAddition() {}
 
   async getGameAllAdditions(gameId: number): Promise<Additions[]> {
-    return this.additionsRepository.find({ where: { game: { id: gameId } } });
+    return this.additionsRepository.find({
+      where: { game: { id: gameId } },
+      relations: { meta: true },
+    });
   }
 
   async getGameAdditionWithComingSoon() {}

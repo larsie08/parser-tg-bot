@@ -7,7 +7,7 @@ export function buildMetaUpdate(gameData: IGameSteamData, meta: GameMeta) {
     v == null || isNaN(v) ? null : v;
 
   const releaseDate = isUpcomingReleaseDate(gameData.releaseDate)
-    ? gameData.releaseDate!
+    ? gameData.releaseDate
     : null;
 
   return {

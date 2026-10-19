@@ -3,7 +3,7 @@ import { session, Telegraf } from "telegraf";
 
 import {
   AutoParserJob,
-  EarlyAccessReleaseDateJob,
+  ReleaseDateJob,
   NotificationJob,
 } from "./src/bot/jobs";
 import {
@@ -138,9 +138,8 @@ class Bot {
         additionsService,
         priceTrackingService,
       ),
-      new EarlyAccessReleaseDateJob(
+      new ReleaseDateJob(
         this.bot,
-        gameService,
         gameMetaService,
         steamService,
         telegramService,
