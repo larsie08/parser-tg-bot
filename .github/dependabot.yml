@@ -7,6 +7,10 @@ updates:
       interval: "weekly"
       day: "monday"
 
+    ignore:
+      - dependency-name: "typescript"
+      - dependency-name: "@typescript/native"
+
     open-pull-requests-limit: 5
 
     labels:
