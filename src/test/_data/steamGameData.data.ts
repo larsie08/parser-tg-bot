@@ -1,4 +1,5 @@
 import { IGameSteamData } from "../../modules";
+import { getUpcomingReleaseDateForTest } from "../helpers/getUpcomingReleaseDate";
 import { ADDITION, GAME } from "./games.data";
 
 export const BASE_STEAMGAMEDATA: IGameSteamData = {
@@ -28,7 +29,7 @@ export const STEAMGAMEDATA_META_WITH_RELEASEDATE_QUARTER_CHANGES: IGameSteamData
   {
     ...BASE_STEAMGAMEDATA,
     comingSoon: true,
-    releaseDate: "Q4 2026",
+    releaseDate: getUpcomingReleaseDateForTest("quarter"),
   };
 
 export const STEAMGAMEDATA_META_RELEASED = {
@@ -44,7 +45,7 @@ export const STEAMGAMEDATA_META_WITH_MULTIPLE_CHANGES: IGameSteamData = {
   oldPrice: 370,
   discount: "10",
   comingSoon: true,
-  releaseDate: "30 Oct, 2026",
+  releaseDate: getUpcomingReleaseDateForTest("date"),
   isEarlyAccess: true,
   currency: "RUB",
 };
@@ -77,15 +78,21 @@ export const STEAMGAMEDATA_WITH_PRICE_USD_CHANGES: IGameSteamData = {
 
 export const STEAMGAMEDATA_WITH_RELEASEDATE_CHANGES: IGameSteamData = {
   ...BASE_STEAMGAMEDATA,
-  releaseDate: "30 Oct, 2026",
+  releaseDate: getUpcomingReleaseDateForTest("date"),
   comingSoon: true,
 };
 
 export const STEAMGAMEDATA_WITH_EARLYRELEASEDATE_CHANGES: IGameSteamData = {
   ...BASE_STEAMGAMEDATA,
-  releaseDate: "30 Oct, 2026",
+  releaseDate: getUpcomingReleaseDateForTest("date"),
   isEarlyAccess: true,
 };
+
+export const STEAMGAMEDATA_WITH_RELEASEDATE_LIKE_YEAR_CHANGES: IGameSteamData =
+  {
+    ...BASE_STEAMGAMEDATA,
+    releaseDate: getUpcomingReleaseDateForTest("year"),
+  };
 
 export const STEAMGAMEDATA_WITH_ADDITIONS_CHANGES: IGameSteamData = {
   ...BASE_STEAMGAMEDATA,

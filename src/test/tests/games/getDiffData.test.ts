@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 
-import { getDiffData } from "../../modules";
+import { getDiffData } from "../../../modules";
 import {
   BASE_STEAMGAMEDATA,
   EMPTY_STEAMGAMEDATA_WITH_PRICE,
@@ -11,7 +11,8 @@ import {
   STEAMGAMEDATA_WITH_PRICE_RU_CHANGES,
   STEAMGAMEDATA_WITH_PRICE_USD_CHANGES,
   STEAMGAMEDATA_WITH_RELEASEDATE_CHANGES,
-} from "../_data";
+} from "../../_data";
+import { getUpcomingReleaseDateForTest } from "../../helpers/getUpcomingReleaseDate";
 
 describe("getDiffData", () => {
   it("detects price change", () => {
@@ -29,7 +30,7 @@ describe("getDiffData", () => {
   it("detects release date change", () => {
     expect(getDiffData(GAME, STEAMGAMEDATA_WITH_RELEASEDATE_CHANGES)).toEqual({
       comingSoon: true,
-      releaseDate: "30 Oct, 2026",
+      releaseDate: getUpcomingReleaseDateForTest("date"),
     });
   });
 
@@ -38,7 +39,7 @@ describe("getDiffData", () => {
       getDiffData(GAME, STEAMGAMEDATA_WITH_EARLYRELEASEDATE_CHANGES),
     ).toEqual({
       isEarlyAccess: true,
-      releaseDate: "30 Oct, 2026",
+      releaseDate: getUpcomingReleaseDateForTest("date"),
     });
   });
   it("detects additions change", () => {

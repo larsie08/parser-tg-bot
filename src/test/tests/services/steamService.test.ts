@@ -1,7 +1,7 @@
 import axios from "axios";
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 
-import { SteamService } from "../../integrations";
+import { SteamService } from "../../../integrations";
 
 import {
   EXPECTED_STEAM_APP_DETAILS_EUR,
@@ -14,7 +14,7 @@ import {
   STEAM_APP_DETAILS_WITH_WRONG_RESPONSE_KEY,
   STEAMGAMEDATA_EXPECTED_NEWS,
   STEAMGAMEDATA_NEWS,
-} from "../_data";
+} from "../../_data";
 
 jest.mock("axios");
 

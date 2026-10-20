@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 
-import { getAdditionDiffData } from "../../modules";
+import { getAdditionDiffData } from "../../../modules";
 import {
   ADDITION,
   BASE_ADDITIONDATA,
@@ -8,7 +8,8 @@ import {
   STEAMGAMEDATA_WITH_PRICE_RU_CHANGES,
   STEAMGAMEDATA_WITH_PRICE_USD_CHANGES,
   STEAMGAMEDATA_WITH_RELEASEDATE_CHANGES,
-} from "../_data";
+} from "../../_data";
+import { getUpcomingReleaseDateForTest } from "../../helpers/getUpcomingReleaseDate";
 
 describe("getAdditionDiffData", () => {
   it("detects price change", () => {
@@ -32,7 +33,7 @@ describe("getAdditionDiffData", () => {
       getAdditionDiffData(ADDITION, STEAMGAMEDATA_WITH_RELEASEDATE_CHANGES),
     ).toEqual({
       comingSoon: true,
-      releaseDate: "30 Oct, 2026",
+      releaseDate: getUpcomingReleaseDateForTest("date"),
     });
   });
   it("detects Early Access release date change", () => {
@@ -41,7 +42,7 @@ describe("getAdditionDiffData", () => {
         ADDITION,
         STEAMGAMEDATA_WITH_EARLYRELEASEDATE_CHANGES,
       ),
-    ).toEqual({ isEarlyAccess: true, releaseDate: "30 Oct, 2026" });
+    ).toEqual({ isEarlyAccess: true, releaseDate: getUpcomingReleaseDateForTest("date") });
   });
   it("return empty object when there are no changes", () => {
     expect(getAdditionDiffData(ADDITION, BASE_ADDITIONDATA)).toEqual({});

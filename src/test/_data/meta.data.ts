@@ -1,4 +1,5 @@
-import { GameMeta, GameMetaType, IGameSteamData } from "../../modules";
+import { GameMeta, GameMetaType } from "../../modules";
+import { getUpcomingReleaseDateForTest } from "../helpers/getUpcomingReleaseDate";
 import { GAME } from "./games.data";
 
 export const BASE_META: GameMeta = {
@@ -31,7 +32,13 @@ export const BASE_EXPECTED_META_UPDATE_RESULT = {
 
 export const META_WITH_RELEASEDATE: GameMeta = {
   ...BASE_META,
-  releaseDate: "Q4 2026",
+  releaseDate: getUpcomingReleaseDateForTest("quarter"),
+  comingSoon: true,
+};
+
+export const META_WITH_RELEASEDATE_LIKE_YEAR: GameMeta = {
+  ...BASE_META,
+  releaseDate: getUpcomingReleaseDateForTest("year"),
   comingSoon: true,
 };
 

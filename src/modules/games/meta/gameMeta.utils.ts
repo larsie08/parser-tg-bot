@@ -30,21 +30,38 @@ function isUpcomingReleaseDate(
     return false;
   }
 
-  const quarterMatch = releaseDate.match(/^Q([1-4])\s+(\d{4})$/);
+  const value = releaseDate.trim();
+
+  const yearMatch = value.match(/^\d{4}$/);
+
+  if (yearMatch) {
+    const year = Number(yearMatch[0]);
+    return new Date(year + 1, 0, 1).getTime() > Date.now();
+  }
+
+  const quarterMatch = value.match(/^Q([1-4])\s+(\d{4})$/i);
 
   if (quarterMatch) {
     const quarter = Number(quarterMatch[1]);
     const year = Number(quarterMatch[2]);
 
-    const quarterEndMonth = quarter * 3;
-    const quarterEndDate = new Date(Date.UTC(year, quarterEndMonth, 0));
+    const nextQuarterStart = new Date(year, quarter * 3, 1);
 
-    return quarterEndDate.getTime() > Date.now();
+    return nextQuarterStart.getTime() > Date.now();
   }
 
-  const date = new Date(releaseDate);
+  const date = new Date(value);
 
-  return !Number.isNaN(date.getTime()) && date.getTime() > Date.now();
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+
+  date.setHours(0, 0, 0, 0);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return date.getTime() >= today.getTime();
 }
 
 export function getMetaRelation(type: GameMetaType): "game" | "addition" {

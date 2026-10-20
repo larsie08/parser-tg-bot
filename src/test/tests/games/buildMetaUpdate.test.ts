@@ -1,5 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
-import { buildMetaUpdate } from "../../modules";
+import { buildMetaUpdate } from "../../../modules";
+import { getUpcomingReleaseDateForTest } from "../../helpers/getUpcomingReleaseDate";
 import {
   BASE_EXPECTED_META_UPDATE_RESULT,
   BASE_META,
@@ -11,7 +12,8 @@ import {
   STEAMGAMEDATA_META_WITH_MULTIPLE_CHANGES,
   STEAMGAMEDATA_META_WITH_RELEASEDATE_QUARTER_CHANGES,
   STEAMGAMEDATA_WITH_RELEASEDATE_CHANGES,
-} from "../_data";
+  STEAMGAMEDATA_WITH_RELEASEDATE_LIKE_YEAR_CHANGES,
+} from "../../_data";
 
 describe("buildMetaUpdate", () => {
   it("updates releaseDate", () => {
@@ -19,7 +21,7 @@ describe("buildMetaUpdate", () => {
       buildMetaUpdate(STEAMGAMEDATA_WITH_RELEASEDATE_CHANGES, BASE_META),
     ).toEqual({
       ...BASE_EXPECTED_META_UPDATE_RESULT,
-      releaseDate: "30 Oct, 2026",
+      releaseDate: getUpcomingReleaseDateForTest("date"),
       comingSoon: true,
     });
   });
@@ -32,8 +34,20 @@ describe("buildMetaUpdate", () => {
       ),
     ).toEqual({
       ...BASE_EXPECTED_META_UPDATE_RESULT,
-      releaseDate: "Q4 2026",
+      releaseDate: getUpcomingReleaseDateForTest("quarter"),
       comingSoon: true,
+    });
+  });
+
+  it("updates releaseDate with year", () => {
+    expect(
+      buildMetaUpdate(
+        STEAMGAMEDATA_WITH_RELEASEDATE_LIKE_YEAR_CHANGES,
+        BASE_META,
+      ),
+    ).toEqual({
+      ...BASE_EXPECTED_META_UPDATE_RESULT,
+      releaseDate: getUpcomingReleaseDateForTest("year"),
     });
   });
 
@@ -77,7 +91,7 @@ describe("buildMetaUpdate", () => {
       oldPrice: null,
       discount: "10",
       currency: "RUB",
-      releaseDate: "30 Oct, 2026",
+      releaseDate: getUpcomingReleaseDateForTest("date"),
       comingSoon: true,
       isEarlyAccess: true,
     });
