@@ -21,6 +21,10 @@ const QUARTERS: Record<string, string> = {
 };
 
 export function getDaysUntilRelease(releaseDate: string): number | null {
+  const yearMatch = releaseDate.match(/^\d{4}$/);
+
+  if (yearMatch) return null;
+
   const release = new Date(releaseDate);
 
   if (Number.isNaN(release.getTime())) {

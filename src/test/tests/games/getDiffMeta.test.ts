@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 
-import { getDiffData } from "../../../modules";
+import { getDiffMeta } from "../../../modules";
 import {
   BASE_STEAMGAMEDATA,
   EMPTY_STEAMGAMEDATA_WITH_PRICE,
@@ -14,21 +14,27 @@ import {
 } from "../../_data";
 import { getUpcomingReleaseDateForTest } from "../../helpers/getUpcomingReleaseDate";
 
-describe("getDiffData", () => {
+describe("getDiffMeta", () => {
   it("detects price change", () => {
-    expect(getDiffData(GAME, STEAMGAMEDATA_WITH_PRICE_RU_CHANGES)).toEqual({
-      price: 899,
-      discount: "0",
-      currency: "RUB",
-    });
-    expect(getDiffData(GAME, STEAMGAMEDATA_WITH_PRICE_USD_CHANGES)).toEqual({
+    expect(getDiffMeta(GAME.meta, STEAMGAMEDATA_WITH_PRICE_RU_CHANGES)).toEqual(
+      {
+        price: 899,
+        discount: "0",
+        currency: "RUB",
+      },
+    );
+    expect(
+      getDiffMeta(GAME.meta, STEAMGAMEDATA_WITH_PRICE_USD_CHANGES),
+    ).toEqual({
       price: 69.99,
       discount: "0",
       currency: "USD",
     });
   });
   it("detects release date change", () => {
-    expect(getDiffData(GAME, STEAMGAMEDATA_WITH_RELEASEDATE_CHANGES)).toEqual({
+    expect(
+      getDiffMeta(GAME.meta, STEAMGAMEDATA_WITH_RELEASEDATE_CHANGES),
+    ).toEqual({
       comingSoon: true,
       releaseDate: getUpcomingReleaseDateForTest("date"),
     });
@@ -36,24 +42,30 @@ describe("getDiffData", () => {
 
   it("detects Early Access release date change", () => {
     expect(
-      getDiffData(GAME, STEAMGAMEDATA_WITH_EARLYRELEASEDATE_CHANGES),
+      getDiffMeta(GAME.meta, STEAMGAMEDATA_WITH_EARLYRELEASEDATE_CHANGES),
     ).toEqual({
       isEarlyAccess: true,
       releaseDate: getUpcomingReleaseDateForTest("date"),
     });
   });
   it("detects additions change", () => {
-    expect(getDiffData(GAME, STEAMGAMEDATA_WITH_ADDITIONS_CHANGES)).toEqual({
+    expect(
+      getDiffMeta(
+        GAME.meta,
+        STEAMGAMEDATA_WITH_ADDITIONS_CHANGES,
+        GAME.additions,
+      ),
+    ).toEqual({
       dlc: ["5001840", "4024620", "4572870"],
     });
   });
   it("return empty object when there are no changes", () => {
-    expect(getDiffData(GAME, BASE_STEAMGAMEDATA)).toEqual({});
+    expect(getDiffMeta(GAME.meta, BASE_STEAMGAMEDATA)).toEqual({});
   });
 
   it("return empty object when there are no changes with initial price meta", () => {
     expect(
-      getDiffData(GAME_WITH_META_PRICE, EMPTY_STEAMGAMEDATA_WITH_PRICE),
+      getDiffMeta(GAME_WITH_META_PRICE.meta, EMPTY_STEAMGAMEDATA_WITH_PRICE),
     ).toEqual({});
   });
 });

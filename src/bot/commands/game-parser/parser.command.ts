@@ -7,7 +7,7 @@ import {
   createGameMessage,
   GameMetaType,
   GameService,
-  getDiffData,
+  getDiffMeta,
   hasMetaData,
   PriceHistoryService,
   PriceTrackingService,
@@ -110,7 +110,7 @@ export class ParserCommand extends Command {
         "Не удалось получить данные о цене игры.",
       );
 
-    const changesDetected = getDiffData(game, gameData);
+    const changesDetected = getDiffMeta(game.meta, gameData, game.additions);
     const hasAnyChange = Object.keys(changesDetected).length > 0;
     const changesKeys = Object.keys(changesDetected);
 

@@ -14,17 +14,6 @@ export const BASE_STEAMGAMEDATA: IGameSteamData = {
   dlc: [],
 };
 
-export const BASE_ADDITIONDATA: IGameSteamData = {
-  name: ADDITION.name,
-  releaseDate: undefined,
-  currency: undefined,
-  price: undefined,
-  oldPrice: undefined,
-  discount: undefined,
-  comingSoon: false,
-  isEarlyAccess: false,
-};
-
 export const STEAMGAMEDATA_META_WITH_RELEASEDATE_QUARTER_CHANGES: IGameSteamData =
   {
     ...BASE_STEAMGAMEDATA,
@@ -82,7 +71,7 @@ export const STEAMGAMEDATA_WITH_RELEASEDATE_CHANGES: IGameSteamData = {
   comingSoon: true,
 };
 
-export const STEAMGAMEDATA_WITH_EARLYRELEASEDATE_CHANGES: IGameSteamData = {
+const STEAMGAMEDATA_WITH_EARLYRELEASEDATE_CHANGES: IGameSteamData = {
   ...BASE_STEAMGAMEDATA,
   releaseDate: getUpcomingReleaseDateForTest("date"),
   isEarlyAccess: true,

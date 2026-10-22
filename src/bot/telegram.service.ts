@@ -31,13 +31,13 @@ export class TelegramService {
     context: IBotContext,
     text: string,
     delay?: number,
-  ) {
+  ): Promise<void> {
     const message = await context.sendMessage(text);
 
     this.timeoutDeleteMessage(context, message.message_id, delay);
   }
 
-  async sendAutoMessageToUser(userId: number, message: string) {
+  async sendAutoMessageToUser(userId: number, message: string): Promise<void> {
     await this.bot.telegram.sendMessage(userId, message);
   }
 
@@ -64,7 +64,10 @@ export class TelegramService {
     await context.deleteMessages(context.session.messagesId[messageArrayId]);
   }
 
-  async deleteLastMessage(context: IBotContext, messageArrayId: MessagesIdKey) {
+  async deleteLastMessage(
+    context: IBotContext,
+    messageArrayId: MessagesIdKey,
+  ): Promise<void> {
     await context.deleteMessage(
       context.session.messagesId[messageArrayId].shift(),
     );

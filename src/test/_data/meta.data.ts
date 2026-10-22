@@ -36,12 +36,6 @@ export const META_WITH_RELEASEDATE: GameMeta = {
   comingSoon: true,
 };
 
-export const META_WITH_RELEASEDATE_LIKE_YEAR: GameMeta = {
-  ...BASE_META,
-  releaseDate: getUpcomingReleaseDateForTest("year"),
-  comingSoon: true,
-};
-
 export const META_WITH_PRICE: GameMeta = {
   ...BASE_META,
   price: 360,

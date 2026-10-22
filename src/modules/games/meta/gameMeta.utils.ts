@@ -1,4 +1,12 @@
-import { GameMeta, GameMetaType, IGameSteamData } from "../..";
+import {
+  Additions,
+  DeniedMetaKeysForDiffFn,
+  GameMeta,
+  GameMetaType,
+  IGameSteamData,
+} from "../..";
+
+const normalize = <T>(value: T | null | undefined): T | null => value ?? null;
 
 export function buildMetaUpdate(gameData: IGameSteamData, meta: GameMeta) {
   const normalizeString = (v: string | undefined | null): string | null =>
@@ -66,4 +74,53 @@ function isUpcomingReleaseDate(
 
 export function getMetaRelation(type: GameMetaType): "game" | "addition" {
   return type === GameMetaType.GAME ? "game" : "addition";
+}
+
+export function getDiffMeta(
+  meta: GameMeta,
+  steamGameData: IGameSteamData,
+  additions?: Additions[],
+): Partial<IGameSteamData> {
+  const changes: Partial<IGameSteamData> = {};
+
+  if (!meta) {
+    return changes;
+  }
+
+  const deniedKeys: DeniedMetaKeysForDiffFn = [
+    "name",
+    "href",
+    "oldPrice",
+    "releaseTime",
+  ];
+
+  if (!additions) deniedKeys.push("dlc");
+  if (meta.isEarlyAccess) deniedKeys.push("releaseDate");
+
+  for (const key of Object.keys(steamGameData) as (keyof IGameSteamData)[]) {
+    if (deniedKeys.includes(key)) continue;
+
+    if (key === "dlc" && steamGameData.dlc && additions) {
+      const additionsGameId = new Set(
+        additions.map((addition) => addition.steamId),
+      );
+
+      const newDlc = (steamGameData.dlc ?? []).filter(
+        (id) => !additionsGameId.has(id),
+      );
+
+      if (newDlc.length > 0) changes.dlc = newDlc;
+
+      continue;
+    }
+
+    const newValue = normalize(steamGameData[key]);
+    const oldValue = normalize(meta[key as keyof GameMeta]);
+
+    if (oldValue !== newValue) {
+      changes[key] = newValue as never;
+    }
+  }
+
+  return changes;
 }

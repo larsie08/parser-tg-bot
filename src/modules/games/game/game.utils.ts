@@ -8,52 +8,6 @@ import { Game, GameMeta, IGameSteamData, PriceHistory } from "../..";
 
 const GAMES_PER_PAGE = 5;
 
-export function getDiffData(
-  game: Game,
-  steamGameData: IGameSteamData,
-): Partial<IGameSteamData> {
-  const changes: Partial<IGameSteamData> = {};
-
-  if (!game.meta) {
-    return changes;
-  }
-
-  const deniedKeys = ["name", "href", "oldPrice", "releaseTime"];
-
-  if (game.meta.isEarlyAccess) deniedKeys.push("releaseDate");
-
-  const normalize = <T>(value: T | null | undefined): T | null => value ?? null;
-
-  for (const key of Object.keys(steamGameData) as (keyof IGameSteamData)[]) {
-    if (deniedKeys.includes(key)) continue;
-
-    if (key === "dlc" && steamGameData.dlc) {
-      const additionsGameId = new Set(
-        game.additions.map((addition) => addition.steamId),
-      );
-
-      const newDlc = steamGameData.dlc.filter(
-        (dlcId) => !additionsGameId.has(dlcId),
-      );
-
-      if (newDlc.length > 0) {
-        changes.dlc = newDlc;
-      }
-
-      continue;
-    }
-
-    const newValue = normalize(steamGameData[key]);
-    const oldValue = normalize(game.meta[key as keyof GameMeta]);
-
-    if (oldValue !== newValue) {
-      changes[key] = newValue as never;
-    }
-  }
-
-  return changes;
-}
-
 export function createGameMessage(
   gameData: IGameSteamData | GameMeta,
   game: Game,

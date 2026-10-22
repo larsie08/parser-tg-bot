@@ -102,18 +102,18 @@ export class NotificationJob extends Command {
   ): string {
     const word = this.getDaysWord(daysUntilRelease);
 
-    const releaseQualifier = meta.isEarlyAccess && "из раннего доступа";
+    const releaseQualifier = meta.isEarlyAccess ? " из раннего доступа" : "";
     const ownerType = meta.type === GameMetaType.GAME ? "Игра" : "Дополнение";
 
     const createDaysMessage = () => {
       let message = "";
 
       if (daysUntilRelease > 1)
-        message = `📅 До выхода ${releaseQualifier} осталось *${daysUntilRelease}* ${word}.`;
+        message = `📅 До выхода${releaseQualifier} осталось *${daysUntilRelease}* ${word}.`;
       if (daysUntilRelease === 1)
-        message = `${ownerType} выходит ${releaseQualifier} завтра`;
+        message = `${ownerType} выходит${releaseQualifier} завтра`;
       if (daysUntilRelease === 0)
-        message = `${ownerType} выходит ${releaseQualifier} сегодня`;
+        message = `${ownerType} выходит${releaseQualifier} сегодня`;
 
       return message;
     };

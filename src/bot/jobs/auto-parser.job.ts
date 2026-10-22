@@ -18,8 +18,7 @@ import {
   GameMetaType,
   GameNewsInfo,
   GameService,
-  getAdditionDiffData,
-  getDiffData,
+  getDiffMeta,
   hasMetaData,
   IGameSteamData,
   NewsService,
@@ -30,6 +29,7 @@ import {
 import { Command, IBotContext } from "..";
 
 import { formatReleaseDate } from "../../shared";
+import { MessageParams } from "./jobs.types";
 
 export class AutoParserJob extends Command {
   constructor(
@@ -75,7 +75,11 @@ export class AutoParserJob extends Command {
     if (!steamGameData)
       return console.log(`Ошибка при обработке игры ${game.name}`);
 
-    const changesDetected = getDiffData(game, steamGameData);
+    const changesDetected = getDiffMeta(
+      game.meta,
+      steamGameData,
+      game.additions,
+    );
     const hasAnyChange = Object.values(changesDetected).length > 0;
     const changesKeys = Object.keys(
       changesDetected,
@@ -100,18 +104,24 @@ export class AutoParserJob extends Command {
 
         if (isFirstAdditionsSync) continue;
 
-        await this.prepareAndSendMessageAboutGameChanges(
+        const message = this.buildMessageAboutGameChanges({
           game,
-          GameMetaType.ADDITION,
-          game.users,
-          additionInfo,
+          steamGameData,
           changesDetected,
-          true,
-          null,
-          false,
-          "",
+          lowestPriceInHistory: null,
+          releaseDate: undefined,
+          type: GameMetaType.ADDITION,
           addition,
-        );
+          isNewAddition: true,
+          isAdditionReleased: false,
+        });
+
+        if (!message)
+          throw new Error(
+            "Произошла ошибка с подготовкой сообщения об изменениях для пользователей.",
+          );
+
+        await this.sendMessageToUsers(game.users, message);
       }
     }
 
@@ -135,17 +145,22 @@ export class AutoParserJob extends Command {
           })()
         : undefined;
 
-      await this.prepareAndSendMessageAboutGameChanges(
+      const message = this.buildMessageAboutGameChanges({
         game,
-        GameMetaType.GAME,
-        game.users,
         steamGameData,
         changesDetected,
-        false,
         lowestPriceInHistory,
-        isGameNowReleased,
         releaseDate,
-      );
+        type: GameMetaType.GAME,
+        isGameReleased: isGameNowReleased,
+      });
+
+      if (!message)
+        throw new Error(
+          "Произошла ошибка с подготовкой сообщения об изменениях для пользователей.",
+        );
+
+      await this.sendMessageToUsers(game.users, message);
     }
 
     await this.priceTrackingService.processSaveMetaInfoAndHistory(
@@ -198,7 +213,7 @@ export class AutoParserJob extends Command {
 
       if (!additionData) continue;
 
-      const changesDetected = getAdditionDiffData(additionItem, additionData);
+      const changesDetected = getDiffMeta(additionItem.meta, additionData);
       const hasAnyChange = Object.values(changesDetected).length > 0;
       const changesKeys = Object.keys(
         changesDetected,
@@ -213,7 +228,7 @@ export class AutoParserJob extends Command {
             additionData,
           );
 
-        const isGameNowReleased = this.hasGameReleased(
+        const isAdditionNowReleased = this.hasGameReleased(
           additionData,
           additionItem.meta,
           changesKeys,
@@ -227,18 +242,24 @@ export class AutoParserJob extends Command {
             })()
           : undefined;
 
-        await this.prepareAndSendMessageAboutGameChanges(
+        const message = this.buildMessageAboutGameChanges({
           game,
-          GameMetaType.ADDITION,
-          game.users,
-          additionData,
+          steamGameData: additionData,
           changesDetected,
-          false,
           lowestPriceInHistory,
-          isGameNowReleased,
           releaseDate,
-          additionItem,
-        );
+          type: GameMetaType.ADDITION,
+          addition: additionItem,
+          isNewAddition: false,
+          isAdditionReleased: isAdditionNowReleased,
+        });
+
+        if (!message)
+          throw new Error(
+            "Произошла ошибка с подготовкой сообщения об изменениях для пользователей.",
+          );
+
+        await this.sendMessageToUsers(game.users, message);
       }
 
       await this.priceTrackingService.processSaveMetaInfoAndHistory(
@@ -267,43 +288,29 @@ export class AutoParserJob extends Command {
     return usersNews;
   }
 
-  private async prepareAndSendMessageAboutGameChanges(
-    game: Game,
-    type: GameMetaType,
-    users: User[],
-    steamGameData: IGameSteamData,
-    changesDetected: Partial<IGameSteamData>,
-    isNewAddition: boolean,
-    lowestPriceInHistory: PriceHistory | null = null,
-    isGameReleased: boolean = false,
-    releaseDate?: string | undefined,
-    addition?: Additions,
-  ) {
-    let message = "";
-
-    if (type === GameMetaType.GAME) {
-      message = createGameMessage(
-        steamGameData,
-        game,
-        changesDetected,
-        releaseDate,
-        lowestPriceInHistory,
-        isGameReleased,
-      );
-    } else if (type === GameMetaType.ADDITION && addition && isNewAddition) {
-      message = createNewAdditionMessage(addition, game);
-    } else if (type === GameMetaType.ADDITION && addition) {
-      message = createAdditionMessage(
-        steamGameData,
-        addition,
-        game,
-        changesDetected,
-        lowestPriceInHistory,
-        releaseDate,
-      );
+  private buildMessageAboutGameChanges(p: MessageParams) {
+    switch (p.type) {
+      case GameMetaType.GAME:
+        return createGameMessage(
+          p.steamGameData,
+          p.game,
+          p.changesDetected,
+          p.releaseDate,
+          p.lowestPriceInHistory,
+          p.isGameReleased,
+        );
+      case GameMetaType.ADDITION:
+        return p.isNewAddition
+          ? createNewAdditionMessage(p.addition, p.game)
+          : createAdditionMessage(
+              p.steamGameData,
+              p.addition,
+              p.game,
+              p.changesDetected,
+              p.lowestPriceInHistory,
+              p.releaseDate,
+            );
     }
-
-    await this.sendMessageToUsers(users, message);
   }
 
   private async sendMessageNews(

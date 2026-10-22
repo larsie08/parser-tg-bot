@@ -1,4 +1,5 @@
-import { Additions, Game, GameMetaType, IGameSteamData } from "../../modules";
+import { Additions, Game, GameMetaType } from "../../modules";
+import { BASE_META } from "./meta.data";
 
 export const GAME: Game = {
   id: 1,
@@ -8,18 +9,7 @@ export const GAME: Game = {
   users: [],
   news: [],
   subscriptions: [],
-  meta: {
-    id: 1,
-    type: GameMetaType.GAME,
-    price: undefined,
-    oldPrice: undefined,
-    discount: undefined,
-    comingSoon: false,
-    isEarlyAccess: false,
-    currency: undefined,
-    createdAt: new Date("2026-09-14 15:31:20.356795"),
-    updatedAt: new Date("2026-09-14 15:31:20.356795"),
-  },
+  meta: BASE_META,
   additions: [],
   createdAt: new Date("2026-09-14 15:31:20.356795"),
   updatedAt: new Date("2026-09-14 15:31:20.356795"),
@@ -51,4 +41,3 @@ export const ADDITION: Additions = {
   createdAt: new Date("2026-09-14 15:31:20.356795"),
   updatedAt: new Date("2026-09-14 15:31:20.356795"),
 };
-
