@@ -101,27 +101,29 @@ export class NotificationJob extends Command {
     daysUntilRelease: number,
   ): string {
     const word = this.getDaysWord(daysUntilRelease);
+    const time = meta.releaseTime
+      ? this.getReleaseTimeUntilRelease(meta.releaseTime)
+      : null;
 
     const releaseQualifier = meta.isEarlyAccess ? " из раннего доступа" : "";
     const ownerType = meta.type === GameMetaType.GAME ? "Игра" : "Дополнение";
 
-    const createDaysMessage = () => {
-      let message = "";
+    let message = "";
+    let messageAboutTime = time && ` в ${time}`;
 
-      if (daysUntilRelease > 1)
-        message = `📅 До выхода${releaseQualifier} осталось *${daysUntilRelease}* ${word}.`;
-      if (daysUntilRelease === 1)
-        message = `${ownerType} выходит${releaseQualifier} завтра`;
-      if (daysUntilRelease === 0)
-        message = `${ownerType} выходит${releaseQualifier} сегодня`;
-
-      return message;
-    };
+    if (daysUntilRelease > 1)
+      message = `📅 До выхода${releaseQualifier} осталось *${daysUntilRelease}* ${word}.`;
+    if (daysUntilRelease === 1)
+      message =
+        `${ownerType} выходит${releaseQualifier} завтра` + messageAboutTime;
+    if (daysUntilRelease === 0)
+      message =
+        `${ownerType} выходит${releaseQualifier} сегодня` + messageAboutTime;
 
     return [
       `🎮 *${entityOwner.name}*`,
       "",
-      createDaysMessage(),
+      message,
       entityOwner.href ? `🔗 [Страница Steam](${entityOwner.href})` : "",
     ]
       .filter(Boolean)
@@ -147,5 +149,15 @@ export class NotificationJob extends Command {
     const releaseNotifications = [30, 14, 7, 3, 1, 0];
 
     return releaseNotifications.includes(releaseDate);
+  }
+
+  private getReleaseTimeUntilRelease(releaseTime: Date): string {
+    const hour = new Intl.DateTimeFormat("ru-RU", {
+      timeZone: "Europe/Moscow",
+      hour: "2-digit",
+      hourCycle: "h23",
+    }).format(releaseTime);
+
+    return `${hour}:00`;
   }
 }

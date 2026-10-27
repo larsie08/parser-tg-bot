@@ -1,6 +1,6 @@
 import { IGameSteamData } from "../../modules";
 import { getUpcomingReleaseDateForTest } from "../helpers/getUpcomingReleaseDate";
-import { ADDITION, GAME } from "./games.data";
+import { GAME } from "./games.data";
 
 export const BASE_STEAMGAMEDATA: IGameSteamData = {
   name: GAME.name,
@@ -71,7 +71,7 @@ export const STEAMGAMEDATA_WITH_RELEASEDATE_CHANGES: IGameSteamData = {
   comingSoon: true,
 };
 
-const STEAMGAMEDATA_WITH_EARLYRELEASEDATE_CHANGES: IGameSteamData = {
+export const STEAMGAMEDATA_WITH_EARLYRELEASEDATE_CHANGES: IGameSteamData = {
   ...BASE_STEAMGAMEDATA,
   releaseDate: getUpcomingReleaseDateForTest("date"),
   isEarlyAccess: true,

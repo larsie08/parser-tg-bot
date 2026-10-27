@@ -91,7 +91,10 @@ export class ReleaseDateJob extends Command {
 
       if (!data?.releaseDate) return;
 
-      if (data.releaseDate !== meta.releaseDate)
+      if (
+        data.releaseDate !== meta.releaseDate ||
+        (data.releaseDate === meta.releaseDate && !meta.releaseTime)
+      )
         await this.handleReleaseDateChange(data, meta, entityOwner, false);
     }
   }
