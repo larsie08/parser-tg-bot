@@ -4,7 +4,6 @@ import { TelegramService } from "../telegram.service";
 import { SteamService } from "../../integrations";
 
 import {
-  Additions,
   AdditionsService,
   compareNewNews,
   createAdditionMessage,
@@ -22,7 +21,6 @@ import {
   hasMetaData,
   IGameSteamData,
   NewsService,
-  PriceHistory,
   PriceTrackingService,
   User,
 } from "../../modules";

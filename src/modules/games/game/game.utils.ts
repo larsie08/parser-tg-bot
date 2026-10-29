@@ -103,37 +103,6 @@ export function createGameMessage(
   return messageParts.join("\n");
 }
 
-export function hasMetaData(meta: GameMeta | null): boolean {
-  if (!meta) return false;
-
-  const keys: (keyof GameMeta)[] = [
-    "price",
-    "discount",
-    "releaseDate",
-    "releaseTime",
-    "comingSoon",
-    "isEarlyAccess",
-  ];
-
-  return keys.some((key) => {
-    const value = meta[key];
-    return value && value !== "";
-  });
-}
-
-export function needsReleaseTracking(
-  gameMeta: GameMeta,
-  gameData?: IGameSteamData,
-): boolean {
-  if (
-    gameData &&
-    (gameMeta.comingSoon === undefined || gameMeta.isEarlyAccess === undefined)
-  )
-    if (!hasMetaData(gameMeta)) return false;
-
-  return gameMeta.comingSoon! || gameMeta.isEarlyAccess!;
-}
-
 export function handleFormatUrlSearch(game: string): string {
   return encodeURIComponent(game);
 }

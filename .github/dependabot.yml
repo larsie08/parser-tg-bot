@@ -10,6 +10,7 @@ updates:
     ignore:
       - dependency-name: "typescript"
       - dependency-name: "@typescript/native"
+      - dependency-name: "jsdom"
 
     open-pull-requests-limit: 5
 
