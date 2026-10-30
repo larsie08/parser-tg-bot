@@ -102,3 +102,10 @@ export function createNewsMessage(
 
   return message;
 }
+
+export function editNewsText(news: NewsItem): NewsItem {
+  return {
+    ...news,
+    contents: news.contents.replace(/\{STEAM_CLAN_IMAGE\}\/[^\s\])"'<>]+/g, ""),
+  };
+}

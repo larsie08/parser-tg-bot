@@ -50,6 +50,8 @@ export class GameReleasesCommand extends Command {
         }
       }
 
+      await this.telegramService.answerCbQueryButton(context);
+
       await Promise.all(
         gamesWithReleaseDate.map(async (gameMeta) => {
           const releaseDate = formatReleaseDate(gameMeta.releaseDate!);

@@ -7,10 +7,12 @@ import {
   buildNewsPaginationMarkUp,
   compareNewNews,
   createNewsMessage,
+  editNewsText,
   filterRelevantNews,
   Game,
   GameNewsInfo,
   GameService,
+  NewsItem,
   NewsService,
 } from "../../../modules";
 
@@ -41,6 +43,8 @@ export class GameNewsCommand extends Command {
 
       const markup = buildGamePaginationMarkUp(games, 0, "news_check");
 
+      await this.telegramService.answerCbQueryButton(context);
+
       await this.telegramService.sendAndTrackMessage(
         context,
         "📰 *Выберите игру:*",
@@ -62,7 +66,7 @@ export class GameNewsCommand extends Command {
           buildGamePaginationMarkUp(games, page, "news_check").reply_markup,
         );
 
-        await context.answerCbQuery();
+        await this.telegramService.answerCbQueryButton(context);
       },
     );
 
@@ -163,7 +167,7 @@ export class GameNewsCommand extends Command {
           ).reply_markup,
         );
 
-        await context.answerCbQuery();
+        await this.telegramService.answerCbQueryButton(context);
       },
     );
 
@@ -187,9 +191,14 @@ export class GameNewsCommand extends Command {
           "gameNewsMessagesId",
         );
 
+        const newsWithRedactedText = editNewsText(news);
+
         await this.telegramService.sendAndTrackMessage(
           context,
-          createNewsMessage(news, context.session.selectedGame!.name),
+          createNewsMessage(
+            newsWithRedactedText,
+            context.session.selectedGame!.name,
+          ),
           "gameNewsMessagesId",
           Markup.inlineKeyboard([
             Markup.button.callback("Назад", "news_check_return_pagination"),

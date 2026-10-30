@@ -32,6 +32,8 @@ export class ParserCommand extends Command {
   async handle(): Promise<void> {
     this.bot.action("price_check_start", async (context: IBotContext) => {
       await this.handleGameSelection(context);
+
+      await this.telegramService.answerCbQueryButton(context);
     });
 
     this.bot.action(
@@ -56,7 +58,7 @@ export class ParserCommand extends Command {
           buildGamePaginationMarkUp(games, page, "price_check").reply_markup,
         );
 
-        await context.answerCbQuery();
+        await this.telegramService.answerCbQueryButton(context);
       },
     );
 

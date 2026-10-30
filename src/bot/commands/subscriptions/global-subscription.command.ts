@@ -35,6 +35,8 @@ export class GlobalSubscriptionCommand extends Command {
         if (userSubscriptions)
           setSubscriptionsSessionState(context, "global", userSubscriptions);
 
+        await this.telegramService.answerCbQueryButton(context);
+
         await this.telegramService.sendAndTrackMessage(
           context,
           "Выберите категории новостей, которые будете получать.",

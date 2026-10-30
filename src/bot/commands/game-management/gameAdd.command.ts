@@ -37,6 +37,8 @@ export class GameAddCommand extends Command {
         ]),
       );
 
+      await this.telegramService.answerCbQueryButton(context);
+
       context.session.state = null;
 
       this.bot.hears(/.+/, async (context) => {

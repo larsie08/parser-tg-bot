@@ -73,6 +73,10 @@ export class TelegramService {
     );
   }
 
+  async answerCbQueryButton(context: IBotContext): Promise<void> {
+    await context.answerCbQuery();
+  }
+
   private timeoutDeleteMessage(
     context: IBotContext,
     messageId: number,

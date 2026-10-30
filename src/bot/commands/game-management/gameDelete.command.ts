@@ -34,6 +34,8 @@ export class GameDeleteCommand extends Command {
 
       const markup = buildGamePaginationMarkUp(games, 0, "game_delete", true);
 
+      await this.telegramService.answerCbQueryButton(context);
+
       await this.telegramService.sendAndTrackMessage(
         context,
         "📰 *Выберите игру:*",
@@ -91,7 +93,7 @@ export class GameDeleteCommand extends Command {
               .reply_markup,
           );
 
-          await context.answerCbQuery();
+          await this.telegramService.answerCbQueryButton(context);
         }
       },
     );
@@ -110,7 +112,7 @@ export class GameDeleteCommand extends Command {
             .reply_markup,
         );
 
-        await context.answerCbQuery();
+        await this.telegramService.answerCbQueryButton(context);
       },
     );
 

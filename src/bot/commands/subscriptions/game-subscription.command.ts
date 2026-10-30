@@ -40,6 +40,8 @@ export class GameSubscriptionCommand extends Command {
 
       const markup = buildGamePaginationMarkUp(games, 0, "game_subscription");
 
+      await this.telegramService.answerCbQueryButton(context);
+
       await this.telegramService.sendAndTrackMessage(
         context,
         "📰 *Выберите игру:*",
@@ -104,7 +106,7 @@ export class GameSubscriptionCommand extends Command {
             .reply_markup,
         );
 
-        await context.answerCbQuery();
+        await this.telegramService.answerCbQueryButton(context);
       },
     );
 

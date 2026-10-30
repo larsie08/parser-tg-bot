@@ -10,6 +10,7 @@ import {
   createGameMessage,
   createNewAdditionMessage,
   createNewsMessage,
+  editNewsText,
   FilteredUsersNewsPreference,
   filterRelevantNews,
   Game,
@@ -179,7 +180,17 @@ export class AutoParserJob extends Command {
 
     const existedNews = compareNewNews(fetchedNews, news);
 
-    const usersNews = this.filterUsersSubscriptionsNews(game, existedNews);
+    const existedNewsWithEditedText: GameNewsInfo = {
+      appnews: {
+        ...existedNews.appnews,
+        newsitems: existedNews.appnews.newsitems.map(editNewsText),
+      },
+    };
+
+    const usersNews = this.filterUsersSubscriptionsNews(
+      game,
+      existedNewsWithEditedText,
+    );
 
     if (!usersNews)
       throw new Error("Произошла ошибка с фильтрацией новостей пользователя.");
