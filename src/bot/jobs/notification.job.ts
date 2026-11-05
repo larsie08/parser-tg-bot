@@ -107,12 +107,14 @@ export class NotificationJob extends Command {
 
     const releaseQualifier = meta.isEarlyAccess ? " из раннего доступа" : "";
     const ownerType = meta.type === GameMetaType.GAME ? "Игра" : "Дополнение";
+    const ownerTypeForLateMessage =
+      meta.type === GameMetaType.GAME ? "игры" : "дополнения";
 
     let message = "";
     let messageAboutTime = time && ` в ${time}`;
 
     if (daysUntilRelease > 1)
-      message = `📅 До выхода${releaseQualifier} осталось *${daysUntilRelease}* ${word}.`;
+      message = `📅 До выхода ${ownerTypeForLateMessage}${releaseQualifier} осталось *${daysUntilRelease}* ${word}.`;
     if (daysUntilRelease === 1)
       message =
         `${ownerType} выходит${releaseQualifier} завтра` + messageAboutTime;
@@ -121,9 +123,11 @@ export class NotificationJob extends Command {
         `${ownerType} выходит${releaseQualifier} сегодня` + messageAboutTime;
 
     return [
-      `🎮 *${entityOwner.name}*`,
+      meta.type === GameMetaType.ADDITION &&
+        `🎮 Игра: ${meta.addition?.game.name}`,
+      `🕹️ ${ownerType} *${entityOwner.name}*`,
       "",
-      message,
+      `📝 ${message}`,
       entityOwner.href ? `🔗 [Страница Steam](${entityOwner.href})` : "",
     ]
       .filter(Boolean)

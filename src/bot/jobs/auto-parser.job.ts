@@ -48,7 +48,7 @@ export class AutoParserJob extends Command {
       async () => {
         const games = await this.gameService.getGamesOfUsersWithSubscriptions();
 
-        if (!games) return console.log("Не найдено ни одной игры.");
+        if (!games?.length) return console.log("Не найдено ни одной игры.");
 
         for (const game of games) {
           try {
