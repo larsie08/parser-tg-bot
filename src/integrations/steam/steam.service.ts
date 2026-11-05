@@ -7,6 +7,7 @@ import {
   SteamAppDetailsResponse,
 } from "./steam.types";
 import { GameNewsInfo, IGameSteamData } from "../../modules";
+import { TypeOfResponse } from "../../bot/jobs/jobs.types";
 
 export class SteamService {
   async fetchGameIdSteam(
@@ -22,22 +23,9 @@ export class SteamService {
     }
   }
 
-  async fetchEarlyAccessReleaseDate(
+  async fetchReleaseDateAndTimeUntilRelease(
     gameId: string,
-  ): Promise<ReleaseDateDataResponse | null> {
-    try {
-      const { data } = await axios.get<Buffer<ArrayBufferLike>>(
-        `https://store.steampowered.com/app/${gameId}`,
-        headersResponse,
-      );
-      return this.parseEarlyAccessReleaseDateData(data);
-    } catch (error) {
-      throw new Error("Ошибка при получении данных о раннем доступе");
-    }
-  }
-
-  async fetchComingSoonReleaseDate(
-    gameId: string,
+    type: TypeOfResponse,
   ): Promise<ReleaseDateDataResponse | null> {
     try {
       const { data } = await axios.get<Buffer<ArrayBufferLike>>(
@@ -45,7 +33,7 @@ export class SteamService {
         headersResponse,
       );
 
-      return this.parseComingSoonReleaseDateData(data);
+      return this.parseReleaseDateData(data, type);
     } catch (error) {
       throw new Error("Ошибка при получении данных о ближайшей дате релиза.");
     }
@@ -144,37 +132,121 @@ export class SteamService {
     };
   }
 
-  private parseEarlyAccessReleaseDateData(
+  private parseReleaseDateData(
     data: Buffer<ArrayBufferLike>,
+    type: TypeOfResponse,
   ): ReleaseDateDataResponse | null {
     const dom = new JSDOM(data);
 
-    const infoBlock = dom.window.document.getElementsByClassName(
-      "early_access_header",
-    )[0];
+    let releaseDateText: string | null;
+    let releaseTimeText: string | null;
 
-    const releaseInfoBlock = infoBlock.getElementsByClassName(
-      "leaving_early_access",
-    )[0];
+    switch (type) {
+      case "comingSoon": {
+        const infoBlock = dom.window.document.getElementsByClassName(
+          "game_area_comingsoon",
+        )[0];
+        const releaseDateBlock = infoBlock.querySelector("h1");
 
-    const releaseDateText = releaseInfoBlock.querySelector("h2")?.textContent;
-    const releaseTimeText =
-      releaseInfoBlock.childNodes.length > 1
-        ? releaseInfoBlock.querySelector("p")?.textContent
-        : null;
+        if (!releaseDateBlock) return null;
+
+        releaseDateText =
+          releaseDateBlock?.querySelector("span")?.textContent?.trim() ||
+          releaseDateBlock?.textContent?.trim() ||
+          null;
+
+        releaseTimeText =
+          infoBlock.querySelector(".content p")?.textContent?.trim() || null;
+
+        break;
+      }
+
+      case "isEarlyAccess": {
+        const infoBlock = dom.window.document.getElementsByClassName(
+          "early_access_header",
+        )[0];
+
+        const releaseInfoBlock = infoBlock.getElementsByClassName(
+          "leaving_early_access",
+        )[0];
+
+        releaseDateText =
+          releaseInfoBlock.querySelector("h2")?.textContent || null;
+        releaseTimeText =
+          releaseInfoBlock.querySelector("p")?.textContent || null;
+
+        break;
+      }
+
+      case "both": {
+        const infoBlock = dom.window.document.getElementsByClassName(
+          "game_area_comingsoon",
+        )[0];
+        const releaseDateBlock = infoBlock.querySelector("h1");
+
+        if (!releaseDateBlock) return null;
+
+        releaseDateText =
+          releaseDateBlock?.querySelector("span")?.textContent?.trim() ||
+          releaseDateBlock?.textContent?.trim() ||
+          null;
+
+        releaseTimeText =
+          infoBlock.querySelector(".content p")?.textContent?.trim() || null;
+
+        break;
+      }
+
+      default:
+        return null;
+    }
 
     if (!releaseDateText) return null;
 
-    const matchReleaseDate = releaseDateText.match(
-      /Leaving Early Access:\s*([0-9]{1,2}\s+[A-Za-z]{3},\s+\d{4})/,
-    );
+    return this.parseReleaseDateInfo(releaseDateText, releaseTimeText, type);
+  }
+
+  private parseReleaseDateInfo(
+    releaseDateText: string,
+    releaseTimeText: string | null,
+    type: TypeOfResponse,
+  ): ReleaseDateDataResponse | null {
+    let matchReleaseDate: RegExpMatchArray | null;
+
+    switch (type) {
+      case "comingSoon":
+        matchReleaseDate = releaseDateText?.match(
+          /^(?:Coming\s+)?(\d{1,2}\s+[A-Za-z]{3},\s+\d{4})$/i,
+        );
+        break;
+
+      case "isEarlyAccess":
+        matchReleaseDate = releaseDateText.match(
+          /Leaving Early Access:\s*([0-9]{1,2}\s+[A-Za-z]{3},\s+\d{4})/,
+        );
+        break;
+
+      case "both":
+        matchReleaseDate = releaseDateText.match(
+          /Planned Release Date:\s*([0-9]{1,2}\s+[A-Za-z]{3},\s+\d{4})/,
+        );
+        break;
+
+      default: {
+        return null;
+      }
+    }
+
     const matchTime = releaseTimeText?.match(
       /unlock in approximately (\d+)\s+hours?/i,
     );
 
-    const hours = Number(matchTime?.[1]);
+    const hours = matchTime ? Number(matchTime[1]) : null;
 
-    const releaseTime = new Date(Date.now() + hours * 60 * 60 * 1000);
+    const releaseTime =
+      hours !== null && Number.isFinite(hours)
+        ? new Date(Date.now() + hours * 60 * 60 * 1000)
+        : null;
 
     return {
       releaseDate: matchReleaseDate?.[1] ?? null,
@@ -192,45 +264,6 @@ export class SteamService {
         ...data.appnews,
         newsitems: newsWithFeedType,
       },
-    };
-  }
-
-  private parseComingSoonReleaseDateData(
-    data: Buffer<ArrayBufferLike>,
-  ): ReleaseDateDataResponse | null {
-    const dom = new JSDOM(data);
-
-    const infoBlock = dom.window.document.getElementsByClassName(
-      "game_area_comingsoon",
-    )[0];
-    const releaseDateBlock = infoBlock.querySelector("h1");
-
-    if (!releaseDateBlock) return null;
-
-    let releaseDateText =
-      releaseDateBlock?.childNodes.length >= 1 &&
-      releaseDateBlock.querySelector("span")?.textContent;
-    if (!releaseDateText) releaseDateText = releaseDateBlock.textContent;
-
-    const releaseTimeText =
-      infoBlock.getElementsByClassName("content")[0].childNodes.length >= 1
-        ? infoBlock.querySelector("p")?.textContent
-        : null;
-
-    const matchReleaseDate = releaseDateText?.match(
-      /^(?:Coming\s+)?(\d{1,2}\s+[A-Za-z]{3},\s+\d{4})$/i,
-    );
-    const releaseDate = matchReleaseDate?.[1] ?? null;
-
-    const matchTime = releaseTimeText?.match(
-      /unlock in approximately (\d+)\s+hours?/i,
-    );
-    const hours = Number(matchTime?.[1]);
-    const releaseTime = new Date(Date.now() + hours * 60 * 60 * 1000);
-
-    return {
-      releaseDate,
-      releaseTime,
     };
   }
 

@@ -22,3 +22,5 @@ export type MessageParams =
       isNewAddition: boolean;
       isAdditionReleased: boolean;
     });
+
+export type TypeOfResponse = "comingSoon" | "isEarlyAccess" | "both";

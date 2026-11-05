@@ -80,8 +80,9 @@ export class GameReleasesCommand extends Command {
     if (!gameMeta) return null;
 
     if (gameMeta.isEarlyAccess && !gameMeta.comingSoon) {
-      const data = await this.steamService.fetchEarlyAccessReleaseDate(
+      const data = await this.steamService.fetchReleaseDateAndTimeUntilRelease(
         owner!.steamId,
+        "isEarlyAccess",
       );
 
       if (data) releaseDate = data.releaseDate;

@@ -16,6 +16,7 @@ import {
 import { formatReleaseDate, getDaysUntilRelease } from "../../shared";
 
 import { Command, IBotContext } from "..";
+import { TypeOfResponse } from "./jobs.types";
 
 export class ReleaseDateJob extends Command {
   constructor(
@@ -39,10 +40,9 @@ export class ReleaseDateJob extends Command {
           ),
         );
 
-        if (!availableGamesMeta)
-          return console.log("Не найдено ни одной игры.");
+        if (!gameMeta) return console.log("Не найдено ни одной игры.");
 
-        for (const meta of availableGamesMeta) {
+        for (const meta of gameMeta) {
           try {
             await this.processReleaseDate(meta);
           } catch (error) {
@@ -65,37 +65,25 @@ export class ReleaseDateJob extends Command {
 
     if (!entityOwner) return;
 
-    if (meta.isEarlyAccess) {
-      const data = await this.steamService.fetchEarlyAccessReleaseDate(
-        entityOwner.steamId,
-      );
+    const type: TypeOfResponse = meta.isEarlyAccess
+      ? meta.comingSoon
+        ? "both"
+        : "isEarlyAccess"
+      : "comingSoon";
 
-      if (!data?.releaseDate) return;
+    const data = await this.steamService.fetchReleaseDateAndTimeUntilRelease(
+      entityOwner.steamId,
+      type,
+    );
 
-      console.log("earlyAccess", data);
+    if (!data?.releaseDate) return;
 
-      if (data.releaseDate !== meta.releaseDate)
-        await this.handleReleaseDateChange(data, meta, entityOwner, true);
-    }
+    const hasReleaseDateChanged = data.releaseDate !== meta.releaseDate;
+    const shouldUpdateReleaseTime =
+      data.releaseDate === meta.releaseDate && !meta.releaseTime;
 
-    const daysUntilRelease = meta.releaseDate
-      ? getDaysUntilRelease(meta.releaseDate)
-      : null;
-    const shouldFetchReleaseTime =
-      daysUntilRelease !== null && daysUntilRelease <= 1;
-
-    if (meta.comingSoon && shouldFetchReleaseTime) {
-      const data = await this.steamService.fetchComingSoonReleaseDate(
-        entityOwner.steamId,
-      );
-
-      if (!data?.releaseDate) return;
-
-      if (
-        data.releaseDate !== meta.releaseDate ||
-        (data.releaseDate === meta.releaseDate && !meta.releaseTime)
-      )
-        await this.handleReleaseDateChange(data, meta, entityOwner, false);
+    if (hasReleaseDateChanged || shouldUpdateReleaseTime) {
+      await this.handleReleaseDateChange(data, meta, entityOwner, true);
     }
   }
 
