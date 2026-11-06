@@ -53,7 +53,8 @@ export class ReleaseDateJob extends Command {
           }
         }
       },
-      240 * 60 * 1000,
+      // 240 * 60 * 1000,
+      20000,
     );
   }
 
@@ -81,9 +82,16 @@ export class ReleaseDateJob extends Command {
     const hasReleaseDateChanged = data.releaseDate !== meta.releaseDate;
     const shouldUpdateReleaseTime =
       data.releaseDate === meta.releaseDate && !meta.releaseTime;
+    const shouldNotifyUserAboutChanged =
+      hasReleaseDateChanged && !meta.releaseDate;
 
     if (hasReleaseDateChanged || shouldUpdateReleaseTime) {
-      await this.handleReleaseDateChange(data, meta, entityOwner, true);
+      await this.handleReleaseDateChange(
+        data,
+        meta,
+        entityOwner,
+        shouldNotifyUserAboutChanged,
+      );
     }
   }
 
