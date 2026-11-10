@@ -13,7 +13,7 @@ import {
   User,
 } from "../../modules";
 
-import { formatReleaseDate, getDaysUntilRelease } from "../../shared";
+import { formatReleaseDate } from "../../shared";
 
 import { Command, IBotContext } from "..";
 import { TypeOfResponse } from "./jobs.types";
@@ -34,15 +34,13 @@ export class ReleaseDateJob extends Command {
         const gameMeta =
           await this.metaService.getGamesWithUpcomingReleaseForJob();
 
-        const availableGamesMeta = gameMeta?.filter((meta) =>
-          /^\d{1,2}\s+[A-Za-z]{3},\s+\d{4}$/.test(
-            meta.releaseDate?.trim() ?? "",
-          ),
-        );
+        const availableGamesMeta =
+          this.filterMetasWhichHasRelevantReleaseDate(gameMeta);
 
-        if (!gameMeta) return console.log("Не найдено ни одной игры.");
+        if (!availableGamesMeta || !availableGamesMeta.length)
+          return console.log("Не найдено ни одной игры.");
 
-        for (const meta of gameMeta) {
+        for (const meta of availableGamesMeta) {
           try {
             await this.processReleaseDate(meta);
           } catch (error) {
@@ -53,8 +51,7 @@ export class ReleaseDateJob extends Command {
           }
         }
       },
-      // 240 * 60 * 1000,
-      20000,
+      240 * 60 * 1000,
     );
   }
 
@@ -158,5 +155,17 @@ export class ReleaseDateJob extends Command {
       "",
       `🔗 ${entity.href}`,
     ].join("\n");
+  }
+
+  private filterMetasWhichHasRelevantReleaseDate(
+    meta: GameMeta[] | null,
+  ): GameMeta[] | null {
+    const fullDateRegex = /^\d{1,2}\s+[A-Za-z]{3},\s+\d{4}$/;
+
+    return (
+      meta?.filter((item) =>
+        fullDateRegex.test(item.releaseDate?.trim() ?? ""),
+      ) || null
+    );
   }
 }
