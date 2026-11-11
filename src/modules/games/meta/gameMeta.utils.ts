@@ -123,6 +123,8 @@ export function getDiffMeta(
     "href",
     "oldPrice",
     "releaseTime",
+    "type",
+    "fullgame",
   ];
 
   if (!additions) deniedKeys.push("dlc");

@@ -1,4 +1,7 @@
+import { SteamGameParent } from "../../../integrations";
+
 export interface IGameSteamData {
+  type: "dlc" | "game";
   name: string;
   price: number | undefined;
   oldPrice: number | undefined;
@@ -8,4 +11,5 @@ export interface IGameSteamData {
   comingSoon: boolean;
   isEarlyAccess: boolean;
   dlc?: string[];
+  fullgame?: SteamGameParent;
 }

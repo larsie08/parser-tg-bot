@@ -24,3 +24,9 @@ export type MessageParams =
     });
 
 export type TypeOfResponse = "comingSoon" | "isEarlyAccess" | "both";
+
+export type IGameSteamDataWithHref = IGameSteamData & { href: string };
+
+export type GiveawayEntity =
+  | IGameSteamDataWithHref
+  | (IGameSteamDataWithHref & { game: Game });

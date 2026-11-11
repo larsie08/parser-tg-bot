@@ -6,6 +6,7 @@ export const STEAM_APP_DETAILS_RESPONSE_RU: SteamAppDetailsResponse = {
   "3321460": {
     success: true,
     data: {
+      type: "game",
       name: "Crimson Desert Enhanced",
       steam_appid: 3321460,
       dlc: [5001840, 4024620, 4572870],
@@ -75,6 +76,7 @@ export const STEAM_APP_DETAILS_RESPONSE_EUR: SteamAppDetailsResponse = {
 };
 
 export const EXPECTED_STEAM_APP_DETAILS_RU: IGameSteamData = {
+  type: "game",
   name: "Crimson Desert Enhanced",
   releaseDate: undefined,
   currency: "RUB",
@@ -87,6 +89,7 @@ export const EXPECTED_STEAM_APP_DETAILS_RU: IGameSteamData = {
 };
 
 export const EXPECTED_STEAM_APP_DETAILS_USD: IGameSteamData = {
+  type: "game",
   name: "Crimson Desert Enhanced",
   releaseDate: undefined,
   currency: "USD",
@@ -99,6 +102,7 @@ export const EXPECTED_STEAM_APP_DETAILS_USD: IGameSteamData = {
 };
 
 export const EXPECTED_STEAM_APP_DETAILS_EUR: IGameSteamData = {
+  type: "game",
   name: "Crimson Desert Enhanced",
   releaseDate: undefined,
   currency: "EUR",
@@ -116,5 +120,3 @@ export const STEAM_APP_DETAILS_WITH_WRONG_RESPONSE_KEY: SteamAppDetailsResponse 
   {
     "4808980": steamAppDetails,
   };
-
-  

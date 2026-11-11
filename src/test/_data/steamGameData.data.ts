@@ -3,6 +3,7 @@ import { getUpcomingReleaseDateForTest } from "../helpers/getUpcomingReleaseDate
 import { GAME } from "./games.data";
 
 export const BASE_STEAMGAMEDATA: IGameSteamData = {
+  type: "game",
   name: GAME.name,
   releaseDate: undefined,
   currency: undefined,

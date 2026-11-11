@@ -11,4 +11,5 @@ export type DeniedMetaKeysForDiffFn = (
   | "dlc"
   | "name"
   | "href"
+  | "fullgame"
 )[];

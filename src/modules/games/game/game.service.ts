@@ -34,15 +34,22 @@ export class GameService {
   }
 
   async getGamesWithEarlyAccess(): Promise<Game[]> {
-    return this.gameRepository.find({
+    return await this.gameRepository.find({
       where: { meta: { isEarlyAccess: true } },
       relations: { meta: true, users: true },
     });
   }
 
   async getUserAllGames(userId: number): Promise<Game[]> {
-    return this.gameRepository.find({
+    return await this.gameRepository.find({
       where: { users: { userId } },
+    });
+  }
+
+  async getGamesWhichMatchSteamId(steamId: string): Promise<Game | null> {
+    return await this.gameRepository.findOne({
+      where: { steamId },
+      relations: { users: true },
     });
   }
 

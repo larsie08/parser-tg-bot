@@ -1,11 +1,7 @@
 import "reflect-metadata";
 import { session, Telegraf } from "telegraf";
 
-import {
-  AutoParserJob,
-  ReleaseDateJob,
-  NotificationJob,
-} from "./src/bot/jobs";
+import { AutoParserJob, ReleaseDateJob, NotificationJob } from "./src/bot/jobs";
 import {
   ParserCommand,
   StartCommand,
@@ -41,6 +37,7 @@ import { SteamService } from "./src/integrations";
 
 import { ConfigService, IConfigService } from "./src/config";
 import { AppDataSource } from "./src/db/typeOrm.db";
+import { GiveawayJob } from "./src/bot/jobs/giveaway.job";
 
 class Bot {
   bot: Telegraf<IBotContext>;
@@ -145,6 +142,13 @@ class Bot {
         telegramService,
       ),
       new NotificationJob(this.bot, gameMetaService, telegramService),
+      new GiveawayJob(
+        this.bot,
+        gameService,
+        userService,
+        steamService,
+        telegramService,
+      ),
 
       new GameAddCommand(
         this.bot,

@@ -11,6 +11,8 @@ export type ReleaseDateDataResponse = {
 };
 
 type SteamGameData = {
+  type: "dlc" | "game";
+
   steam_appid: number;
 
   name: string;
@@ -29,9 +31,16 @@ type SteamGameData = {
 
   genres?: SteamGenre[];
 
+  fullgame?: SteamGameParent;
+
   recommendations?: {
     total: number;
   };
+};
+
+export type SteamGameParent = {
+  appid: string;
+  name: string;
 };
 
 type SteamPriceOverview = {
@@ -64,6 +73,8 @@ type SteamGenre = {
 };
 
 type SteamCurrency = "RUB" | "USD" | "EUR";
+
+export type GiveawayResolvedData = { steamId: string; href: string };
 
 export const headersResponse = {
   headers: {
