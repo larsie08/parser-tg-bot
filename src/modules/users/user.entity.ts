@@ -42,7 +42,7 @@ export class User {
     (UserNewsSubscription) => UserNewsSubscription.user,
     { cascade: true },
   )
-  UserNewsSubscription!: UserNewsSubscription;
+  userNewsSubscription!: UserNewsSubscription;
 
   @OneToMany(() => GameNewsSubscription, (subscription) => subscription.user)
   gameSubscriptions!: GameNewsSubscription[];

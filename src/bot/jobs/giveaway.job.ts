@@ -82,7 +82,7 @@ export class GiveawayJob extends Command {
     games: IGameSteamDataWithHref[];
     additions: (IGameSteamDataWithHref & { game: Game })[];
   }): Promise<void> {
-    const users = await this.userService.getAllUsers();
+    const users = await this.userService.getAllUsersWhoSubscribeOnGiveaway();
 
     if (!users)
       throw new Error(

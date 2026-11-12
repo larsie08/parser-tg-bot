@@ -25,7 +25,7 @@ export class GameService {
       relations: {
         meta: true,
         users: {
-          UserNewsSubscription: true,
+          userNewsSubscription: true,
           gameSubscriptions: { game: true },
         },
         additions: true,

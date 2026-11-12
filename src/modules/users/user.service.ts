@@ -10,19 +10,21 @@ export class UserService {
   async getUserWithGames(userId: number): Promise<User | null> {
     return await this.userRepository.findOne({
       where: { userId },
-      relations: { games: true, UserNewsSubscription: true },
+      relations: { games: true, userNewsSubscription: true },
     });
   }
 
   async getUser(userId: number): Promise<User | null> {
     return await this.userRepository.findOne({
       where: { userId },
-      relations: { UserNewsSubscription: true },
+      relations: { userNewsSubscription: true },
     });
   }
 
-  async getAllUsers(): Promise<User[] | null> {
-    return await this.userRepository.find();
+  async getAllUsersWhoSubscribeOnGiveaway(): Promise<User[] | null> {
+    return await this.userRepository.find({
+      where: { userNewsSubscription: { giveaway: true } },
+    });
   }
 
   async saveUser(userId: number, userName: string): Promise<User> {

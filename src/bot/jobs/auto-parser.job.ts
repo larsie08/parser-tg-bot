@@ -290,7 +290,7 @@ export class AutoParserJob extends Command {
 
       usersNews.push({
         userId: user.userId,
-        news: filterRelevantNews(news, gameSub ?? user.UserNewsSubscription),
+        news: filterRelevantNews(news, gameSub ?? user.userNewsSubscription),
       });
     }
 

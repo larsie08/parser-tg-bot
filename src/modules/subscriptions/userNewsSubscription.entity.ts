@@ -14,7 +14,7 @@ export class UserNewsSubscription {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @OneToOne(() => User, (user) => user.UserNewsSubscription, {
+  @OneToOne(() => User, (user) => user.userNewsSubscription, {
     onDelete: "CASCADE",
   })
   @JoinColumn({ name: "user_id" })

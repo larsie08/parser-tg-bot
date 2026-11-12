@@ -115,7 +115,7 @@ export class GameNewsCommand extends Command {
           fetchedNews,
           gameSubscription
             ? gameSubscription
-            : context.session.user!.UserNewsSubscription,
+            : context.session.user!.userNewsSubscription,
         );
 
         const existingNews = await this.newsService.getNewsGame(
