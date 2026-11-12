@@ -72,6 +72,7 @@ class Bot {
               [NewsType.DISCOUNTS]: true,
               [NewsType.ANNOUNCEMENTS]: true,
               [NewsType.DEV_DIARY]: true,
+              giveaway: true,
             },
             game: {
               [NewsType.PATCHES]: true,

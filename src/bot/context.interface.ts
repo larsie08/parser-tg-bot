@@ -31,7 +31,7 @@ export interface SessionData {
   messagesId: MessagesId;
   lastAskNextGameMessageId: number | null;
   subscriptionDraft: {
-    global: NewsSubscriptionsSettings;
+    global: NewsSubscriptionsSettings & { giveaway: boolean };
     game: NewsSubscriptionsSettings;
   };
   user: User | null;

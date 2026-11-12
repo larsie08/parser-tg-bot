@@ -40,6 +40,14 @@ export function buildSubscriptionMarkupKeyboard(
       ),
     ]);
 
+  if (subscriptionSettingName === "global" && "giveaway" in state)
+    menuButtons.unshift([
+      Markup.button.callback(
+        `${state.giveaway ? "✅" : "❌"} Новости о раздачах игр`,
+        `${subscriptionSettingName}_subscription_toggle_giveaway`,
+      ),
+    ]);
+
   return Markup.inlineKeyboard([
     [
       Markup.button.callback(
@@ -80,7 +88,18 @@ export function setSubscriptionContextStateDefault(
     devDiary: true,
   };
 
-  context.session.subscriptionDraft[draftName] = defaultStateValue;
+  if (draftName === "global") {
+    context.session.subscriptionDraft[draftName] = {
+      ...defaultStateValue,
+      giveaway: true,
+    };
+
+    return;
+  }
+
+  context.session.subscriptionDraft[draftName] = {
+    ...defaultStateValue,
+  };
 }
 
 export function getKeySubscriptionFromKeyboardCallback(

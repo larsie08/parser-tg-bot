@@ -32,6 +32,9 @@ export class UserNewsSubscription {
   @Column({ default: true })
   devDiary!: boolean;
 
+  @Column({ default: true })
+  giveaway!: boolean;
+
   @CreateDateColumn()
   createdAt!: Date;
 
