@@ -21,6 +21,9 @@ export * from "./game-tracking/price-history/price-history.service";
 export * from "./game-tracking/price-history/price-history.entity";
 export * from "./game-tracking/price-history/price-tracking.service";
 
+export * from "./game-tracking/giveaway/giveaway.entity";
+export * from "./game-tracking/giveaway/giveaway.service";
+
 export * from "./subscriptions/newsSubscription.service";
 export * from "./subscriptions/gameNewsSubscription.entity";
 export * from "./subscriptions/userNewsSubscription.entity";

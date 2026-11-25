@@ -8,7 +8,14 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
-import { Additions, GameMeta, GameNewsSubscription, News, User } from "../..";
+import {
+  Additions,
+  GameMeta,
+  GameNewsSubscription,
+  Giveaway,
+  News,
+  User,
+} from "../..";
 
 @Entity()
 export class Game {
@@ -38,6 +45,12 @@ export class Game {
 
   @OneToMany(() => Additions, (adddition) => adddition.game)
   additions!: Additions[];
+
+  @OneToOne(
+    () => Giveaway,
+    (giveawayAdditionGiveaway) => giveawayAdditionGiveaway.gameParent,
+  )
+  giveawayAdditionGiveaway?: Giveaway;
 
   @CreateDateColumn()
   createdAt!: Date;

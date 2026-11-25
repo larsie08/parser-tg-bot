@@ -21,6 +21,8 @@ import {
   GameMetaService,
   GameNewsSubscription,
   GameService,
+  Giveaway,
+  GiveawayService,
   News,
   NewsService,
   NewsSubscriptionService,
@@ -100,6 +102,7 @@ class Bot {
       AppDataSource.getRepository(UserNewsSubscription);
     const gameSubscriptionRepository =
       AppDataSource.getRepository(GameNewsSubscription);
+    const giveawayRepository = AppDataSource.getRepository(Giveaway);
 
     const gameService = new GameService(gameRepository);
     const gameMetaService = new GameMetaService(gameMetaRepository);
@@ -123,6 +126,7 @@ class Bot {
       gameMetaService,
       priceHistoryService,
     );
+    const giveawayService = new GiveawayService(giveawayRepository);
 
     this.commands = [
       new StartCommand(this.bot, userService, telegramService),
@@ -149,6 +153,7 @@ class Bot {
         userService,
         steamService,
         telegramService,
+        giveawayService,
       ),
 
       new GameAddCommand(

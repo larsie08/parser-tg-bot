@@ -1,9 +1,11 @@
+import { GiveawayResolvedData } from "../../integrations";
 import {
   Additions,
   Game,
   GameMetaType,
   IGameSteamData,
   PriceHistory,
+  User,
 } from "../../modules";
 
 type BaseParams = {
@@ -25,8 +27,20 @@ export type MessageParams =
 
 export type TypeOfResponse = "comingSoon" | "isEarlyAccess" | "both";
 
-export type IGameSteamDataWithHref = IGameSteamData & { href: string };
+export type IGameSteamDataWithHref<T = object> = IGameSteamData &
+  GiveawayResolvedData &
+  T;
+
+export type GiveawayResponseData<T = object> = {
+  games: IGameSteamDataWithHref<T>[];
+  additions: (IGameSteamDataWithHref<T> & { game: Game })[];
+};
 
 export type GiveawayEntity =
-  | IGameSteamDataWithHref
-  | (IGameSteamDataWithHref & { game: Game });
+  | GiveawayResponseData<{
+      users: User[];
+    }>["games"][number]
+  | GiveawayResponseData<{
+      game: Game;
+      users: User[];
+    }>["additions"][number];

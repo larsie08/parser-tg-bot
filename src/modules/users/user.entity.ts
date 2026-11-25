@@ -4,11 +4,12 @@ import {
   Entity,
   JoinTable,
   ManyToMany,
+  ManyToOne,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { Game, GameNewsSubscription, UserNewsSubscription } from "..";
+import { Game, GameNewsSubscription, Giveaway, UserNewsSubscription } from "..";
 
 @Entity()
 export class User {
@@ -36,6 +37,12 @@ export class User {
     },
   })
   games!: Game[];
+
+  @ManyToOne(
+    () => Giveaway,
+    (giveawayNotification) => giveawayNotification.alreadyNotifiedUsers,
+  )
+  giveawayNotification?: Giveaway;
 
   @OneToOne(
     () => UserNewsSubscription,

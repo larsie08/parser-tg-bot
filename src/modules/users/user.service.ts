@@ -1,11 +1,37 @@
 import { Repository } from "typeorm";
-import { Game, User, UserNewsSubscription } from "..";
+import { Game, Giveaway, User, UserNewsSubscription } from "..";
 
 export class UserService {
   constructor(
     private readonly userRepository: Repository<User>,
     private readonly userSubscriptionsRepository: Repository<UserNewsSubscription>,
   ) {}
+
+  async findAndDefineWhoDidntReceiveMessageAboutGiveaway(
+    entity: Giveaway,
+  ): Promise<User[] | Error> {
+    const didntReceiveMessageUsers: User[] = [];
+
+    const users = await this.getAllUsersWhoSubscribeOnGiveaway();
+
+    if (!users)
+      throw new Error(
+        "Не найден ни один пользователь который подписан на раздачи.",
+      );
+
+    const whoReceiveMessage = entity?.alreadyNotifiedUsers;
+
+    for (const user of users) {
+      const hasMessage = whoReceiveMessage?.some((u) => u.id === user.id);
+
+      if (!hasMessage) didntReceiveMessageUsers.push(user);
+    }
+
+    if (!didntReceiveMessageUsers.length)
+      throw new Error("Все пользователи уже получили свои сообщения.");
+
+    return didntReceiveMessageUsers;
+  }
 
   async getUserWithGames(userId: number): Promise<User | null> {
     return await this.userRepository.findOne({
